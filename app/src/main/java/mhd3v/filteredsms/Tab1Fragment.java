@@ -64,6 +64,8 @@ public class Tab1Fragment extends Fragment {
             TextView time= view.findViewById(R.id.time);
             TextView text= view.findViewById(R.id.textbody);
 
+            text.setText("Lorem ipsum dolor sit amet, consectetur adipiscing elit. Vestibulum eget interdum enim, vitae elementum tortor. Vivamus elementum mauris in metus aliquam, sed placerat nibh pharetra.");
+
             ImageView contactPicture = view.findViewById(R.id.contactPicture);
             contactPicture.setImageResource(R.drawable.knownsender);
 
