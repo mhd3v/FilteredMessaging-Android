@@ -3,6 +3,7 @@ package mhd3v.filteredsms;
 import android.content.Intent;
 import android.os.Bundle;
 import android.support.v7.app.AppCompatActivity;
+import android.text.format.DateFormat;
 import android.util.Log;
 import android.view.View;
 import android.view.ViewGroup;
@@ -16,10 +17,16 @@ import java.util.ArrayList;
 public class CoversationActivity extends AppCompatActivity {
 
     ArrayList<String> senderMessages;
+    ArrayList<String> senderTime;
+
     ArrayList<String> reverseSenderMessages = new ArrayList<>();
+    ArrayList<String> reverseSenderTime = new ArrayList();
 
     ArrayList<String> userMessages;
+    ArrayList<String> userTime;
+
     ArrayList<String> reverseUserMessages = new ArrayList<>();
+    ArrayList<String> reverseUserTime = new ArrayList();
     String sender;
 
     @Override
@@ -29,40 +36,28 @@ public class CoversationActivity extends AppCompatActivity {
 
         Intent intent = getIntent();
 
-        //int userMessagesSize = intent.getStringArrayExtra("userMessages").length;
         sender = intent.getStringExtra("sender");
 
-        Log.d("sender123", sender);
-
-
-       // senderMessages = new String[senderMessagesSize];
-        //userMessages = new String[userMessagesSize];
-
-
-        //Log.d("userMessages", Integer.toString(userMessagesSize));
-
         senderMessages = intent.getStringArrayListExtra("senderMessages");
+        senderTime = intent.getStringArrayListExtra("senderTime");
+
         userMessages = intent.getStringArrayListExtra("userMessages");
+        userTime = intent.getStringArrayListExtra("userTime");
 
         for(int i=senderMessages.size()-1; i >= 0; i--) {
 
             reverseSenderMessages.add(senderMessages.get(i));
+            reverseSenderTime.add(senderTime.get(i));
         }
+
 
         for(int i=userMessages.size()-1; i >= 0; i--) {
 
             reverseUserMessages.add(userMessages.get(i));
+            reverseUserTime.add(userTime.get(i));
+
         }
 
-
-
-
-
-        // senderMessages = reversedMessages;
-
-        //Log.d("sender11", senderMessages.get(0));
-
-        //userMessages = intent.getStringArrayExtra("userMessages");
 
         ListView conversation = (ListView) findViewById(R.id.conversationList);
 
@@ -74,7 +69,7 @@ public class CoversationActivity extends AppCompatActivity {
 
         @Override
         public int getCount() {
-            return senderMessages.size() ; //set array adapter next six days from today
+            return senderMessages.size() ;
         }
 
         @Override
@@ -89,21 +84,28 @@ public class CoversationActivity extends AppCompatActivity {
 
         @Override
         public View getView(int i, View view, ViewGroup viewGroup) {
-//
+
             view = getLayoutInflater().inflate(R.layout.conversation_list,null);
 
             TextView senderName = view.findViewById(R.id.senderName);
 
             senderName.setText(sender);
 
-
-
             try{
 
                 if(!(reverseSenderMessages.get(i).equals(null))){
+
                     TextView senderMessage= view.findViewById(R.id.senderText);
                     senderMessage.setText(reverseSenderMessages.get(i));
                     senderMessage.setVisibility(View.VISIBLE);
+
+                    TextView senderTimeText = view.findViewById(R.id.senderTime);
+                    String time = convertDate(reverseSenderTime.get(i),"dd/MM - hh:mm aa");
+                    senderTimeText.setText(time);
+                    senderTimeText.setVisibility(View.VISIBLE);
+
+
+
                     ImageView img = view.findViewById(R.id.image_message_profile);
                     img.setVisibility(View.VISIBLE);
                 }
@@ -116,8 +118,16 @@ public class CoversationActivity extends AppCompatActivity {
             try{
 
                 if(!(reverseUserMessages.get(i).equals(null))){
+
                     TextView userMessage= view.findViewById(R.id.userText);
                     userMessage.setText(reverseUserMessages.get(i));
+
+                    TextView userTimeText = view.findViewById(R.id.userTime);
+
+                    String time = convertDate(reverseUserTime.get(i),"dd/MM hh:mm");
+                    userTimeText.setText(time);
+                    userTimeText.setVisibility(View.VISIBLE);
+
                     userMessage.setVisibility(View.VISIBLE);
                     }
                 }
@@ -126,18 +136,12 @@ public class CoversationActivity extends AppCompatActivity {
 
             }
 
-
-//            TextView time= view.findViewById(R.id.time);
-//            TextView text= view.findViewById(R.id.textbody);
-
-           // text.setText("Lorem ipsum dolor sit amet, consectetur adipiscing elit. Vestibulum eget interdum enim, vitae elementum tortor. Vivamus elementum mauris in metus aliquam, sed placerat nibh pharetra.");
-
-           // ImageView contactPicture = view.findViewById(R.id.contactPicture);
-
-            //contactPicture.setImageResource(R.drawable.unknownsender);
-
-
             return view;
         }
+
+        public String convertDate(String dateInMilliseconds,String dateFormat) {
+            return DateFormat.format(dateFormat, Long.parseLong(dateInMilliseconds)).toString();
+        }
+
     }
 }

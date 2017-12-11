@@ -10,27 +10,43 @@ public class sms {
 
     String sender;
 
-    ArrayList<String> messages = new ArrayList<>();
+    ArrayList<messages> messages = new ArrayList<>();
 
 
-    ArrayList<String> userMessages = new ArrayList<>();
+    ArrayList<messages> userMessages = new ArrayList<>();
 
 
-    sms(String sender, String message){
+    sms(String sender, String message, String time){
 
         this.sender = sender;
 
-        this.messages.add(message);
+        messages m = new messages(message, time);
+
+        messages.add(m);
 
     }
 
-    void addNew(String message){
-
-        this.messages.add(message);
+    void addNew(String message, String time){
+        messages m = new messages(message, time);
+        messages.add(m);
     }
 
-    void addNewUserMessage(String message){
-        userMessages.add(message);
+    void addNewUserMessage(String message, String time){
+        messages m = new messages(message, time);
+        userMessages.add(m);
+    }
+
+}
+
+class messages{
+
+    String messageBody;
+    String time;
+
+
+    messages(String messageBody, String time){
+        this.messageBody = messageBody;
+        this.time = time;
     }
 
 }
