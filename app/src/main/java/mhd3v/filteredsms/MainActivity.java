@@ -135,7 +135,7 @@ public class MainActivity extends AppCompatActivity {
 
             for(int i = 0; i < smsList.size(); i++){
 
-                if(smsList.get(i).sender.equals(smsInboxCursor.getString(indexAddress))){
+                if(smsList.get(i).sender.equals(getFormattedNumber(smsInboxCursor.getString(indexAddress)))){
                     String date = smsInboxCursor.getString(smsInboxCursor
                             .getColumnIndex("date"));
                     smsList.get(i).addNew(smsInboxCursor.getString(indexBody), date);
@@ -148,7 +148,7 @@ public class MainActivity extends AppCompatActivity {
                 String date = smsInboxCursor.getString(smsInboxCursor
                         .getColumnIndex("date"));
 
-                sms newSms = new sms(smsInboxCursor.getString(indexAddress), smsInboxCursor.getString(indexBody),date);
+                sms newSms = new sms(getFormattedNumber(smsInboxCursor.getString(indexAddress)), smsInboxCursor.getString(indexBody),date);
 
                 smsList.add(newSms);
             }
@@ -160,6 +160,10 @@ public class MainActivity extends AppCompatActivity {
 
         Cursor smsOutboxCursor = contentResolver.query(
                 Uri.parse("content://sms/sent"), null, null, null, null);
+
+//        int indexBodyOutbox = smsInboxCursor.getColumnIndex("body");
+//        int indexAddressOutbox = smsInboxCursor.getColumnIndex("address");
+//        if (indexBodyOutbox < 0 || !smsOutboxCursor.moveToFirst()) return;
         smsOutboxCursor.moveToFirst();
 
         do { //sent messages
@@ -168,29 +172,8 @@ public class MainActivity extends AppCompatActivity {
 
             for(int i = 0; i < smsList.size(); i++) {
 
-                if(Character.toString(smsOutboxCursor.getString(indexAddress).charAt(0)).equals("0")){ //if user sent message without entering the area code
+                if (smsList.get(i).sender.equals(getFormattedNumber(smsOutboxCursor.getString(indexAddress)))) {
 
-                    String originalNumber = smsOutboxCursor.getString(indexAddress);
-
-                    String formattedNumber = "+92";
-
-                    for (int j = 1; j < originalNumber.length(); j++){
-                        formattedNumber = formattedNumber + Character.toString(originalNumber.charAt(j));
-                    }
-
-
-                    Log.d("mahad1", formattedNumber);
-
-                    if (smsList.get(i).sender.equals(formattedNumber)) {
-                        String date = smsOutboxCursor.getString(smsOutboxCursor
-                                .getColumnIndex("date"));
-                        smsList.get(i).addNewUserMessage(smsOutboxCursor.getString(indexBody), date);
-                        found = true;
-                    }
-                }
-
-
-                else if (smsList.get(i).sender.equals(smsOutboxCursor.getString(indexAddress))) {
                     String date = smsOutboxCursor.getString(smsOutboxCursor
                             .getColumnIndex("date"));
                     smsList.get(i).addNewUserMessage(smsOutboxCursor.getString(indexBody), date);
@@ -202,7 +185,7 @@ public class MainActivity extends AppCompatActivity {
                 String date = smsOutboxCursor.getString(smsOutboxCursor
                         .getColumnIndex("date"));
 
-                sms newSms = new sms(smsOutboxCursor.getString(indexAddress), null,date);
+                sms newSms = new sms(getFormattedNumber(smsOutboxCursor.getString(indexAddress)), null,date);
 
                 newSms.addNewUserMessage(smsOutboxCursor.getString(indexBody),date);
 
@@ -211,7 +194,6 @@ public class MainActivity extends AppCompatActivity {
 
 
         } while (smsOutboxCursor.moveToNext());
-
 
 
         setSmsLists(smsList);
@@ -268,5 +250,25 @@ public class MainActivity extends AppCompatActivity {
 
         return Name;
     }
+
+    String getFormattedNumber(String originalNumber) {
+
+        String formattedNumber = "+92";
+
+        if (Character.toString(originalNumber.charAt(0)).equals("0")) { //if user sent message without entering the area code
+
+            for (int j = 1; j < originalNumber.length(); j++) {
+                formattedNumber = formattedNumber + Character.toString(originalNumber.charAt(j));
+            }
+
+            return formattedNumber;
+
+        }
+
+        else
+            return originalNumber;
+
+    }
+
 
 }
