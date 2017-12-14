@@ -23,6 +23,8 @@ import android.widget.Toast;
 
 import java.util.ArrayList;
 
+import static android.R.attr.value;
+
 public class MainActivity extends AppCompatActivity {
 
     private SectionsPageAdapter mSectionsPageAdapter;
@@ -127,8 +129,12 @@ public class MainActivity extends AppCompatActivity {
         Cursor cursor = getContentResolver().query(Uri
                 .parse("content://sms"), null, null, null, null);
 
+//        Uri uri = Uri.parse("content://sms/");
+//        cursor = contentResolver.query(uri, null, "thread_id=" + value, null, "date asc");
+
         int indexBody = cursor.getColumnIndex("body");
         int indexAddress = cursor.getColumnIndex("address");
+        //String threadId = ;
         if (indexBody < 0 || !cursor.moveToFirst()) return;
 
 
@@ -139,13 +145,14 @@ public class MainActivity extends AppCompatActivity {
 
             if (cursor.getString(Integer.parseInt(type)).equalsIgnoreCase("1")) {
 
+                // System.out.println("ThreadID"+ cursor.getString(cursor.getColumnIndex("thread_id")));
                 //received messages
 
                 boolean found = false;
 
                 for (int i = 0; i < smsList.size(); i++) {
 
-                    if (smsList.get(i).sender.equals(getFormattedNumber(cursor.getString(indexAddress)))) {
+                    if (smsList.get(i).threadId.equals(cursor.getString(cursor.getColumnIndex("thread_id")))) {
                         String date = cursor.getString(cursor
                                 .getColumnIndex("date"));
                         smsList.get(i).addNewSenderMessage(cursor.getString(indexBody), date);
@@ -158,7 +165,7 @@ public class MainActivity extends AppCompatActivity {
                     String date = cursor.getString(cursor
                             .getColumnIndex("date"));
 
-                    sms newSms = new sms(getFormattedNumber(cursor.getString(indexAddress)));
+                    sms newSms = new sms(cursor.getString(indexAddress), cursor.getString(cursor.getColumnIndex("thread_id")));
                     newSms.addNewSenderMessage(cursor.getString(indexBody), date);
                     smsList.add(newSms);
                 }
@@ -171,7 +178,7 @@ public class MainActivity extends AppCompatActivity {
 
                 for (int i = 0; i < smsList.size(); i++) {
 
-                    if (smsList.get(i).sender.equals(getFormattedNumber(cursor.getString(indexAddress)))) {
+                    if (smsList.get(i).threadId.equals(cursor.getString(cursor.getColumnIndex("thread_id")))) {
 
                         String date = cursor.getString(cursor.getColumnIndex("date"));
 
@@ -184,7 +191,7 @@ public class MainActivity extends AppCompatActivity {
                     String date = cursor.getString(cursor
                             .getColumnIndex("date"));
 
-                    sms newSms = new sms(getFormattedNumber(cursor.getString(indexAddress)));
+                    sms newSms = new sms(cursor.getString(indexAddress),cursor.getString(cursor.getColumnIndex("thread_id")));
 
                     newSms.addNewUserMessage(cursor.getString(indexBody), date);
 
@@ -252,24 +259,24 @@ public class MainActivity extends AppCompatActivity {
         return Name;
     }
 
-    String getFormattedNumber(String originalNumber) {
-
-        String formattedNumber = "+92";
-
-        if (Character.toString(originalNumber.charAt(0)).equals("0")) { //if user sent message without entering the area code
-
-            for (int j = 1; j < originalNumber.length(); j++) {
-                formattedNumber = formattedNumber + Character.toString(originalNumber.charAt(j));
-            }
-
-            return formattedNumber;
-
-        }
-
-        else
-            return originalNumber;
-
-    }
+//    String getFormattedNumber(String originalNumber) {
+//
+//        String formattedNumber = "+92";
+//
+//        if (Character.toString(originalNumber.charAt(0)).equals("0")) { //if user sent message without entering the area code
+//
+//            for (int j = 1; j < originalNumber.length(); j++) {
+//                formattedNumber = formattedNumber + Character.toString(originalNumber.charAt(j));
+//            }
+//
+//            return formattedNumber;
+//
+//        }
+//
+//        else
+//            return originalNumber;
+//
+//    }
 
 
 }

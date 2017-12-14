@@ -9,6 +9,8 @@ import java.util.ArrayList;
 
 public class sms{
 
+    String threadId;
+
     String sender;
 
     messages lastMessage;
@@ -16,9 +18,10 @@ public class sms{
     ArrayList<messages> messages = new ArrayList<>();
 
 
-    sms(String sender){
+    sms(String sender, String threadId){
 
         this.sender = sender;
+        this.threadId = threadId;
 
     }
 
