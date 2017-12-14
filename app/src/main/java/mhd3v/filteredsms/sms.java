@@ -10,8 +10,9 @@ public class sms {
 
     String sender;
 
-    ArrayList<messages> messages = new ArrayList<>();
+    messages lastMessage;
 
+    ArrayList<messages> messages = new ArrayList<>();
 
     ArrayList<messages> userMessages = new ArrayList<>();
 
@@ -21,20 +22,23 @@ public class sms {
         this.sender = sender;
 
         messages m = new messages(message, time);
-
+        lastMessage = m;
         messages.add(m);
 
     }
 
     void addNew(String message, String time){
         messages m = new messages(message, time);
+        lastMessage = m;
         messages.add(m);
     }
 
     void addNewUserMessage(String message, String time){
         messages m = new messages(message, time);
+        lastMessage = m;
         userMessages.add(m);
     }
+
 
 }
 

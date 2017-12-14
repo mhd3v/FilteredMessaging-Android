@@ -122,81 +122,82 @@ public class MainActivity extends AppCompatActivity {
     }
 
     public void refreshSmsInbox() {
-        ContentResolver contentResolver = getContentResolver();
-        Cursor smsInboxCursor = contentResolver.query(Uri.parse("content://sms/inbox"), null, null, null, null);
-        int indexBody = smsInboxCursor.getColumnIndex("body");
-        int indexAddress = smsInboxCursor.getColumnIndex("address");
-        if (indexBody < 0 || !smsInboxCursor.moveToFirst()) return;
-
-        do { //received messages
 
 
-            boolean found = false;
+        Cursor cursor = getContentResolver().query(Uri
+                .parse("content://sms"), null, null, null, null);
 
-            for(int i = 0; i < smsList.size(); i++){
+        int indexBody = cursor.getColumnIndex("body");
+        int indexAddress = cursor.getColumnIndex("address");
+        if (indexBody < 0 || !cursor.moveToFirst()) return;
 
-                if(smsList.get(i).sender.equals(getFormattedNumber(smsInboxCursor.getString(indexAddress)))){
-                    String date = smsInboxCursor.getString(smsInboxCursor
+
+        String type = Integer.toString(cursor.getColumnIndex("type"));
+
+
+        while (cursor.moveToNext()) {
+
+            if (cursor.getString(Integer.parseInt(type)).equalsIgnoreCase("1")) {
+
+                //received messages
+
+                boolean found = false;
+
+                for (int i = 0; i < smsList.size(); i++) {
+
+                    if (smsList.get(i).sender.equals(getFormattedNumber(cursor.getString(indexAddress)))) {
+                        String date = cursor.getString(cursor
+                                .getColumnIndex("date"));
+                        smsList.get(i).addNew(cursor.getString(indexBody), date);
+                        found = true;
+                    }
+
+                }
+                if (found == false) {
+
+                    String date = cursor.getString(cursor
                             .getColumnIndex("date"));
-                    smsList.get(i).addNew(smsInboxCursor.getString(indexBody), date);
-                    found = true;
+
+                    sms newSms = new sms(getFormattedNumber(cursor.getString(indexAddress)), cursor.getString(indexBody), date);
+
+                    smsList.add(newSms);
+                }
+
+            } else if (cursor.getString(Integer.parseInt(type)).equalsIgnoreCase("2")) {
+
+                //recieved messaged
+
+                boolean found = false;
+
+                for (int i = 0; i < smsList.size(); i++) {
+
+                    if (smsList.get(i).sender.equals(getFormattedNumber(cursor.getString(indexAddress)))) {
+
+                        String date = cursor.getString(cursor
+                                .getColumnIndex("date"));
+                        smsList.get(i).addNewUserMessage(cursor.getString(indexBody), date);
+                        found = true;
+                    }
+                }
+
+                if (found == false) {
+                    String date = cursor.getString(cursor
+                            .getColumnIndex("date"));
+
+                    sms newSms = new sms(getFormattedNumber(cursor.getString(indexAddress)), null, date);
+
+                    newSms.addNewUserMessage(cursor.getString(indexBody), date);
+
+                    smsList.add(newSms);
+
                 }
 
             }
-            if(found == false) {
 
-                String date = smsInboxCursor.getString(smsInboxCursor
-                        .getColumnIndex("date"));
-
-                sms newSms = new sms(getFormattedNumber(smsInboxCursor.getString(indexAddress)), smsInboxCursor.getString(indexBody),date);
-
-                smsList.add(newSms);
-            }
-
-
-        } while (smsInboxCursor.moveToNext());
-
-
-
-        Cursor smsOutboxCursor = contentResolver.query(
-                Uri.parse("content://sms/sent"), null, null, null, null);
-
-//        int indexBodyOutbox = smsInboxCursor.getColumnIndex("body");
-//        int indexAddressOutbox = smsInboxCursor.getColumnIndex("address");
-//        if (indexBodyOutbox < 0 || !smsOutboxCursor.moveToFirst()) return;
-        smsOutboxCursor.moveToFirst();
-
-        do { //sent messages
-
-            boolean found = false;
-
-            for(int i = 0; i < smsList.size(); i++) {
-
-                if (smsList.get(i).sender.equals(getFormattedNumber(smsOutboxCursor.getString(indexAddress)))) {
-
-                    String date = smsOutboxCursor.getString(smsOutboxCursor
-                            .getColumnIndex("date"));
-                    smsList.get(i).addNewUserMessage(smsOutboxCursor.getString(indexBody), date);
-                    found = true;
-                }
-            }
-
-            if(found == false) {
-                String date = smsOutboxCursor.getString(smsOutboxCursor
-                        .getColumnIndex("date"));
-
-                sms newSms = new sms(getFormattedNumber(smsOutboxCursor.getString(indexAddress)), null,date);
-
-                newSms.addNewUserMessage(smsOutboxCursor.getString(indexBody),date);
-
-                smsList.add(newSms);
-            }
-
-
-        } while (smsOutboxCursor.moveToNext());
-
+        }
 
         setSmsLists(smsList);
+
     }
 
     void setSmsLists(ArrayList<sms> smsList){

@@ -15,6 +15,8 @@ import android.widget.ListView;
 import android.widget.TextView;
 
 import java.util.ArrayList;
+import java.util.Collections;
+import java.util.Comparator;
 
 /**
  * Created by Mahad on 11/27/2017.
@@ -35,6 +37,7 @@ public class Tab1Fragment extends Fragment {
         MainActivity activity = (MainActivity) getActivity();
 
         smsList = activity.getKnownSms();
+
 
         knownList.setAdapter(new customAdapter());
 
@@ -111,7 +114,7 @@ public class Tab1Fragment extends Fragment {
             time.setText(lastSenderMessageTime);
 
             TextView text= view.findViewById(R.id.textbody);
-            text.setText(smsList.get(i).messages.get(0).messageBody);
+            text.setText(smsList.get(i).lastMessage.messageBody);
 
             ImageView contactPicture = view.findViewById(R.id.contactPicture);
             contactPicture.setImageResource(R.drawable.knownsender);
@@ -125,6 +128,7 @@ public class Tab1Fragment extends Fragment {
 
 
     }
+
 
 
 }

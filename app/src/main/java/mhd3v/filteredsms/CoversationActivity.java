@@ -59,6 +59,8 @@ public class CoversationActivity extends AppCompatActivity {
         }
 
 
+
+
         ListView conversation = (ListView) findViewById(R.id.conversationList);
 
         conversation.setAdapter(new customAdapter());
@@ -144,4 +146,7 @@ public class CoversationActivity extends AppCompatActivity {
         }
 
     }
+
+
+
 }
