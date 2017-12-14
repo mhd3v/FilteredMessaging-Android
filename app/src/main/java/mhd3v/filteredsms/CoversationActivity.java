@@ -156,10 +156,11 @@ public class CoversationActivity extends AppCompatActivity {
                 userMessage.setVisibility(View.VISIBLE);
 
                 TextView userTimeText = view.findViewById(R.id.userTime);
+                //Log.d("time1", messageList.get(i).time);
                 String time = convertDate(messageList.get(i).time,"dd/MM hh:mm");
+                Log.d("usertime", time);
                 userTimeText.setText(time);
                 userTimeText.setVisibility(View.VISIBLE);
-
 
 
             }

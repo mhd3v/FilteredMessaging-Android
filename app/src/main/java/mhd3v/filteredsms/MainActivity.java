@@ -159,9 +159,7 @@ public class MainActivity extends AppCompatActivity {
                             .getColumnIndex("date"));
 
                     sms newSms = new sms(getFormattedNumber(cursor.getString(indexAddress)));
-
                     newSms.addNewSenderMessage(cursor.getString(indexBody), date);
-
                     smsList.add(newSms);
                 }
 
@@ -183,7 +181,8 @@ public class MainActivity extends AppCompatActivity {
                 }
 
                 if (found == false) {
-                    String date = cursor.getString(cursor.getColumnIndex("date"));
+                    String date = cursor.getString(cursor
+                            .getColumnIndex("date"));
 
                     sms newSms = new sms(getFormattedNumber(cursor.getString(indexAddress)));
 
