@@ -13,8 +13,11 @@ import android.widget.ListView;
 import android.widget.TextView;
 
 import java.util.ArrayList;
+import java.util.Collections;
 
 public class CoversationActivity extends AppCompatActivity {
+
+    ArrayList<messages> messageList;
 
     ArrayList<String> senderMessages;
     ArrayList<String> senderTime;
@@ -34,31 +37,35 @@ public class CoversationActivity extends AppCompatActivity {
         super.onCreate(savedInstanceState);
         setContentView(R.layout.activity_coversation);
 
+//        Intent intent = getIntent();
+//
+//        sender = intent.getStringExtra("sender");
+//
+//        senderMessages = intent.getStringArrayListExtra("senderMessages");
+//        senderTime = intent.getStringArrayListExtra("senderTime");
+//
+//        userMessages = intent.getStringArrayListExtra("userMessages");
+//        userTime = intent.getStringArrayListExtra("userTime");
+//
+//        for(int i=senderMessages.size()-1; i >= 0; i--) {
+//
+//            reverseSenderMessages.add(senderMessages.get(i));
+//            reverseSenderTime.add(senderTime.get(i));
+//        }
+//
+//
+//        for(int i=userMessages.size()-1; i >= 0; i--) {
+//
+//            reverseUserMessages.add(userMessages.get(i));
+//            reverseUserTime.add(userTime.get(i));
+//
+//        }
+
         Intent intent = getIntent();
+        Bundle args = intent.getBundleExtra("BUNDLE");
+        messageList = (ArrayList<messages>) args.getSerializable("messageList");
 
-        sender = intent.getStringExtra("sender");
-
-        senderMessages = intent.getStringArrayListExtra("senderMessages");
-        senderTime = intent.getStringArrayListExtra("senderTime");
-
-        userMessages = intent.getStringArrayListExtra("userMessages");
-        userTime = intent.getStringArrayListExtra("userTime");
-
-        for(int i=senderMessages.size()-1; i >= 0; i--) {
-
-            reverseSenderMessages.add(senderMessages.get(i));
-            reverseSenderTime.add(senderTime.get(i));
-        }
-
-
-        for(int i=userMessages.size()-1; i >= 0; i--) {
-
-            reverseUserMessages.add(userMessages.get(i));
-            reverseUserTime.add(userTime.get(i));
-
-        }
-
-
+        Collections.reverse(messageList);
 
 
         ListView conversation = (ListView) findViewById(R.id.conversationList);
@@ -71,7 +78,9 @@ public class CoversationActivity extends AppCompatActivity {
 
         @Override
         public int getCount() {
-            return senderMessages.size() ;
+            Log.d("test", Integer.toString(messageList.size()));
+            //Log.d("test1", Integer.toString(messageList.));
+            return messageList.size() ;
         }
 
         @Override
@@ -91,51 +100,83 @@ public class CoversationActivity extends AppCompatActivity {
 
             TextView senderName = view.findViewById(R.id.senderName);
 
-            senderName.setText(sender);
+            //senderName.setText(messageList);
 
-            try{
+//            try{
+//
+//                if(!(reverseSenderMessages.get(i).equals(null))){
+//
+//                    TextView senderMessage= view.findViewById(R.id.senderText);
+//                    senderMessage.setText(reverseSenderMessages.get(i));
+//                    senderMessage.setVisibility(View.VISIBLE);
+//
+//                    TextView senderTimeText = view.findViewById(R.id.senderTime);
+//                    String time = convertDate(reverseSenderTime.get(i),"dd/MM - hh:mm aa");
+//                    senderTimeText.setText(time);
+//                    senderTimeText.setVisibility(View.VISIBLE);
+//
+//
+//
+//                    ImageView img = view.findViewById(R.id.image_message_profile);
+//                    img.setVisibility(View.VISIBLE);
+//                }
+//
+//            }
+//            catch (Exception e) {
+//
+//            }
+//
+//            try{
+//
+//                if(!(reverseUserMessages.get(i).equals(null))){
+//
+//                    TextView userMessage= view.findViewById(R.id.userText);
+//                    userMessage.setText(reverseUserMessages.get(i));
+//
+//                    TextView userTimeText = view.findViewById(R.id.userTime);
+//
+//                    String time = convertDate(reverseUserTime.get(i),"dd/MM hh:mm");
+//                    userTimeText.setText(time);
+//                    userTimeText.setVisibility(View.VISIBLE);
+//
+//                    userMessage.setVisibility(View.VISIBLE);
+//                    }
+//                }
+//
+//            catch (Exception e){
+//
+//            }
 
-                if(!(reverseSenderMessages.get(i).equals(null))){
-
-                    TextView senderMessage= view.findViewById(R.id.senderText);
-                    senderMessage.setText(reverseSenderMessages.get(i));
-                    senderMessage.setVisibility(View.VISIBLE);
-
-                    TextView senderTimeText = view.findViewById(R.id.senderTime);
-                    String time = convertDate(reverseSenderTime.get(i),"dd/MM - hh:mm aa");
-                    senderTimeText.setText(time);
-                    senderTimeText.setVisibility(View.VISIBLE);
 
 
+            if(messageList.get(i).isUserMessage){
 
-                    ImageView img = view.findViewById(R.id.image_message_profile);
-                    img.setVisibility(View.VISIBLE);
-                }
+                TextView userMessage= view.findViewById(R.id.userText);
+                userMessage.setText(messageList.get(i).messageBody);
+                userMessage.setVisibility(View.VISIBLE);
+
+                TextView userTimeText = view.findViewById(R.id.userTime);
+                String time = convertDate(messageList.get(i).time,"dd/MM hh:mm");
+                userTimeText.setText(time);
+                userTimeText.setVisibility(View.VISIBLE);
+
+
 
             }
-            catch (Exception e) {
+            else{
 
-            }
+                TextView senderMessage= view.findViewById(R.id.senderText);
+                senderMessage.setText(messageList.get(i).messageBody);
+                senderMessage.setVisibility(View.VISIBLE);
 
-            try{
+                TextView senderTimeText = view.findViewById(R.id.senderTime);
+                String time = convertDate(messageList.get(i).time,"dd/MM - hh:mm aa");
+                senderTimeText.setText(time);
+                senderTimeText.setVisibility(View.VISIBLE);
 
-                if(!(reverseUserMessages.get(i).equals(null))){
 
-                    TextView userMessage= view.findViewById(R.id.userText);
-                    userMessage.setText(reverseUserMessages.get(i));
-
-                    TextView userTimeText = view.findViewById(R.id.userTime);
-
-                    String time = convertDate(reverseUserTime.get(i),"dd/MM hh:mm");
-                    userTimeText.setText(time);
-                    userTimeText.setVisibility(View.VISIBLE);
-
-                    userMessage.setVisibility(View.VISIBLE);
-                    }
-                }
-
-            catch (Exception e){
-
+                ImageView img = view.findViewById(R.id.image_message_profile);
+                img.setVisibility(View.VISIBLE);
             }
 
             return view;

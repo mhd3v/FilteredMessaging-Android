@@ -135,7 +135,7 @@ public class MainActivity extends AppCompatActivity {
         String type = Integer.toString(cursor.getColumnIndex("type"));
 
 
-        while (cursor.moveToNext()) {
+        do {
 
             if (cursor.getString(Integer.parseInt(type)).equalsIgnoreCase("1")) {
 
@@ -148,7 +148,7 @@ public class MainActivity extends AppCompatActivity {
                     if (smsList.get(i).sender.equals(getFormattedNumber(cursor.getString(indexAddress)))) {
                         String date = cursor.getString(cursor
                                 .getColumnIndex("date"));
-                        smsList.get(i).addNew(cursor.getString(indexBody), date);
+                        smsList.get(i).addNewSenderMessage(cursor.getString(indexBody), date);
                         found = true;
                     }
 
@@ -158,7 +158,9 @@ public class MainActivity extends AppCompatActivity {
                     String date = cursor.getString(cursor
                             .getColumnIndex("date"));
 
-                    sms newSms = new sms(getFormattedNumber(cursor.getString(indexAddress)), cursor.getString(indexBody), date);
+                    sms newSms = new sms(getFormattedNumber(cursor.getString(indexAddress)));
+
+                    newSms.addNewSenderMessage(cursor.getString(indexBody), date);
 
                     smsList.add(newSms);
                 }
@@ -173,18 +175,17 @@ public class MainActivity extends AppCompatActivity {
 
                     if (smsList.get(i).sender.equals(getFormattedNumber(cursor.getString(indexAddress)))) {
 
-                        String date = cursor.getString(cursor
-                                .getColumnIndex("date"));
+                        String date = cursor.getString(cursor.getColumnIndex("date"));
+
                         smsList.get(i).addNewUserMessage(cursor.getString(indexBody), date);
                         found = true;
                     }
                 }
 
                 if (found == false) {
-                    String date = cursor.getString(cursor
-                            .getColumnIndex("date"));
+                    String date = cursor.getString(cursor.getColumnIndex("date"));
 
-                    sms newSms = new sms(getFormattedNumber(cursor.getString(indexAddress)), null, date);
+                    sms newSms = new sms(getFormattedNumber(cursor.getString(indexAddress)));
 
                     newSms.addNewUserMessage(cursor.getString(indexBody), date);
 
@@ -194,7 +195,7 @@ public class MainActivity extends AppCompatActivity {
 
             }
 
-        }
+        } while (cursor.moveToNext());
 
         setSmsLists(smsList);
 

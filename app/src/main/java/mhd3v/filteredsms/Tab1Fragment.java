@@ -14,6 +14,7 @@ import android.widget.ImageView;
 import android.widget.ListView;
 import android.widget.TextView;
 
+import java.io.Serializable;
 import java.util.ArrayList;
 import java.util.Collections;
 import java.util.Comparator;
@@ -39,37 +40,48 @@ public class Tab1Fragment extends Fragment {
         smsList = activity.getKnownSms();
 
 
+
+
         knownList.setAdapter(new customAdapter());
 
         knownList.setOnItemClickListener(new AdapterView.OnItemClickListener() {
             @Override
             public void onItemClick(AdapterView<?> parent, View view, int position, long id) {
-                ArrayList<String> senderMessages = new ArrayList<String>();
-                ArrayList<String> senderTime = new ArrayList<String>();
 
 
-                ArrayList<String> userMessages = new ArrayList<String>();
-                ArrayList<String> userTime = new ArrayList<String>();
-
-                for(int j=0; j < smsList.get(position).messages.size(); j++){
-                        senderMessages.add(smsList.get(position).messages.get(j).messageBody);
-                        senderTime.add(smsList.get(position).messages.get(j).time);
-                }
-
-                for(int j=0; j < smsList.get(position).userMessages.size(); j++){
-                    userMessages.add(smsList.get(position).userMessages.get(j).messageBody);
-                    userTime.add(smsList.get(position).userMessages.get(j).time);
-
-                }
+//                ArrayList<String> senderMessages = new ArrayList<String>();
+//                ArrayList<String> senderTime = new ArrayList<String>();
+//
+//
+//                ArrayList<String> userMessages = new ArrayList<String>();
+//                ArrayList<String> userTime = new ArrayList<String>();
+//
+//                for(int j=0; j < smsList.get(position).messages.size(); j++){
+//                        senderMessages.add(smsList.get(position).messages.get(j).messageBody);
+//                        senderTime.add(smsList.get(position).messages.get(j).time);
+//                }
+//
+//                for(int j=0; j < smsList.get(position).userMessages.size(); j++){
+//                    userMessages.add(smsList.get(position).userMessages.get(j).messageBody);
+//                    userTime.add(smsList.get(position).userMessages.get(j).time);
+//
+//                }
+//
+//                Intent intent = new Intent(getActivity(), CoversationActivity.class);
+//
+//                intent.putExtra("sender", smsList.get(position).sender);
+//                intent.putExtra("senderMessages", senderMessages);
+//                intent.putExtra("senderTime", senderTime);
+//                intent.putExtra("userMessages", userMessages);
+//                intent.putExtra("userTime", userTime);
+//
+//
+//                startActivity(intent);
 
                 Intent intent = new Intent(getActivity(), CoversationActivity.class);
-
-                intent.putExtra("sender", smsList.get(position).sender);
-                intent.putExtra("senderMessages", senderMessages);
-                intent.putExtra("senderTime", senderTime);
-                intent.putExtra("userMessages", userMessages);
-                intent.putExtra("userTime", userTime);
-
+                Bundle args = new Bundle();
+                args.putSerializable("messageList",(Serializable)smsList.get(position).messages);
+                intent.putExtra("BUNDLE",args);
 
                 startActivity(intent);
 
@@ -114,7 +126,7 @@ public class Tab1Fragment extends Fragment {
             time.setText(lastSenderMessageTime);
 
             TextView text= view.findViewById(R.id.textbody);
-            text.setText(smsList.get(i).lastMessage.messageBody);
+            text.setText(smsList.get(i).messages.get(0).messageBody);
 
             ImageView contactPicture = view.findViewById(R.id.contactPicture);
             contactPicture.setImageResource(R.drawable.knownsender);

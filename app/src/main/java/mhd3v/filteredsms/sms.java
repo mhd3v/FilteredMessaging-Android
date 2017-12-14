@@ -1,12 +1,13 @@
 package mhd3v.filteredsms;
 
+import java.io.Serializable;
 import java.util.ArrayList;
 
 /**
  * Created by Mahad on 12/10/2017.
  */
 
-public class sms {
+public class sms{
 
     String sender;
 
@@ -14,20 +15,14 @@ public class sms {
 
     ArrayList<messages> messages = new ArrayList<>();
 
-    ArrayList<messages> userMessages = new ArrayList<>();
 
-
-    sms(String sender, String message, String time){
+    sms(String sender){
 
         this.sender = sender;
 
-        messages m = new messages(message, time);
-        lastMessage = m;
-        messages.add(m);
-
     }
 
-    void addNew(String message, String time){
+    void addNewSenderMessage(String message, String time){
         messages m = new messages(message, time);
         lastMessage = m;
         messages.add(m);
@@ -36,14 +31,16 @@ public class sms {
     void addNewUserMessage(String message, String time){
         messages m = new messages(message, time);
         lastMessage = m;
-        userMessages.add(m);
+        m.isUserMessage = true;
+        messages.add(m);
     }
 
 
 }
 
-class messages{
+class messages implements Serializable{
 
+    boolean isUserMessage = false;
     String messageBody;
     String time;
 
