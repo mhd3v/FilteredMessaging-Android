@@ -5,6 +5,7 @@ import android.os.Bundle;
 import android.support.annotation.Nullable;
 import android.support.v4.app.Fragment;
 import android.text.format.DateFormat;
+import android.util.Log;
 import android.view.LayoutInflater;
 import android.view.View;
 import android.view.ViewGroup;
@@ -38,8 +39,6 @@ public class Tab1Fragment extends Fragment {
         MainActivity activity = (MainActivity) getActivity();
 
         smsList = activity.getKnownSms();
-
-
 
 
         knownList.setAdapter(new customAdapter());
@@ -82,6 +81,8 @@ public class Tab1Fragment extends Fragment {
                 Bundle args = new Bundle();
                 args.putSerializable("messageList",(Serializable)smsList.get(position).messages);
                 intent.putExtra("BUNDLE",args);
+
+                intent.putExtra("sender", smsList.get(position).sender);
 
                 startActivity(intent);
 

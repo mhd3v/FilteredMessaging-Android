@@ -67,6 +67,9 @@ public class CoversationActivity extends AppCompatActivity {
 
         Collections.reverse(messageList);
 
+        sender = intent.getStringExtra("sender");
+
+//        Log.d("sender", sender);
 
         ListView conversation = (ListView) findViewById(R.id.conversationList);
 
