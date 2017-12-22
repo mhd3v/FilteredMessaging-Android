@@ -78,6 +78,7 @@ public class Tab2Fragment extends Fragment {
                 Intent intent = new Intent(getActivity(), CoversationActivity.class);
                 Bundle args = new Bundle();
                 args.putSerializable("messageList",(Serializable)smsList.get(position).messages);
+                intent.putExtra("sender", smsList.get(position).sender);
                 intent.putExtra("BUNDLE",args);
 
                 startActivity(intent);

@@ -1,16 +1,21 @@
 package mhd3v.filteredsms;
 
+import android.Manifest;
 import android.content.Intent;
 import android.os.Bundle;
+import android.support.v4.content.ContextCompat;
 import android.support.v7.app.AppCompatActivity;
+import android.telephony.SmsManager;
 import android.text.format.DateFormat;
 import android.util.Log;
 import android.view.View;
 import android.view.ViewGroup;
 import android.widget.BaseAdapter;
+import android.widget.EditText;
 import android.widget.ImageView;
 import android.widget.ListView;
 import android.widget.TextView;
+import android.widget.Toast;
 
 import java.util.ArrayList;
 import java.util.Collections;
@@ -18,6 +23,9 @@ import java.util.Collections;
 public class CoversationActivity extends AppCompatActivity {
 
     ArrayList<messages> messageList;
+    EditText input;
+    SmsManager smsManager;
+
 
     ArrayList<String> senderMessages;
     ArrayList<String> senderTime;
@@ -32,8 +40,11 @@ public class CoversationActivity extends AppCompatActivity {
     ArrayList<String> reverseUserTime = new ArrayList();
     String sender;
 
+    private static CoversationActivity conversationInstance;
+
     @Override
     protected void onCreate(Bundle savedInstanceState) {
+
         super.onCreate(savedInstanceState);
         setContentView(R.layout.activity_coversation);
 
@@ -189,6 +200,22 @@ public class CoversationActivity extends AppCompatActivity {
         public String convertDate(String dateInMilliseconds,String dateFormat) {
             return DateFormat.format(dateFormat, Long.parseLong(dateInMilliseconds)).toString();
         }
+
+    }
+
+    @Override
+    public void onStart() {
+        super.onStart();
+        conversationInstance = this;
+    }
+
+
+    public void onSendClick(View view) {
+            smsManager = SmsManager.getDefault();
+            input = (EditText) findViewById(R.id.edittext_chatbox);
+
+            smsManager.sendTextMessage(sender, null, input.getText().toString(), null, null);
+            Toast.makeText(this, "Message sent!", Toast.LENGTH_SHORT).show();
 
     }
 

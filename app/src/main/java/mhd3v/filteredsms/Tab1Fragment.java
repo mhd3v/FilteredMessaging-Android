@@ -119,7 +119,7 @@ public class Tab1Fragment extends Fragment {
 
             TextView sender= view.findViewById(R.id.sender);
 
-            sender.setText(smsList.get(i).sender);
+            sender.setText(smsList.get(i).senderName);
 
             TextView time= view.findViewById(R.id.time);
             String lastSenderMessageTime = smsList.get(i).messages.get(0).time;

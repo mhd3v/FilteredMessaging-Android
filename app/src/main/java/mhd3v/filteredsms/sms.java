@@ -13,6 +13,8 @@ public class sms{
 
     String sender;
 
+    String senderName;
+
     messages lastMessage;
 
     ArrayList<messages> messages = new ArrayList<>();

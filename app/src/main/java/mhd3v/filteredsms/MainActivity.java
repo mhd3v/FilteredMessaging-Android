@@ -39,7 +39,9 @@ public class MainActivity extends AppCompatActivity {
 
     boolean isContact;
 
-    Menu menu;
+    static boolean active = false;
+
+    private static MainActivity inst;
 
     private static final int READ_SMS_PERMISSIONS_REQUEST = 1;
     
@@ -143,9 +145,10 @@ public class MainActivity extends AppCompatActivity {
 
         do {
 
+            isContact = false;
+
             if (cursor.getString(Integer.parseInt(type)).equalsIgnoreCase("1")) {
 
-                // System.out.println("ThreadID"+ cursor.getString(cursor.getColumnIndex("thread_id")));
                 //received messages
 
                 boolean found = false;
@@ -168,11 +171,27 @@ public class MainActivity extends AppCompatActivity {
                     sms newSms = new sms(cursor.getString(indexAddress), cursor.getString(cursor.getColumnIndex("thread_id")));
                     newSms.addNewSenderMessage(cursor.getString(indexBody), date);
                     smsList.add(newSms);
+
+                    String contactName;
+                    contactName = getContactName(this, newSms.sender);
+
+                    if(isContact == true){
+
+                        newSms.senderName = contactName;
+                        knownSms.add(newSms);
+                    }
+                    else {
+
+                        unknownSms.add(newSms);
+                    }
+
                 }
 
-            } else if (cursor.getString(Integer.parseInt(type)).equalsIgnoreCase("2")) {
+            }
 
-                //recieved messaged
+            else if (cursor.getString(Integer.parseInt(type)).equalsIgnoreCase("2")) {
+
+                //sent messages
 
                 boolean found = false;
 
@@ -197,45 +216,69 @@ public class MainActivity extends AppCompatActivity {
 
                     smsList.add(newSms);
 
+                    String contactName;
+                    contactName = getContactName(this, newSms.sender);
+
+                    if(isContact == true){
+
+                        newSms.senderName = contactName;
+                        knownSms.add(newSms);
+                    }
+                    else {
+
+                        unknownSms.add(newSms);
+                    }
+
                 }
 
             }
 
         } while (cursor.moveToNext());
 
-        setSmsLists(smsList);
+        //setSmsLists(smsList);
 
     }
+//
+//    public void updateInbox(final String smsMessage) {
+//        arrayAdapter.insert(smsMessage, 0);
+//        arrayAdapter.notifyDataSetChanged();
+//    }
 
-    void setSmsLists(ArrayList<sms> smsList){
-       // this.smsList = smsList;
 
-        for(int i=0; i< smsList.size(); i++){
-
-            isContact = false;
-
-            String contactName;
-            contactName = getContactName(this, smsList.get(i).sender);
-
-            if(isContact == true){
-
-                smsList.get(i).sender = contactName;
-                knownSms.add(smsList.get(i));
-            }
-            else {
-
-                unknownSms.add(smsList.get(i));
-            }
-
-        }
-
-    }
+//    void setSmsLists(ArrayList<sms> smsList){
+//        // this.smsList = smsList;
+//
+//        for(int i=0; i< smsList.size(); i++){
+//
+//            isContact = false;
+//
+//            String contactName;
+//            contactName = getContactName(this, smsList.get(i).sender);
+//
+//            if(isContact == true){
+//
+//                smsList.get(i).sender = contactName;
+//                knownSms.add(smsList.get(i));
+//            }
+//            else {
+//
+//                unknownSms.add(smsList.get(i));
+//            }
+//
+//        }
+//
+//    }
 
     public ArrayList<sms> getKnownSms() {
         return knownSms;
     }
     public ArrayList<sms> getUnknownSms() {
         return unknownSms;
+    }
+
+    public void updateInbox(final String smsMessage) {
+//        arrayAdapter.insert(smsMessage, 0);
+//        arrayAdapter.notifyDataSetChanged();
     }
 
 
@@ -277,6 +320,25 @@ public class MainActivity extends AppCompatActivity {
 //            return originalNumber;
 //
 //    }
+
+
+    public static MainActivity instance() {
+        return inst;
+    }
+
+    @Override
+    public void onStart() {
+        super.onStart();
+        active = true;
+        inst = this;
+    }
+
+    @Override
+    public void onStop() {
+        super.onStop();
+        active = false;
+    }
+
 
 
 }
