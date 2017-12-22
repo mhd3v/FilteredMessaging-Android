@@ -43,7 +43,7 @@ public class MainActivity extends AppCompatActivity {
 
     Context currentConversation;
 
-    private static MainActivity inst;
+    static MainActivity inst;
 
     private static final int READ_SMS_PERMISSIONS_REQUEST = 1;
     
@@ -282,15 +282,6 @@ public class MainActivity extends AppCompatActivity {
     }
 
 
-
-    public static MainActivity instance() {
-        return inst;
-    }
-
-    void setCurrentConversation(Context context){
-        currentConversation = context;
-    }
-
     @Override
     public void onStart() {
         super.onStart();
@@ -302,8 +293,7 @@ public class MainActivity extends AppCompatActivity {
     public void onStop() {
         super.onStop();
         active = false;
+        //inst = null;
     }
-
-
 
 }

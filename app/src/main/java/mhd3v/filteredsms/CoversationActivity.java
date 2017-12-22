@@ -164,30 +164,40 @@ public class CoversationActivity extends AppCompatActivity {
 
             input = (EditText) findViewById(R.id.edittext_chatbox);
 
-            smsManager.sendTextMessage(sender, null, input.getText().toString(), null, null);
 
-            messages newSms = new messages(input.getText().toString() ,Long.toString(System.currentTimeMillis()));
+            if(!(input.getText().toString().trim().length() == 0)){
 
-            newSms.isUserMessage = true;
+                smsManager.sendTextMessage(sender, null, input.getText().toString(), null, null);
 
-            ArrayList<messages> newMessageList = new ArrayList<>();
+                messages newSms = new messages(input.getText().toString() ,Long.toString(System.currentTimeMillis()));
 
-            newMessageList.addAll(messageList);
+                newSms.isUserMessage = true;
 
-            newMessageList.add(newSms);
+                ArrayList<messages> newMessageList = new ArrayList<>();
 
-            adapter.updateMessageList(newMessageList);
+                newMessageList.addAll(messageList);
 
-            Toast.makeText(this, "Message sent!", Toast.LENGTH_SHORT).show();
+                newMessageList.add(newSms);
 
-            try  { //close keyboard
-                InputMethodManager imm = (InputMethodManager)getSystemService(INPUT_METHOD_SERVICE);
-                imm.hideSoftInputFromWindow(getCurrentFocus().getWindowToken(), 0);
-            } catch (Exception e) {
+                adapter.updateMessageList(newMessageList);
 
+                Toast.makeText(this, "Message sent!", Toast.LENGTH_SHORT).show();
+
+                try  { //close keyboard
+                    InputMethodManager imm = (InputMethodManager)getSystemService(INPUT_METHOD_SERVICE);
+                    imm.hideSoftInputFromWindow(getCurrentFocus().getWindowToken(), 0);
+                } catch (Exception e) {
+
+                }
+
+                input.setText("");
             }
 
-            input.setText("");
+            else{
+                Toast.makeText(this, "Please enter a message body", Toast.LENGTH_LONG).show();
+            }
+
+
 
     }
 
