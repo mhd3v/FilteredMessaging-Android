@@ -9,21 +9,22 @@
     tools:layout_editor_absoluteX="0dp">
 
     <ListView
+        android:paddingBottom="?attr/actionBarSize"
         android:id="@+id/knownList"
-        android:layout_width="wrap_content"
+        android:layout_width="0dp"
 
-        android:layout_height="wrap_content"
+        android:layout_height="0dp"
         android:divider="@null"
         android:dividerHeight="5dp"
         tools:layout_constraintTop_creator="1"
         tools:layout_constraintLeft_creator="1"
+        tools:layout_constraintBottom_creator="1"
+        app:layout_constraintBottom_toBottomOf="parent"
         app:layout_constraintLeft_toLeftOf="parent"
         app:layout_constraintTop_toTopOf="parent"
+        android:layout_marginLeft="0dp"
         android:layout_marginRight="0dp"
+        app:layout_constraintVertical_bias="0.0"
         app:layout_constraintRight_toRightOf="parent"
-        android:layout_marginTop="0dp"
-        app:layout_constraintBottom_toBottomOf="parent"
-        app:layout_constraintHorizontal_bias="0.0"
-        android:layout_marginBottom="8dp"
-        app:layout_constraintVertical_bias="0.0" />
+        app:layout_constraintHorizontal_bias="0.375" />
 </android.support.constraint.ConstraintLayout>

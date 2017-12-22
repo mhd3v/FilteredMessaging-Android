@@ -7,6 +7,10 @@
     tools:context="mhd3v.filteredsms.CoversationActivity">
 
     <ListView
+
+        android:stackFromBottom="true"
+        android:transcriptMode="alwaysScroll"
+
         android:divider="@null"
         android:dividerHeight="5dp"
 

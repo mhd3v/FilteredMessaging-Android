@@ -41,6 +41,8 @@ public class MainActivity extends AppCompatActivity {
 
     static boolean active = false;
 
+    Context currentConversation;
+
     private static MainActivity inst;
 
     private static final int READ_SMS_PERMISSIONS_REQUEST = 1;
@@ -238,36 +240,6 @@ public class MainActivity extends AppCompatActivity {
         //setSmsLists(smsList);
 
     }
-//
-//    public void updateInbox(final String smsMessage) {
-//        arrayAdapter.insert(smsMessage, 0);
-//        arrayAdapter.notifyDataSetChanged();
-//    }
-
-
-//    void setSmsLists(ArrayList<sms> smsList){
-//        // this.smsList = smsList;
-//
-//        for(int i=0; i< smsList.size(); i++){
-//
-//            isContact = false;
-//
-//            String contactName;
-//            contactName = getContactName(this, smsList.get(i).sender);
-//
-//            if(isContact == true){
-//
-//                smsList.get(i).sender = contactName;
-//                knownSms.add(smsList.get(i));
-//            }
-//            else {
-//
-//                unknownSms.add(smsList.get(i));
-//            }
-//
-//        }
-//
-//    }
 
     public ArrayList<sms> getKnownSms() {
         return knownSms;
@@ -279,6 +251,13 @@ public class MainActivity extends AppCompatActivity {
     public void updateInbox(final String smsMessage) {
 //        arrayAdapter.insert(smsMessage, 0);
 //        arrayAdapter.notifyDataSetChanged();
+
+//            if(currentConversation != null) {
+//                CoversationActivity conversationActivity = (CoversationActivity) currentConversation;
+//
+//                conversationActivity.adapter.notifyDataSetChanged();
+//            }
+
     }
 
 
@@ -302,28 +281,14 @@ public class MainActivity extends AppCompatActivity {
         return Name;
     }
 
-//    String getFormattedNumber(String originalNumber) {
-//
-//        String formattedNumber = "+92";
-//
-//        if (Character.toString(originalNumber.charAt(0)).equals("0")) { //if user sent message without entering the area code
-//
-//            for (int j = 1; j < originalNumber.length(); j++) {
-//                formattedNumber = formattedNumber + Character.toString(originalNumber.charAt(j));
-//            }
-//
-//            return formattedNumber;
-//
-//        }
-//
-//        else
-//            return originalNumber;
-//
-//    }
 
 
     public static MainActivity instance() {
         return inst;
+    }
+
+    void setCurrentConversation(Context context){
+        currentConversation = context;
     }
 
     @Override
