@@ -25,45 +25,34 @@
         app:layout_constraintTop_toTopOf="parent" />
 
     <TextView
-        android:id="@+id/senderName"
-        android:layout_width="wrap_content"
-        android:layout_height="wrap_content"
-        android:layout_marginLeft="8dp"
-        android:layout_marginTop="-7dp"
-        android:text="John Doe"
-        android:textSize="12sp"
-        android:visibility="gone"
-        app:layout_constraintLeft_toRightOf="@+id/image_message_profile"
-        app:layout_constraintTop_toTopOf="parent" />
-
-    <TextView
         android:id="@+id/senderText"
         android:layout_width="wrap_content"
         android:layout_height="wrap_content"
-        android:layout_marginLeft="8dp"
+        android:layout_marginLeft="16dp"
+        android:layout_marginTop="8dp"
         android:background="@drawable/rounded_rectangle_orange"
         android:maxWidth="240dp"
         android:padding="8dp"
         android:text="hi man, how are you?"
         android:textColor="#ffffff"
         android:visibility="gone"
-        app:layout_constraintBottom_toBottomOf="parent"
         app:layout_constraintLeft_toRightOf="@+id/image_message_profile"
-        app:layout_constraintTop_toBottomOf="@+id/senderName"
-        app:layout_constraintVertical_bias="0.0" />
+        app:layout_constraintTop_toTopOf="parent" />
 
     <TextView
         android:id="@+id/senderTime"
         android:layout_width="wrap_content"
         android:layout_height="wrap_content"
-        android:layout_marginLeft="7dp"
+        android:layout_marginLeft="8dp"
+        android:layout_marginRight="8dp"
+        android:layout_marginTop="2dp"
         android:text="11:40"
         android:textSize="10sp"
         android:visibility="gone"
-        app:layout_constraintBottom_toBottomOf="parent"
-        app:layout_constraintLeft_toRightOf="@+id/senderText"
-        app:layout_constraintTop_toTopOf="parent"
-        app:layout_constraintVertical_bias="0.851"
+        app:layout_constraintHorizontal_bias="0.0"
+        app:layout_constraintLeft_toLeftOf="@+id/senderText"
+        app:layout_constraintRight_toRightOf="parent"
+        app:layout_constraintTop_toBottomOf="@+id/senderText"
         tools:layout_constraintBottom_creator="1"
         tools:layout_constraintLeft_creator="1"
         tools:layout_constraintTop_creator="1" />
@@ -72,29 +61,31 @@
         android:id="@+id/userText"
         android:layout_width="wrap_content"
         android:layout_height="wrap_content"
-        android:layout_marginBottom="18dp"
         android:layout_marginRight="16dp"
+        android:layout_marginTop="8dp"
         android:background="@drawable/rounded_rectangle_green"
         android:maxWidth="240dp"
         android:padding="8dp"
         android:text="Fine. How are you?"
         android:textColor="#ffffff"
         android:visibility="gone"
-        app:layout_constraintBottom_toBottomOf="parent"
-        app:layout_constraintRight_toRightOf="parent" />
+        app:layout_constraintRight_toRightOf="parent"
+        app:layout_constraintTop_toTopOf="parent" />
 
     <TextView
         android:id="@+id/userTime"
         android:layout_width="wrap_content"
         android:layout_height="wrap_content"
-        android:layout_marginRight="7dp"
+        android:layout_marginLeft="236dp"
+        android:layout_marginRight="8dp"
+        android:layout_marginTop="0dp"
         android:text="11:40"
         android:textSize="10sp"
         android:visibility="gone"
-        app:layout_constraintBottom_toBottomOf="parent"
-        app:layout_constraintRight_toLeftOf="@+id/userText"
-        app:layout_constraintTop_toTopOf="parent"
-        app:layout_constraintVertical_bias="0.34"
+        app:layout_constraintHorizontal_bias="1.0"
+        app:layout_constraintLeft_toLeftOf="parent"
+        app:layout_constraintRight_toRightOf="@+id/userText"
+        app:layout_constraintTop_toBottomOf="@+id/userText"
         tools:layout_constraintBottom_creator="1"
         tools:layout_constraintRight_creator="1" />
 

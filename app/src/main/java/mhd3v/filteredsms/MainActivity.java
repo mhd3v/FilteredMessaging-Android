@@ -55,7 +55,7 @@ public class MainActivity extends AppCompatActivity implements Serializable{
     static MainActivity inst;
 
     private static final int READ_SMS_PERMISSIONS_REQUEST = 1;
-    
+
     @Override
     protected void onCreate(Bundle savedInstanceState) {
         super.onCreate(savedInstanceState);
@@ -280,14 +280,16 @@ public class MainActivity extends AppCompatActivity implements Serializable{
         active = true;
         inst = this;
 
+        if(refreshInbox){
+            refreshOnExtraThread();
+        }
+
     }
 
     @Override
     protected void onRestart() {
         super.onRestart();
-        if(refreshInbox){
-            refreshOnExtraThread();
-        }
+
     }
 
     @Override

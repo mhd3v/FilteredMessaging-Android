@@ -116,7 +116,7 @@ public class CoversationActivity extends AppCompatActivity {
 
             view = getLayoutInflater().inflate(R.layout.conversation_list,null);
 
-            TextView senderName = view.findViewById(R.id.senderName);
+            //TextView senderName = view.findViewById(R.id.senderName);
 
 
 
