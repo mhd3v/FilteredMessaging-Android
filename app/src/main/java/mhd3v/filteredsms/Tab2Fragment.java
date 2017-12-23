@@ -24,8 +24,7 @@ import java.util.ArrayList;
 public class Tab2Fragment extends Fragment {
 
     ArrayList<sms> smsList;
-
-    static Tab2Fragment unknownFragmentInstance;
+    Tab2Fragment.customAdapter unknownAdapter;
 
     @Nullable
     @Override
@@ -35,14 +34,18 @@ public class Tab2Fragment extends Fragment {
 
         ListView unknownList = (ListView) view.findViewById(R.id.unknownList);
 
-        unknownFragmentInstance = this;
 
         MainActivity activity = (MainActivity) getActivity();
 
+        activity.setUnknownInstance(this);
+
         smsList = activity.getUnknownSms();
 
+        unknownAdapter = new customAdapter();
 
-        unknownList.setAdapter(new customAdapter());
+        activity.setUnknownAdapter(unknownAdapter);
+
+        unknownList.setAdapter(unknownAdapter);
 
         unknownList.setOnItemClickListener(new AdapterView.OnItemClickListener() {
             @Override
@@ -76,6 +79,13 @@ public class Tab2Fragment extends Fragment {
         public Object getItem(int i) {
             return null;
         }
+
+        public void updateMessageList(ArrayList<sms> newlist) {
+            smsList.clear();
+            smsList.addAll(newlist);
+            this.notifyDataSetChanged();
+        }
+
 
         @Override
         public long getItemId(int i) {

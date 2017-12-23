@@ -21,19 +21,22 @@
         <activity
 
             android:name=".MainActivity"
+
             android:label="@string/app_name"
+            android:launchMode="singleInstance"
             android:theme="@style/AppTheme.NoActionBar">
             <intent-filter>
                 <action android:name="android.intent.action.MAIN" />
-
                 <category android:name="android.intent.category.LAUNCHER" />
             </intent-filter>
 
-            <!--android:launchMode="singleInstance" -->
+
+
 
         </activity>
 
-        <activity android:name=".CoversationActivity" />
+        <activity android:name=".CoversationActivity"
+            android:launchMode="singleInstance" />
 
         <activity
             android:name=".SettingsActivity"

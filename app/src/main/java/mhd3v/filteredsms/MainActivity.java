@@ -7,11 +7,13 @@ import android.content.Intent;
 import android.content.pm.PackageManager;
 import android.database.Cursor;
 import android.net.Uri;
+import android.os.AsyncTask;
 import android.os.Build;
 import android.os.Bundle;
 import android.provider.ContactsContract;
 import android.support.annotation.NonNull;
 import android.support.design.widget.TabLayout;
+import android.support.v4.app.Fragment;
 import android.support.v4.content.ContextCompat;
 import android.support.v4.view.ViewPager;
 import android.support.v7.app.AppCompatActivity;
@@ -21,13 +23,20 @@ import android.view.Menu;
 import android.view.View;
 import android.widget.Toast;
 
+import java.io.Serializable;
 import java.util.ArrayList;
 
 import static android.R.attr.value;
 
-public class MainActivity extends AppCompatActivity {
+public class MainActivity extends AppCompatActivity implements Serializable{
 
     private SectionsPageAdapter mSectionsPageAdapter;
+
+    Tab1Fragment knownInstance;
+    Tab2Fragment unknownInstance;
+
+    Tab1Fragment.customAdapter knownAdapter;
+    Tab2Fragment.customAdapter unknownAdapter;
 
     private ViewPager mViewPager;
 
@@ -39,9 +48,9 @@ public class MainActivity extends AppCompatActivity {
 
     boolean isContact;
 
-    static boolean active = false;
+    static boolean refreshInbox = false;
 
-    Context currentConversation;
+    static boolean active = false;
 
     static MainActivity inst;
 
@@ -129,16 +138,11 @@ public class MainActivity extends AppCompatActivity {
 
     public void refreshSmsInbox() {
 
-
         Cursor cursor = getContentResolver().query(Uri
                 .parse("content://sms"), null, null, null, null);
 
-//        Uri uri = Uri.parse("content://sms/");
-//        cursor = contentResolver.query(uri, null, "thread_id=" + value, null, "date asc");
-
         int indexBody = cursor.getColumnIndex("body");
         int indexAddress = cursor.getColumnIndex("address");
-        //String threadId = ;
         if (indexBody < 0 || !cursor.moveToFirst()) return;
 
 
@@ -237,27 +241,14 @@ public class MainActivity extends AppCompatActivity {
 
         } while (cursor.moveToNext());
 
-        //setSmsLists(smsList);
-
     }
 
     public ArrayList<sms> getKnownSms() {
         return knownSms;
     }
     public ArrayList<sms> getUnknownSms() {
+
         return unknownSms;
-    }
-
-    public void updateInbox(final String smsMessage) {
-//        arrayAdapter.insert(smsMessage, 0);
-//        arrayAdapter.notifyDataSetChanged();
-
-//            if(currentConversation != null) {
-//                CoversationActivity conversationActivity = (CoversationActivity) currentConversation;
-//
-//                conversationActivity.adapter.notifyDataSetChanged();
-//            }
-
     }
 
 
@@ -284,9 +275,19 @@ public class MainActivity extends AppCompatActivity {
 
     @Override
     public void onStart() {
+
         super.onStart();
         active = true;
         inst = this;
+
+    }
+
+    @Override
+    protected void onRestart() {
+        super.onRestart();
+        if(refreshInbox){
+            refreshOnExtraThread();
+        }
     }
 
     @Override
@@ -294,6 +295,191 @@ public class MainActivity extends AppCompatActivity {
         super.onStop();
         active = false;
         //inst = null;
+    }
+
+    public static MainActivity getInstance(){
+        return inst;
+    }
+
+    void refreshFragments(){
+
+        Log.d("mahad", "refreshing because refresh inbox true");
+
+        ArrayList<sms> newKnownList = new ArrayList<>();
+
+        newKnownList.addAll(getKnownSms());
+
+        ArrayList<sms> newUnknownList = new ArrayList<>();
+
+        newUnknownList.addAll(getUnknownSms());
+
+        knownAdapter.updateMessageList(newKnownList);
+
+        unknownAdapter.updateMessageList(newUnknownList);
+
+        refreshInbox = false;
+    }
+
+
+
+    public void setKnownInstance(Tab1Fragment knownInstance) {
+        this.knownInstance = knownInstance;
+    }
+
+    public void setUnknownInstance(Tab2Fragment unknownInstance) {
+        this.unknownInstance = unknownInstance;
+    }
+
+    public void setKnownAdapter(Tab1Fragment.customAdapter adapter) {
+        knownAdapter = adapter;
+    }
+
+    public void setUnknownAdapter(Tab2Fragment.customAdapter adapter) {
+        unknownAdapter = adapter;
+    }
+
+
+
+    public void refreshOnExtraThread() {
+
+        new refreshInboxOnNewThread().execute();
+
+
+    }
+
+    class refreshInboxOnNewThread extends AsyncTask<Void, Void, Void> {
+
+
+        @Override
+        protected Void doInBackground(Void... params) {
+
+            try {
+                Thread.sleep(1000); //waiting for db update
+            } catch (InterruptedException e) {
+                e.printStackTrace();
+            }
+
+            knownSms.clear();
+            smsList.clear();
+            unknownSms.clear();
+
+
+            Cursor cursor = getContentResolver().query(Uri
+                    .parse("content://sms"), null, null, null, null);
+
+
+            int indexBody = cursor.getColumnIndex("body");
+            int indexAddress = cursor.getColumnIndex("address");
+
+            cursor.moveToFirst();
+
+
+            String type = Integer.toString(cursor.getColumnIndex("type"));
+
+
+            do {
+
+                isContact = false;
+
+                if (cursor.getString(Integer.parseInt(type)).equalsIgnoreCase("1")) {
+
+                    //received messages
+
+                    boolean found = false;
+
+                    for (int i = 0; i < smsList.size(); i++) {
+
+                        if (smsList.get(i).threadId.equals(cursor.getString(cursor.getColumnIndex("thread_id")))) {
+                            String date = cursor.getString(cursor
+                                    .getColumnIndex("date"));
+                            smsList.get(i).addNewSenderMessage(cursor.getString(indexBody), date);
+                            found = true;
+                        }
+
+                    }
+                    if (found == false) {
+
+                        String date = cursor.getString(cursor
+                                .getColumnIndex("date"));
+
+                        sms newSms = new sms(cursor.getString(indexAddress), cursor.getString(cursor.getColumnIndex("thread_id")));
+                        newSms.addNewSenderMessage(cursor.getString(indexBody), date);
+                        smsList.add(newSms);
+
+                        String contactName;
+                        contactName = getContactName(inst, newSms.sender);
+
+                        if(isContact == true){
+
+                            newSms.senderName = contactName;
+                            knownSms.add(newSms);
+                        }
+                        else {
+
+                            unknownSms.add(newSms);
+                        }
+
+                    }
+
+                }
+
+                else if (cursor.getString(Integer.parseInt(type)).equalsIgnoreCase("2")) {
+
+                    //sent messages
+
+                    boolean found = false;
+
+                    for (int i = 0; i < smsList.size(); i++) {
+
+                        if (smsList.get(i).threadId.equals(cursor.getString(cursor.getColumnIndex("thread_id")))) {
+
+                            String date = cursor.getString(cursor.getColumnIndex("date"));
+
+                            smsList.get(i).addNewUserMessage(cursor.getString(indexBody), date);
+                            found = true;
+                        }
+                    }
+
+                    if (found == false) {
+                        String date = cursor.getString(cursor
+                                .getColumnIndex("date"));
+
+                        sms newSms = new sms(cursor.getString(indexAddress),cursor.getString(cursor.getColumnIndex("thread_id")));
+
+                        newSms.addNewUserMessage(cursor.getString(indexBody), date);
+
+                        smsList.add(newSms);
+
+                        String contactName;
+                        contactName = getContactName(inst, newSms.sender);
+
+                        if(isContact == true){
+
+                            newSms.senderName = contactName;
+                            knownSms.add(newSms);
+                        }
+                        else {
+
+                            unknownSms.add(newSms);
+                        }
+
+                    }
+
+                }
+
+            } while (cursor.moveToNext());
+
+
+            return null;
+        }
+
+        @Override
+        protected void onPostExecute(Void aVoid) {
+            super.onPostExecute(aVoid);
+
+            refreshFragments();
+
+        }
     }
 
 }

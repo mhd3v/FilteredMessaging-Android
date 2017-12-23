@@ -27,6 +27,7 @@ import java.util.Comparator;
 public class Tab1Fragment extends Fragment {
 
     ArrayList<sms> smsList;
+    customAdapter knownAdapter;
 
     @Nullable
     @Override
@@ -34,14 +35,20 @@ public class Tab1Fragment extends Fragment {
 
         View view = inflater.inflate(R.layout.tab1_fragment, container, false);
 
+
         ListView knownList = (ListView) view.findViewById(R.id.knownList);
 
         MainActivity activity = (MainActivity) getActivity();
 
+        activity.setKnownInstance(this);
+
         smsList = activity.getKnownSms();
 
+        knownAdapter = new customAdapter();
 
-        knownList.setAdapter(new customAdapter());
+        activity.setKnownAdapter(knownAdapter);
+
+        knownList.setAdapter(knownAdapter);
 
         knownList.setOnItemClickListener(new AdapterView.OnItemClickListener() {
             @Override
@@ -54,6 +61,10 @@ public class Tab1Fragment extends Fragment {
                 intent.putExtra("BUNDLE",args);
 
                 intent.putExtra("sender", smsList.get(position).sender);
+
+
+                // To retrieve object in second Activity
+                //getIntent().getSerializableExtra("MyClass");
 
                 startActivity(intent);
 
@@ -71,6 +82,13 @@ public class Tab1Fragment extends Fragment {
         @Override
         public int getCount() {
             return smsList.size(); //set array adapter next six days from today
+        }
+
+        public void updateMessageList(ArrayList<sms> newlist) {
+            smsList.clear();
+            smsList.addAll(newlist);
+            this.notifyDataSetChanged();
+
         }
 
         @Override

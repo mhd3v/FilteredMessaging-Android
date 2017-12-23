@@ -30,6 +30,8 @@ public class CoversationActivity extends AppCompatActivity {
     EditText input;
     SmsManager smsManager;
 
+    static boolean askMainToRefresh = false;
+
     static boolean active = false;
 
 
@@ -47,6 +49,7 @@ public class CoversationActivity extends AppCompatActivity {
     String sender;
 
     customAdapter adapter;
+    static Intent intent;
 
 
     static CoversationActivity conversationInstance;
@@ -58,7 +61,7 @@ public class CoversationActivity extends AppCompatActivity {
         setContentView(R.layout.activity_coversation);
 
 
-        Intent intent = getIntent();
+        intent = getIntent();
         Bundle args = intent.getBundleExtra("BUNDLE");
         messageList = (ArrayList<messages>) args.getSerializable("messageList");
 
@@ -74,6 +77,12 @@ public class CoversationActivity extends AppCompatActivity {
 
         conversation.setAdapter(adapter);
 
+    }
+
+    public static void refreshMain() {
+        //askMainToRefresh = true;
+        MainActivity mainInstance  = MainActivity.getInstance();
+        mainInstance.refreshInbox = true;
     }
 
     class customAdapter extends BaseAdapter {
@@ -206,6 +215,7 @@ public class CoversationActivity extends AppCompatActivity {
         super.onStop();
         //active = false;
         conversationInstance = null;
+
     }
 
 
