@@ -427,7 +427,7 @@ public class MainActivity extends AppCompatActivity implements Serializable{
 
                 else if (cursor.getString(Integer.parseInt(type)).equalsIgnoreCase("2")) {
 
-                    //sent messages
+                    ///sent messages
 
                     boolean found = false;
 
