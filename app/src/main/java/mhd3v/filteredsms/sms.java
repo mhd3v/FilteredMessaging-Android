@@ -29,7 +29,6 @@ public class sms{
 
     void addNewSenderMessage(String message, String time){
         messages m = new messages(message, time);
-        lastMessage = m;
         messages.add(m);
     }
 
@@ -39,6 +38,8 @@ public class sms{
         m.isUserMessage = true;
         messages.add(m);
     }
+
+
 
 
 }

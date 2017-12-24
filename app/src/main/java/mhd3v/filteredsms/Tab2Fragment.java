@@ -1,10 +1,12 @@
 package mhd3v.filteredsms;
 
+import android.app.FragmentTransaction;
 import android.content.Intent;
 import android.os.Bundle;
 import android.support.annotation.Nullable;
 import android.support.v4.app.Fragment;
 import android.text.format.DateFormat;
+import android.util.Log;
 import android.view.LayoutInflater;
 import android.view.View;
 import android.view.ViewGroup;
@@ -24,7 +26,9 @@ import java.util.ArrayList;
 public class Tab2Fragment extends Fragment {
 
     ArrayList<sms> smsList;
+
     Tab2Fragment.customAdapter unknownAdapter;
+
 
     @Nullable
     @Override
@@ -32,12 +36,10 @@ public class Tab2Fragment extends Fragment {
 
         View view = inflater.inflate(R.layout.tab2_fragment, container, false);
 
-        ListView unknownList = (ListView) view.findViewById(R.id.unknownList);
-
-
         MainActivity activity = (MainActivity) getActivity();
-
         activity.setUnknownInstance(this);
+
+        ListView unknownList = view.findViewById(R.id.unknownList);
 
         smsList = activity.getUnknownSms();
 
@@ -54,9 +56,9 @@ public class Tab2Fragment extends Fragment {
 
                 Intent intent = new Intent(getActivity(), CoversationActivity.class);
                 Bundle args = new Bundle();
-                args.putSerializable("messageList",(Serializable)smsList.get(position).messages);
+                args.putSerializable("messageList", (Serializable) smsList.get(position).messages);
                 intent.putExtra("sender", smsList.get(position).sender);
-                intent.putExtra("BUNDLE",args);
+                intent.putExtra("BUNDLE", args);
 
                 startActivity(intent);
 
@@ -81,11 +83,12 @@ public class Tab2Fragment extends Fragment {
         }
 
         public void updateMessageList(ArrayList<sms> newlist) {
+
             smsList.clear();
             smsList.addAll(newlist);
             this.notifyDataSetChanged();
-        }
 
+        }
 
         @Override
         public long getItemId(int i) {
@@ -95,18 +98,18 @@ public class Tab2Fragment extends Fragment {
         @Override
         public View getView(int i, View view, ViewGroup viewGroup) {
 
-            view = getActivity().getLayoutInflater().inflate(R.layout.custom_list,null);
+            view = getActivity().getLayoutInflater().inflate(R.layout.custom_list, null);
 
-            TextView sender= view.findViewById(R.id.sender);
+            TextView sender = view.findViewById(R.id.sender);
 
             sender.setText(smsList.get(i).sender);
 
-            TextView time= view.findViewById(R.id.time);
+            TextView time = view.findViewById(R.id.time);
             String lastSenderMessageTime = smsList.get(i).messages.get(0).time;
             lastSenderMessageTime = convertDate(lastSenderMessageTime, "dd/MM - hh:mm aa");
             time.setText(lastSenderMessageTime);
 
-            TextView text= view.findViewById(R.id.textbody);
+            TextView text = view.findViewById(R.id.textbody);
             text.setText(smsList.get(i).messages.get(0).messageBody);
 
             ImageView contactPicture = view.findViewById(R.id.contactPicture);
@@ -117,13 +120,10 @@ public class Tab2Fragment extends Fragment {
         }
 
 
-        public String convertDate(String dateInMilliseconds,String dateFormat) {
+        public String convertDate(String dateInMilliseconds, String dateFormat) {
             return DateFormat.format(dateFormat, Long.parseLong(dateInMilliseconds)).toString();
         }
     }
 
-    public void refreshFragments() {
-        getFragmentManager().beginTransaction().detach(this).attach(this).commit();
-    }
 
 }

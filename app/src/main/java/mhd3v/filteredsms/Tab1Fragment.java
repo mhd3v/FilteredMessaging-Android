@@ -26,7 +26,7 @@ import java.util.Comparator;
 
 public class Tab1Fragment extends Fragment {
 
-    ArrayList<sms> smsList;
+    ArrayList<sms> smsList = new ArrayList<>();
     customAdapter knownAdapter;
 
     @Nullable
@@ -35,13 +35,13 @@ public class Tab1Fragment extends Fragment {
 
         View view = inflater.inflate(R.layout.tab1_fragment, container, false);
 
-
-        ListView knownList = (ListView) view.findViewById(R.id.knownList);
-
         MainActivity activity = (MainActivity) getActivity();
 
         activity.setKnownInstance(this);
 
+        ListView knownList = view.findViewById(R.id.knownList);
+
+        if(smsList.isEmpty())
         smsList = activity.getKnownSms();
 
         knownAdapter = new customAdapter();
@@ -57,18 +57,12 @@ public class Tab1Fragment extends Fragment {
 
                 Intent intent = new Intent(getActivity(), CoversationActivity.class);
                 Bundle args = new Bundle();
-                args.putSerializable("messageList",(Serializable)smsList.get(position).messages);
+                args.putSerializable("messageList", smsList.get(position).messages);
                 intent.putExtra("BUNDLE",args);
 
                 intent.putExtra("sender", smsList.get(position).sender);
 
-
-                // To retrieve object in second Activity
-                //getIntent().getSerializableExtra("MyClass");
-
                 startActivity(intent);
-
-
 
             }
         });
@@ -81,13 +75,17 @@ public class Tab1Fragment extends Fragment {
 
         @Override
         public int getCount() {
-            return smsList.size(); //set array adapter next six days from today
+            return smsList.size();
         }
 
+
+
         public void updateMessageList(ArrayList<sms> newlist) {
+
             smsList.clear();
             smsList.addAll(newlist);
             this.notifyDataSetChanged();
+
 
         }
 
