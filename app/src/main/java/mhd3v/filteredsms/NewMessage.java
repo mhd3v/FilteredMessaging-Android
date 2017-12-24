@@ -1,21 +1,26 @@
 package mhd3v.filteredsms;
 
+import android.Manifest;
 import android.app.Activity;
 import android.content.ContentResolver;
 import android.content.Intent;
+import android.content.pm.PackageManager;
 import android.database.Cursor;
 import android.net.Uri;
 import android.os.Build;
 import android.provider.Contacts;
 import android.provider.ContactsContract;
+import android.support.v4.content.ContextCompat;
 import android.support.v7.app.AppCompatActivity;
 import android.os.Bundle;
 import android.support.v7.widget.Toolbar;
+import android.telephony.SmsManager;
 import android.view.View;
 import android.widget.EditText;
 import android.widget.Toast;
 
 import static android.R.attr.data;
+import static android.R.id.input;
 import static android.provider.OpenableColumns.DISPLAY_NAME;
 
 public class NewMessage extends AppCompatActivity {
@@ -83,6 +88,23 @@ public class NewMessage extends AppCompatActivity {
                 }
             }
         }
+    }
+
+    public void onSendClick(View view) {
+
+        String sendernumber = ((EditText) findViewById(R.id.edittext_contactnumber)).getText().toString();
+
+        String messagebody = ((EditText) findViewById(R.id.edittext_chatbox)).getText().toString();
+
+        SmsManager smsManager = SmsManager.getDefault();
+
+        smsManager.sendTextMessage(sendernumber, null, messagebody, null, null);
+        Toast.makeText(this, "Message sent!", Toast.LENGTH_SHORT).show();
+
+        Intent intent = new Intent(this, MainActivity.class);
+        finish();
+        startActivity(intent);
+
     }
 
 
