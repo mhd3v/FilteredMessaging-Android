@@ -1,6 +1,7 @@
 package mhd3v.filteredsms;
 
 import android.Manifest;
+import android.annotation.TargetApi;
 import android.content.ContentResolver;
 import android.content.Context;
 import android.content.Intent;
@@ -19,6 +20,7 @@ import android.support.v7.app.AppCompatActivity;
 import android.support.v7.widget.Toolbar;
 import android.util.Log;
 import android.view.View;
+import android.widget.ArrayAdapter;
 import android.widget.Toast;
 
 import java.util.ArrayList;
@@ -46,6 +48,12 @@ public class MainActivity extends AppCompatActivity{
 
     private static final int READ_SMS_PERMISSIONS_REQUEST = 1;
     private static final int READ_CONTACTS_PERMISSIONS_REQUEST = 1;
+
+
+    public static MainActivity instance() {
+        return inst;
+    }
+
 
     @Override
     protected void onCreate(Bundle savedInstanceState) {
@@ -83,6 +91,14 @@ public class MainActivity extends AppCompatActivity{
             }
         });
 
+//        tb.findViewById(R.id.newmessagebutton).setOnClickListener(new View.OnClickListener() {
+//            @Override
+//            public void onClick(View v) {
+//                Intent intent = new Intent(MainActivity.this, NewMessage.class);
+//                startActivity(intent);
+//
+//            }
+//        });
     }
 
     void setupFragments(ViewPager viewPager) {
@@ -128,6 +144,8 @@ public class MainActivity extends AppCompatActivity{
             }
         }
     }
+
+
 
     @Override
     public void onRequestPermissionsResult(int requestCode,
@@ -369,6 +387,11 @@ public class MainActivity extends AppCompatActivity{
         new refreshInboxOnNewThread().execute();
 
 
+    }
+
+    public void fabClicked(View view) {
+        Intent intent = new Intent(MainActivity.this, NewMessage.class);
+        startActivity(intent);
     }
 
     class refreshInboxOnNewThread extends AsyncTask<Void, Void, Void> {

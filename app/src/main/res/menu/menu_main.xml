@@ -4,9 +4,18 @@
     tools:context="mhd3v.filteredsms.MainActivity">
     <item
         android:id="@+id/settingsButton"
+        android:title="settings"
         android:checkable="false"
         android:enabled="true"
         android:icon="@drawable/settings"
         android:visible="true"
+        app:showAsAction="always" />
+    <item
+        android:id="@+id/newmessagebutton"
+        android:checkable="false"
+        android:enabled="true"
+        android:icon="@drawable/new_message"
+        android:title="new_message"
+        android:visible="false"
         app:showAsAction="always" />
 </menu>

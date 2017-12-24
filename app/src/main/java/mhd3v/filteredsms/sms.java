@@ -12,7 +12,6 @@ public class sms{
     String threadId;
 
     String sender;
-
     String senderName;
 
     messages lastMessage;
