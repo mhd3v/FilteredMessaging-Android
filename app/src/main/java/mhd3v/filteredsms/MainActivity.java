@@ -45,6 +45,7 @@ public class MainActivity extends AppCompatActivity{
     static MainActivity inst;
 
     private static final int READ_SMS_PERMISSIONS_REQUEST = 1;
+    private static final int READ_CONTACTS_PERMISSIONS_REQUEST = 1;
 
     @Override
     protected void onCreate(Bundle savedInstanceState) {
@@ -52,9 +53,12 @@ public class MainActivity extends AppCompatActivity{
         setContentView(R.layout.activity_main);
 
         if (ContextCompat.checkSelfPermission(this, Manifest.permission.READ_SMS)
-                != PackageManager.PERMISSION_GRANTED) {
+                != PackageManager.PERMISSION_GRANTED){
             getPermissionToReadSMS();
-        } else
+
+        }
+
+        else
             refreshSmsInbox();
 
         mSectionsPageAdapter = new SectionsPageAdapter(getSupportFragmentManager());
@@ -105,6 +109,24 @@ public class MainActivity extends AppCompatActivity{
                         READ_SMS_PERMISSIONS_REQUEST);
             }
         }
+
+
+    }
+
+    public void getPermissionToReadContacts() {
+        if (ContextCompat.checkSelfPermission(this, Manifest.permission.READ_CONTACTS)
+                != PackageManager.PERMISSION_GRANTED) {
+            if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.M) {
+                if (shouldShowRequestPermissionRationale(
+                        Manifest.permission.READ_CONTACTS)) {
+                    Toast.makeText(this, "Please allow permission!", Toast.LENGTH_SHORT).show();
+                }
+            }
+            if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.M) {
+                requestPermissions(new String[]{Manifest.permission.READ_CONTACTS},
+                        READ_CONTACTS_PERMISSIONS_REQUEST);
+            }
+        }
     }
 
     @Override
@@ -114,16 +136,31 @@ public class MainActivity extends AppCompatActivity{
         // Make sure it's our original READ_CONTACTS request
         if (requestCode == READ_SMS_PERMISSIONS_REQUEST) {
             if (grantResults.length == 1 &&
-                    grantResults[0] == PackageManager.PERMISSION_GRANTED) {
+                    grantResults[0] == PackageManager.PERMISSION_GRANTED ) {
                 Toast.makeText(this, "Read SMS permission granted", Toast.LENGTH_SHORT).show();
-                refreshSmsInbox();
+                getPermissionToReadContacts();
             } else {
                 Toast.makeText(this, "Read SMS permission denied", Toast.LENGTH_SHORT).show();
             }
 
-        } else {
+        }
+
+        if (requestCode == READ_CONTACTS_PERMISSIONS_REQUEST ) {
+            if (grantResults.length == 2 &&
+                    grantResults[1] == PackageManager.PERMISSION_GRANTED ) {
+                Toast.makeText(this, "Read Contacts permission granted", Toast.LENGTH_SHORT).show();
+                refreshSmsInbox();
+            } else {
+                Toast.makeText(this, "Read Contacts permission denied", Toast.LENGTH_SHORT).show();
+            }
+
+        }
+
+        else {
             super.onRequestPermissionsResult(requestCode, permissions, grantResults);
         }
+
+
     }
 
     public void refreshSmsInbox() {
