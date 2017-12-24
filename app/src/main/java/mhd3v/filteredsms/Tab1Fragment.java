@@ -26,7 +26,8 @@ import java.util.Comparator;
 
 public class Tab1Fragment extends Fragment {
 
-    ArrayList<sms> smsList;
+    ArrayList<sms> smsList = new ArrayList<>();
+    customAdapter knownAdapter;
 
     @Nullable
     @Override
@@ -34,59 +35,34 @@ public class Tab1Fragment extends Fragment {
 
         View view = inflater.inflate(R.layout.tab1_fragment, container, false);
 
-        ListView knownList = (ListView) view.findViewById(R.id.knownList);
-
         MainActivity activity = (MainActivity) getActivity();
 
+        activity.setKnownInstance(this);
+
+        ListView knownList = view.findViewById(R.id.knownList);
+
+        if(smsList.isEmpty())
         smsList = activity.getKnownSms();
 
+        knownAdapter = new customAdapter();
 
-        knownList.setAdapter(new customAdapter());
+        activity.setKnownAdapter(knownAdapter);
+
+        knownList.setAdapter(knownAdapter);
 
         knownList.setOnItemClickListener(new AdapterView.OnItemClickListener() {
             @Override
             public void onItemClick(AdapterView<?> parent, View view, int position, long id) {
 
 
-//                ArrayList<String> senderMessages = new ArrayList<String>();
-//                ArrayList<String> senderTime = new ArrayList<String>();
-//
-//
-//                ArrayList<String> userMessages = new ArrayList<String>();
-//                ArrayList<String> userTime = new ArrayList<String>();
-//
-//                for(int j=0; j < smsList.get(position).messages.size(); j++){
-//                        senderMessages.add(smsList.get(position).messages.get(j).messageBody);
-//                        senderTime.add(smsList.get(position).messages.get(j).time);
-//                }
-//
-//                for(int j=0; j < smsList.get(position).userMessages.size(); j++){
-//                    userMessages.add(smsList.get(position).userMessages.get(j).messageBody);
-//                    userTime.add(smsList.get(position).userMessages.get(j).time);
-//
-//                }
-//
-//                Intent intent = new Intent(getActivity(), CoversationActivity.class);
-//
-//                intent.putExtra("sender", smsList.get(position).sender);
-//                intent.putExtra("senderMessages", senderMessages);
-//                intent.putExtra("senderTime", senderTime);
-//                intent.putExtra("userMessages", userMessages);
-//                intent.putExtra("userTime", userTime);
-//
-//
-//                startActivity(intent);
-
                 Intent intent = new Intent(getActivity(), CoversationActivity.class);
                 Bundle args = new Bundle();
-                args.putSerializable("messageList",(Serializable)smsList.get(position).messages);
+                args.putSerializable("messageList", smsList.get(position).messages);
                 intent.putExtra("BUNDLE",args);
 
                 intent.putExtra("sender", smsList.get(position).sender);
 
                 startActivity(intent);
-
-
 
             }
         });
@@ -99,7 +75,18 @@ public class Tab1Fragment extends Fragment {
 
         @Override
         public int getCount() {
-            return smsList.size(); //set array adapter next six days from today
+            return smsList.size();
+        }
+
+
+
+        public void updateMessageList(ArrayList<sms> newlist) {
+
+            smsList.clear();
+            smsList.addAll(newlist);
+            this.notifyDataSetChanged();
+
+
         }
 
         @Override
@@ -119,7 +106,7 @@ public class Tab1Fragment extends Fragment {
 
             TextView sender= view.findViewById(R.id.sender);
 
-            sender.setText(smsList.get(i).sender);
+            sender.setText(smsList.get(i).senderName);
 
             TextView time= view.findViewById(R.id.time);
             String lastSenderMessageTime = smsList.get(i).messages.get(0).time;
