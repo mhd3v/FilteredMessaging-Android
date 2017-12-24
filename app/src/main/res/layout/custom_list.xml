@@ -19,7 +19,7 @@
     <TextView
         android:id="@+id/textbody"
         android:layout_width="195dp"
-        android:layout_height="31dp"
+        android:layout_height="wrap_content"
         android:layout_marginLeft="26dp"
         android:layout_marginTop="9dp"
         android:text="Some Text"

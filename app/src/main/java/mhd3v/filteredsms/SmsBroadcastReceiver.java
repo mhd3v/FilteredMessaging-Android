@@ -1,5 +1,6 @@
 package mhd3v.filteredsms;
 
+
 import android.app.NotificationManager;
 import android.content.BroadcastReceiver;
 import android.content.ContentResolver;
@@ -34,6 +35,7 @@ public class SmsBroadcastReceiver extends BroadcastReceiver {
             for (int i = 0; i < sms.length; ++i) {
                 String format = intentExtras.getString("format");
                 SmsMessage smsMessage = SmsMessage.createFromPdu((byte[]) sms[i], format);
+
 
                 smsBody = smsMessage.getMessageBody().toString();
                 address = smsMessage.getOriginatingAddress();
@@ -136,3 +138,4 @@ public class SmsBroadcastReceiver extends BroadcastReceiver {
 
 
 }
+

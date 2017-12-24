@@ -61,6 +61,7 @@ public class Tab1Fragment extends Fragment {
                 intent.putExtra("BUNDLE",args);
 
                 intent.putExtra("sender", smsList.get(position).sender);
+                intent.putExtra("senderName", smsList.get(position).senderName);
 
                 startActivity(intent);
 
@@ -71,7 +72,7 @@ public class Tab1Fragment extends Fragment {
     }
 
 
-    class customAdapter extends BaseAdapter {
+ public  class customAdapter extends BaseAdapter {
 
         @Override
         public int getCount() {
