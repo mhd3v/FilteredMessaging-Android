@@ -1,16 +1,23 @@
 package mhd3v.filteredsms;
 
+import android.Manifest;
 import android.content.Intent;
+import android.content.pm.PackageManager;
+import android.os.Build;
 import android.os.Bundle;
+import android.support.v4.content.ContextCompat;
 import android.support.v7.app.AppCompatActivity;
+import android.telephony.SmsManager;
 import android.text.format.DateFormat;
 import android.util.Log;
 import android.view.View;
 import android.view.ViewGroup;
 import android.widget.BaseAdapter;
+import android.widget.EditText;
 import android.widget.ImageView;
 import android.widget.ListView;
 import android.widget.TextView;
+import android.widget.Toast;
 
 import java.util.ArrayList;
 import java.util.Collections;
@@ -18,19 +25,23 @@ import java.util.Collections;
 public class CoversationActivity extends AppCompatActivity {
 
     ArrayList<messages> messageList;
+    EditText input;
+    SmsManager smsManager = SmsManager.getDefault();
+    private static final int READ_SMS_PERMISSIONS_REQUEST = 1;
 
-    ArrayList<String> senderMessages;
-    ArrayList<String> senderTime;
+    //   ArrayList<String> senderMessages;
+ //   ArrayList<String> senderTime;
 
-    ArrayList<String> reverseSenderMessages = new ArrayList<>();
-    ArrayList<String> reverseSenderTime = new ArrayList();
+  //  ArrayList<String> reverseSenderMessages = new ArrayList<>();
+  //  ArrayList<String> reverseSenderTime = new ArrayList();
 
-    ArrayList<String> userMessages;
-    ArrayList<String> userTime;
+  //  ArrayList<String> userMessages;
+  //  ArrayList<String> userTime;
 
-    ArrayList<String> reverseUserMessages = new ArrayList<>();
-    ArrayList<String> reverseUserTime = new ArrayList();
-    String sender;
+  //  ArrayList<String> reverseUserMessages = new ArrayList<>();
+  //  ArrayList<String> reverseUserTime = new ArrayList();
+    String sendername;
+    String sendernumber;
 
     @Override
     protected void onCreate(Bundle savedInstanceState) {
@@ -67,7 +78,8 @@ public class CoversationActivity extends AppCompatActivity {
 
         Collections.reverse(messageList);
 
-        sender = intent.getStringExtra("sender");
+        sendername = intent.getStringExtra("sendername");
+        sendernumber = intent.getStringExtra("sendernumber");
 
 //        Log.d("sender", sender);
 
@@ -75,6 +87,37 @@ public class CoversationActivity extends AppCompatActivity {
 
         conversation.setAdapter(new customAdapter());
 
+    }
+
+    public void onSendClick(View view) {
+
+        input = (EditText) findViewById(R.id.edittext_chatbox);
+
+        Log.d("aqib", sendernumber);
+
+        if (ContextCompat.checkSelfPermission(this, Manifest.permission.SEND_SMS)
+                != PackageManager.PERMISSION_GRANTED) {
+                getPermissionToReadSMS();
+        } else {
+            smsManager.sendTextMessage(sendernumber, null, input.getText().toString(), null, null);
+            Toast.makeText(this, "Message sent!", Toast.LENGTH_SHORT).show();
+        }
+    }
+
+    public void getPermissionToReadSMS() {
+        if (ContextCompat.checkSelfPermission(this, Manifest.permission.READ_SMS)
+                != PackageManager.PERMISSION_GRANTED) {
+            if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.M) {
+                if (shouldShowRequestPermissionRationale(
+                        Manifest.permission.READ_SMS)) {
+                    Toast.makeText(this, "Please allow permission!", Toast.LENGTH_SHORT).show();
+                }
+            }
+            if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.M) {
+                requestPermissions(new String[]{Manifest.permission.READ_SMS},
+                        READ_SMS_PERMISSIONS_REQUEST);
+            }
+        }
     }
 
     class customAdapter extends BaseAdapter {
@@ -160,7 +203,7 @@ public class CoversationActivity extends AppCompatActivity {
 
                 TextView userTimeText = view.findViewById(R.id.userTime);
                 //Log.d("time1", messageList.get(i).time);
-                String time = convertDate(messageList.get(i).time,"dd/MM hh:mm");
+                String time = convertDate(messageList.get(i).time,"dd/MM hh:mm aa");
                 Log.d("usertime", time);
                 userTimeText.setText(time);
                 userTimeText.setVisibility(View.VISIBLE);

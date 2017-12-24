@@ -1,6 +1,7 @@
 package mhd3v.filteredsms;
 
 import android.Manifest;
+import android.annotation.TargetApi;
 import android.content.ContentResolver;
 import android.content.Context;
 import android.content.Intent;
@@ -19,6 +20,7 @@ import android.support.v7.widget.Toolbar;
 import android.util.Log;
 import android.view.Menu;
 import android.view.View;
+import android.widget.ArrayAdapter;
 import android.widget.Toast;
 
 import java.util.ArrayList;
@@ -42,7 +44,20 @@ public class MainActivity extends AppCompatActivity {
     Menu menu;
 
     private static final int READ_SMS_PERMISSIONS_REQUEST = 1;
-    
+    private static final int READ_CONTACTS_PERMISSIONS_REQUEST = 1;
+
+    static MainActivity inst;
+
+    ArrayAdapter arrayAdapter;
+
+ //   Tab1Fragment t1 = new Tab1Fragment();
+
+    public static MainActivity instance() {
+        return inst;
+    }
+
+    static boolean active = false;
+
     @Override
     protected void onCreate(Bundle savedInstanceState) {
         super.onCreate(savedInstanceState);
@@ -76,7 +91,37 @@ public class MainActivity extends AppCompatActivity {
             }
         });
 
+        tb.findViewById(R.id.newmessagebutton).setOnClickListener(new View.OnClickListener() {
+            @Override
+            public void onClick(View v) {
+                Intent intent = new Intent(MainActivity.this, NewMessage.class);
+                startActivity(intent);
+
+            }
+        });
     }
+
+    @Override
+    public void onStart() {
+        super.onStart();
+        active = true;
+        inst = this;
+    }
+
+    @Override
+    public void onStop() {
+        super.onStop();
+        active = false;
+    }
+
+  /*  public void updateInbox(final String smsMessage) {
+
+        customAdapter c1 = new customAdapter();
+
+
+        arrayAdapter.insert(smsMessage, 0);
+        arrayAdapter.notifyDataSetChanged();
+    } */
 
     void setupFragments(ViewPager viewPager) {
         SectionsPageAdapter adapter = new SectionsPageAdapter(getSupportFragmentManager());
@@ -104,12 +149,40 @@ public class MainActivity extends AppCompatActivity {
         }
     }
 
+    @android.support.annotation.RequiresApi(api = Build.VERSION_CODES.M)
+    public void getPermissionToReadContacts() {
+        if (ContextCompat.checkSelfPermission(this, Manifest.permission.READ_CONTACTS)
+                != PackageManager.PERMISSION_GRANTED) {
+            if (shouldShowRequestPermissionRationale(
+                    Manifest.permission.READ_CONTACTS)) {
+                Toast.makeText(this, "Please allow permission!", Toast.LENGTH_SHORT).show();
+            }
+            requestPermissions(new String[]{Manifest.permission.READ_CONTACTS},
+                    READ_CONTACTS_PERMISSIONS_REQUEST);
+
+        }
+    }
+
+
     @Override
     public void onRequestPermissionsResult(int requestCode,
                                            @NonNull String permissions[],
                                            @NonNull int[] grantResults) {
         // Make sure it's our original READ_CONTACTS request
         if (requestCode == READ_SMS_PERMISSIONS_REQUEST) {
+            if (grantResults.length == 1 &&
+                    grantResults[0] == PackageManager.PERMISSION_GRANTED) {
+                Toast.makeText(this, "Read SMS permission granted", Toast.LENGTH_SHORT).show();
+                refreshSmsInbox();
+            } else {
+                Toast.makeText(this, "Read SMS permission denied", Toast.LENGTH_SHORT).show();
+            }
+
+        } else {
+            super.onRequestPermissionsResult(requestCode, permissions, grantResults);
+        }
+
+        if (requestCode == READ_CONTACTS_PERMISSIONS_REQUEST) {
             if (grantResults.length == 1 &&
                     grantResults[0] == PackageManager.PERMISSION_GRANTED) {
                 Toast.makeText(this, "Read SMS permission granted", Toast.LENGTH_SHORT).show();
@@ -258,6 +331,8 @@ public class MainActivity extends AppCompatActivity {
 
         return Name;
     }
+
+
 
 //    String getFormattedNumber(String originalNumber) {
 //

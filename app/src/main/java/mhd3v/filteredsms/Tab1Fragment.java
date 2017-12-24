@@ -82,7 +82,8 @@ public class Tab1Fragment extends Fragment {
                 args.putSerializable("messageList",(Serializable)smsList.get(position).messages);
                 intent.putExtra("BUNDLE",args);
 
-                intent.putExtra("sender", smsList.get(position).sender);
+                intent.putExtra("sendername", smsList.get(position).sender);
+                intent.putExtra("sendernumber", smsList.get(position).sendernumber);
 
                 startActivity(intent);
 
@@ -95,7 +96,7 @@ public class Tab1Fragment extends Fragment {
     }
 
 
-    class customAdapter extends BaseAdapter {
+ public  class customAdapter extends BaseAdapter {
 
         @Override
         public int getCount() {

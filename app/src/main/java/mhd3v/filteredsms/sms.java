@@ -12,6 +12,7 @@ public class sms{
     String threadId;
 
     String sender;
+    String sendernumber;
 
     messages lastMessage;
 
@@ -21,6 +22,7 @@ public class sms{
     sms(String sender, String threadId){
 
         this.sender = sender;
+        this.sendernumber = sender;
         this.threadId = threadId;
 
     }

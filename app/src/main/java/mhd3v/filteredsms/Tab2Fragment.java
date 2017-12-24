@@ -80,6 +80,9 @@ public class Tab2Fragment extends Fragment {
                 args.putSerializable("messageList",(Serializable)smsList.get(position).messages);
                 intent.putExtra("BUNDLE",args);
 
+                intent.putExtra("sendername", smsList.get(position).sender);
+                intent.putExtra("sendernumber", smsList.get(position).sendernumber);
+
                 startActivity(intent);
 
             }
