@@ -2,6 +2,8 @@ package mhd3v.filteredsms;
 
 import android.Manifest;
 import android.content.Intent;
+import android.content.pm.PackageManager;
+import android.os.Build;
 import android.os.Bundle;
 import android.support.v4.content.ContextCompat;
 import android.support.v7.app.AppCompatActivity;
@@ -28,25 +30,26 @@ public class CoversationActivity extends AppCompatActivity {
 
     ArrayList<messages> messageList;
     EditText input;
+
     SmsManager smsManager;
 
     static boolean askMainToRefresh = false;
 
     static boolean active = false;
 
+    //   ArrayList<String> senderMessages;
+ //   ArrayList<String> senderTime;
 
-    ArrayList<String> senderMessages;
-    ArrayList<String> senderTime;
+  //  ArrayList<String> reverseSenderMessages = new ArrayList<>();
+  //  ArrayList<String> reverseSenderTime = new ArrayList();
 
-    ArrayList<String> reverseSenderMessages = new ArrayList<>();
-    ArrayList<String> reverseSenderTime = new ArrayList();
+  //  ArrayList<String> userMessages;
+  //  ArrayList<String> userTime;
 
-    ArrayList<String> userMessages;
-    ArrayList<String> userTime;
-
-    ArrayList<String> reverseUserMessages = new ArrayList<>();
-    ArrayList<String> reverseUserTime = new ArrayList();
-    String sender;
+  //  ArrayList<String> reverseUserMessages = new ArrayList<>();
+  //  ArrayList<String> reverseUserTime = new ArrayList();
+    String sendername;
+    String sendernumber;
 
     customAdapter adapter;
     static Intent intent;
@@ -67,7 +70,8 @@ public class CoversationActivity extends AppCompatActivity {
 
         Collections.reverse(messageList);
 
-        sender = intent.getStringExtra("sender");
+        sendername = intent.getStringExtra("sendername");
+        sendernumber = intent.getStringExtra("sendernumber");
 
 //        Log.d("sender", sender);
 
@@ -78,6 +82,7 @@ public class CoversationActivity extends AppCompatActivity {
         conversation.setAdapter(adapter);
 
     }
+
 
     public static void refreshMain() {
         //askMainToRefresh = true;
@@ -127,6 +132,7 @@ public class CoversationActivity extends AppCompatActivity {
                 userMessage.setVisibility(View.VISIBLE);
 
                 TextView userTimeText = view.findViewById(R.id.userTime);
+
                 String time = convertDate(messageList.get(i).time,"dd/MM hh:mm aa");
                 Log.d("usertime", time);
                 userTimeText.setText(time);

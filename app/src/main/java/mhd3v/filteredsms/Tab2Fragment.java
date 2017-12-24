@@ -60,6 +60,9 @@ public class Tab2Fragment extends Fragment {
                 intent.putExtra("sender", smsList.get(position).sender);
                 intent.putExtra("BUNDLE", args);
 
+                intent.putExtra("sendername", smsList.get(position).sender);
+                intent.putExtra("sendernumber", smsList.get(position).sendernumber);
+
                 startActivity(intent);
 
             }
