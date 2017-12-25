@@ -7,9 +7,11 @@ import android.os.Build;
 import android.os.Bundle;
 import android.support.v4.content.ContextCompat;
 import android.support.v7.app.AppCompatActivity;
+import android.support.v7.widget.Toolbar;
 import android.telephony.SmsManager;
 import android.text.format.DateFormat;
 import android.util.Log;
+import android.view.Menu;
 import android.view.View;
 import android.view.ViewGroup;
 import android.view.inputmethod.InputMethodManager;
@@ -40,6 +42,7 @@ public class CoversationActivity extends AppCompatActivity {
     String sender;
     String senderName;
 
+
     customAdapter adapter;
     static Intent intent;
 
@@ -60,15 +63,34 @@ public class CoversationActivity extends AppCompatActivity {
         Collections.reverse(messageList);
 
         sender = intent.getStringExtra("sender");
-        //sendernumber = intent.getStringExtra("senderName");
+        senderName = intent.getStringExtra("senderName");
 
         ListView conversation = (ListView) findViewById(R.id.conversationList);
-
         adapter = new customAdapter();
 
         conversation.setAdapter(adapter);
 
+        Toolbar toolbar = (Toolbar) findViewById(R.id.toolbar);
+        if(toolbar != null) {
+            setSupportActionBar(toolbar);
+
+            if(senderName.equals(""))
+                getSupportActionBar().setTitle(sender);
+            else
+            getSupportActionBar().setTitle(senderName);
+            getSupportActionBar().setHomeButtonEnabled(true);
+            getSupportActionBar().setDisplayHomeAsUpEnabled(true);
+        }
+
+        toolbar.setNavigationOnClickListener(new View.OnClickListener(){
+            @Override
+            public void onClick(View view){
+                finish();
+            }
+        });
+
     }
+
 
 
     public static void refreshMain() {

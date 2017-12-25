@@ -9,8 +9,6 @@
     <uses-permission android:name="android.permission.RECEIVE_BOOT_COMPLETED"/>
     <uses-permission android:name="android.permission.READ_CONTACTS" />
 
-
-
     <application
         android:allowBackup="true"
         android:icon="@mipmap/ic_launcher"
@@ -46,7 +44,8 @@
 
         </activity>
 
-        <activity android:name=".CoversationActivity" />
+        <activity android:name=".CoversationActivity"
+            android:theme="@style/AppTheme.NoActionBar" />
 
         <activity
             android:name=".SettingsActivity"
