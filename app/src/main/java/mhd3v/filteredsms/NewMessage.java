@@ -96,6 +96,12 @@ public class NewMessage extends AppCompatActivity {
         }
     }
 
+    public static void refreshMain() {
+        //askMainToRefresh = true;
+        MainActivity mainInstance  = MainActivity.getInstance();
+        mainInstance.refreshInbox = true;
+    }
+
     public void onSendClick(View view) {
 
         String sendernumber = senderEt.getText().toString();
@@ -107,6 +113,8 @@ public class NewMessage extends AppCompatActivity {
 
             smsManager.sendTextMessage(sendernumber, null, messagebody, null, null);
             Toast.makeText(this, "Message sent!", Toast.LENGTH_SHORT).show();
+
+            refreshMain();
 
             finish();
 

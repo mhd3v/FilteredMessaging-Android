@@ -210,6 +210,7 @@ public class CoversationActivity extends AppCompatActivity {
                 }
 
                 input.setText("");
+                refreshMain();
             }
 
             else{
