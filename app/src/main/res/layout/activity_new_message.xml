@@ -45,7 +45,8 @@
             android:layout_marginRight="16dp"
             android:layout_weight="1"
             android:background="@android:color/transparent"
-            android:hint="Enter contact name or phone number"
+            android:hint="Enter phone number"
+            android:inputType="phone"
             android:maxLines="6" />
 
         <ImageView
@@ -53,6 +54,7 @@
             android:layout_width="47dp"
             android:layout_height="match_parent"
             android:onClick="onAddContactIcon"
+            android:paddingRight="10dp"
             app:srcCompat="@drawable/addcontact" />
 
     </LinearLayout>
@@ -65,6 +67,7 @@
         android:background="#ffffff"
         android:minHeight="48dp"
         android:orientation="horizontal"
+        android:paddingBottom="15dp"
         app:layout_constraintBottom_toBottomOf="parent"
         app:layout_constraintHorizontal_bias="0.0"
         app:layout_constraintLeft_toLeftOf="parent"
