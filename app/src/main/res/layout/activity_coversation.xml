@@ -49,6 +49,7 @@
             android:layout_marginTop="0dp"
             android:divider="@null"
             android:dividerHeight="5dp"
+            android:scrollbars="vertical"
             android:stackFromBottom="true"
             android:transcriptMode="alwaysScroll"
             app:layout_constraintBottom_toBottomOf="@+id/view"
@@ -59,9 +60,7 @@
             tools:layout_constraintBottom_creator="1"
             tools:layout_constraintLeft_creator="1"
             tools:layout_constraintRight_creator="1"
-            tools:layout_constraintTop_creator="1"
-            android:scrollbars="vertical"
-            />
+            tools:layout_constraintTop_creator="1" />
 
         <!-- A horizontal line between the chatbox and RecyclerView -->
         <View
