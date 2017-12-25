@@ -5,6 +5,7 @@ import android.content.Intent;
 import android.os.Bundle;
 import android.support.annotation.Nullable;
 import android.support.v4.app.Fragment;
+import android.text.TextUtils;
 import android.text.format.DateFormat;
 import android.util.Log;
 import android.view.LayoutInflater;
@@ -113,7 +114,11 @@ public class Tab2Fragment extends Fragment {
             time.setText(lastSenderMessageTime);
 
             TextView text = view.findViewById(R.id.textbody);
-            text.setText(smsList.get(i).messages.get(0).messageBody);
+
+            if(smsList.get(i).messages.get(0).messageBody.length() >= 50)
+                text.setText(TextUtils.substring(smsList.get(i).messages.get(0).messageBody, 0, 50) + "...");
+            else
+                text.setText(smsList.get(i).messages.get(0).messageBody);
 
             ImageView contactPicture = view.findViewById(R.id.contactPicture);
             contactPicture.setImageResource(R.drawable.unknownsender);

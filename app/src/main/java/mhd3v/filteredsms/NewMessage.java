@@ -29,10 +29,16 @@ public class NewMessage extends AppCompatActivity {
 
     Intent intent;
 
+    EditText senderEt;
+    EditText messageEt;
+
     @Override
     protected void onCreate(Bundle savedInstanceState) {
         super.onCreate(savedInstanceState);
         setContentView(R.layout.activity_new_message);
+
+        senderEt = ((EditText) findViewById(R.id.edittext_contactnumber));
+        messageEt = ((EditText) findViewById(R.id.edittext_chatbox));
 
     }
 
@@ -92,18 +98,27 @@ public class NewMessage extends AppCompatActivity {
 
     public void onSendClick(View view) {
 
-        String sendernumber = ((EditText) findViewById(R.id.edittext_contactnumber)).getText().toString();
+        String sendernumber = senderEt.getText().toString();
+        String messagebody = messageEt.getText().toString();
 
-        String messagebody = ((EditText) findViewById(R.id.edittext_chatbox)).getText().toString();
+        if(!(sendernumber.length() == 0 && messagebody.length() == 0)){
 
-        SmsManager smsManager = SmsManager.getDefault();
+            SmsManager smsManager = SmsManager.getDefault();
 
-        smsManager.sendTextMessage(sendernumber, null, messagebody, null, null);
-        Toast.makeText(this, "Message sent!", Toast.LENGTH_SHORT).show();
+            smsManager.sendTextMessage(sendernumber, null, messagebody, null, null);
+            Toast.makeText(this, "Message sent!", Toast.LENGTH_SHORT).show();
 
-        Intent intent = new Intent(this, MainActivity.class);
-        finish();
-        startActivity(intent);
+            finish();
+
+        }
+
+        else{
+            if(sendernumber.length() == 0)
+                Toast.makeText(this, "Please enter a phone number or select one from contacts", Toast.LENGTH_LONG).show();
+            if(messagebody.length() == 0)
+                Toast.makeText(this, "Please enter a message body", Toast.LENGTH_LONG).show();
+
+        }
 
     }
 

@@ -37,17 +37,6 @@ public class CoversationActivity extends AppCompatActivity {
 
     static boolean active = false;
 
-    //   ArrayList<String> senderMessages;
- //   ArrayList<String> senderTime;
-
-  //  ArrayList<String> reverseSenderMessages = new ArrayList<>();
-  //  ArrayList<String> reverseSenderTime = new ArrayList();
-
-  //  ArrayList<String> userMessages;
-  //  ArrayList<String> userTime;
-
-  //  ArrayList<String> reverseUserMessages = new ArrayList<>();
-  //  ArrayList<String> reverseUserTime = new ArrayList();
     String sender;
     String senderName;
 
@@ -72,8 +61,6 @@ public class CoversationActivity extends AppCompatActivity {
 
         sender = intent.getStringExtra("sender");
         //sendernumber = intent.getStringExtra("senderName");
-
-//        Log.d("sender", sender);
 
         ListView conversation = (ListView) findViewById(R.id.conversationList);
 
@@ -164,7 +151,6 @@ public class CoversationActivity extends AppCompatActivity {
     @Override
     public void onStart() {
         super.onStart();
-        //active = true;
         conversationInstance = this;
     }
 

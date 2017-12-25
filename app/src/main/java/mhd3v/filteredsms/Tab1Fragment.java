@@ -5,7 +5,6 @@ import android.os.Bundle;
 import android.support.annotation.Nullable;
 import android.support.v4.app.Fragment;
 import android.text.format.DateFormat;
-import android.util.Log;
 import android.view.LayoutInflater;
 import android.view.View;
 import android.view.ViewGroup;
@@ -14,11 +13,9 @@ import android.widget.BaseAdapter;
 import android.widget.ImageView;
 import android.widget.ListView;
 import android.widget.TextView;
-
-import java.io.Serializable;
+import android.text.TextUtils;
 import java.util.ArrayList;
-import java.util.Collections;
-import java.util.Comparator;
+
 
 /**
  * Created by Mahad on 11/27/2017.
@@ -115,7 +112,10 @@ public class Tab1Fragment extends Fragment {
             time.setText(lastSenderMessageTime);
 
             TextView text= view.findViewById(R.id.textbody);
-            text.setText(smsList.get(i).messages.get(0).messageBody);
+            if(smsList.get(i).messages.get(0).messageBody.length() >= 50)
+                text.setText(TextUtils.substring(smsList.get(i).messages.get(0).messageBody, 0, 50) + "...");
+            else
+                text.setText(smsList.get(i).messages.get(0).messageBody);
 
             ImageView contactPicture = view.findViewById(R.id.contactPicture);
             contactPicture.setImageResource(R.drawable.knownsender);
