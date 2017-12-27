@@ -29,7 +29,7 @@ public class Tab2Fragment extends Fragment {
     ArrayList<sms> smsList;
 
     Tab2Fragment.customAdapter unknownAdapter;
-
+    ListView unknownList;
 
     @Nullable
     @Override
@@ -40,7 +40,7 @@ public class Tab2Fragment extends Fragment {
         MainActivity activity = (MainActivity) getActivity();
         activity.setUnknownInstance(this);
 
-        ListView unknownList = view.findViewById(R.id.unknownList);
+        unknownList = view.findViewById(R.id.unknownList);
 
         smsList = activity.getUnknownSms();
 
@@ -63,6 +63,7 @@ public class Tab2Fragment extends Fragment {
 
                 intent.putExtra("sender", smsList.get(position).sender);
                 intent.putExtra("senderName", "");
+                intent.putExtra("threadId", smsList.get(position).threadId);
 
                 startActivity(intent);
 
@@ -88,9 +89,9 @@ public class Tab2Fragment extends Fragment {
 
         public void updateMessageList(ArrayList<sms> newlist) {
 
-            smsList.clear();
-            smsList.addAll(newlist);
-            this.notifyDataSetChanged();
+//            smsList.clear();
+//            smsList.addAll(newlist);
+           // this.notifyDataSetChanged();
 
         }
 

@@ -21,6 +21,7 @@ import android.support.v7.widget.Toolbar;
 import android.util.Log;
 import android.view.View;
 import android.widget.ArrayAdapter;
+import android.widget.ProgressBar;
 import android.widget.Toast;
 
 import java.util.ArrayList;
@@ -46,14 +47,15 @@ public class MainActivity extends AppCompatActivity{
     static boolean active = false;
     static MainActivity inst;
 
+    ProgressBar pb;
+
     private static final int READ_SMS_PERMISSIONS_REQUEST = 1;
     private static final int READ_CONTACTS_PERMISSIONS_REQUEST = 1;
 
-
     public static MainActivity instance() {
+
         return inst;
     }
-
 
     @Override
     protected void onCreate(Bundle savedInstanceState) {
@@ -73,6 +75,8 @@ public class MainActivity extends AppCompatActivity{
 
         mViewPager = (ViewPager)findViewById(R.id.container);
         setupFragments(mViewPager);
+
+        pb = (ProgressBar) findViewById(R.id.progressBar2);
 
         TabLayout tabLayout = (TabLayout) findViewById(R.id.tabs);
         tabLayout.setupWithViewPager(mViewPager);
@@ -350,16 +354,22 @@ public class MainActivity extends AppCompatActivity{
         Log.d("mahad", "refreshing because refresh inbox true");
 
         ArrayList<sms> newKnownList = new ArrayList<>();
-
-        newKnownList.addAll(getKnownSms());
-
         ArrayList<sms> newUnknownList = new ArrayList<>();
 
+        newKnownList.addAll(getKnownSms());
         newUnknownList.addAll(getUnknownSms());
 
-        knownAdapter.updateMessageList(newKnownList);
+        knownInstance.smsList.clear();
+        knownInstance.smsList.addAll(newKnownList);
+        knownAdapter.notifyDataSetChanged();
 
-        unknownAdapter.updateMessageList(newUnknownList);
+        unknownInstance.smsList.clear();
+        unknownInstance.smsList.addAll(newUnknownList);
+        unknownAdapter.notifyDataSetChanged();
+
+        knownInstance.knownList.setVisibility(View.VISIBLE);
+        unknownInstance.unknownList.setVisibility(View.VISIBLE);
+        pb.setVisibility(View.GONE);
 
         refreshInbox = false;
 
@@ -396,6 +406,14 @@ public class MainActivity extends AppCompatActivity{
 
     class refreshInboxOnNewThread extends AsyncTask<Void, Void, Void> {
 
+        @Override
+        protected void onPreExecute() {
+            super.onPreExecute();
+            knownInstance.knownList.setVisibility(View.GONE);
+            unknownInstance.unknownList.setVisibility(View.GONE);
+            pb.setVisibility(View.VISIBLE);
+
+        }
 
         @Override
         protected Void doInBackground(Void... params) {
@@ -417,6 +435,7 @@ public class MainActivity extends AppCompatActivity{
 
                 int indexBody = cursor.getColumnIndex("body");
                 int indexAddress = cursor.getColumnIndex("address");
+
 
                 cursor.moveToFirst();
 

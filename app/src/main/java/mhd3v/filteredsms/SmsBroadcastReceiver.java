@@ -4,14 +4,17 @@ package mhd3v.filteredsms;
 import android.app.NotificationManager;
 import android.content.BroadcastReceiver;
 import android.content.ContentResolver;
+import android.content.ContentValues;
 import android.content.Context;
 import android.content.Intent;
 import android.database.Cursor;
 import android.net.Uri;
 import android.os.Bundle;
 import android.provider.ContactsContract;
+import android.provider.Telephony;
 import android.support.v4.app.NotificationCompat;
 import android.telephony.SmsMessage;
+import android.util.Log;
 
 import java.util.ArrayList;
 
@@ -25,6 +28,7 @@ public class SmsBroadcastReceiver extends BroadcastReceiver {
     String address;
     String smsBody;
     boolean isContact;
+    Cursor cursor;
 
     public void onReceive(Context context, Intent intent) {
         Bundle intentExtras = intent.getExtras();
@@ -42,6 +46,27 @@ public class SmsBroadcastReceiver extends BroadcastReceiver {
 
                 smsMessageStr += "SMS From: " + address + "\n";
                 smsMessageStr += smsBody + "\n";
+
+                String defaultSmsApp = Telephony.Sms.getDefaultSmsPackage(context);
+
+                if(defaultSmsApp.equals("mhd3v.filteredsms")){
+                    ContentValues values = new ContentValues();
+                    values.put("address", address);//sender name
+                    values.put("body", smsBody);
+                    context.getContentResolver().insert(Uri.parse("content://sms/inbox"), values);
+                }
+
+                cursor = context.getContentResolver().query(Uri
+                        .parse("content://sms"), null, null, null, null);
+
+                try {
+                    Thread.sleep(1000);
+                } catch (InterruptedException e) {
+                    e.printStackTrace();
+                }
+
+                cursor.moveToFirst();
+
             }
 
             MainActivity mainActivityInstance = MainActivity.inst;
@@ -50,7 +75,7 @@ public class SmsBroadcastReceiver extends BroadcastReceiver {
 
             if (conversationInstance != null) {
 
-                if(conversationInstance.sender.equals(address)){
+                if(conversationInstance.threadId.equals(cursor.getString(cursor.getColumnIndex("thread_id")))){
 
                     messages newSms = new messages(smsBody ,Long.toString(System.currentTimeMillis()));
 
