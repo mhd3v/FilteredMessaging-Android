@@ -26,6 +26,8 @@ public class Tab1Fragment extends Fragment {
     ArrayList<sms> smsList = new ArrayList<>();
     customAdapter knownAdapter;
 
+    ListView knownList;
+
     @Nullable
     @Override
     public View onCreateView(LayoutInflater inflater, @Nullable ViewGroup container, @Nullable Bundle savedInstanceState) {
@@ -36,7 +38,7 @@ public class Tab1Fragment extends Fragment {
 
         activity.setKnownInstance(this);
 
-        ListView knownList = view.findViewById(R.id.knownList);
+        knownList = view.findViewById(R.id.knownList);
 
         if(smsList.isEmpty())
         smsList = activity.getKnownSms();
@@ -51,7 +53,6 @@ public class Tab1Fragment extends Fragment {
             @Override
             public void onItemClick(AdapterView<?> parent, View view, int position, long id) {
 
-
                 Intent intent = new Intent(getActivity(), CoversationActivity.class);
                 Bundle args = new Bundle();
                 args.putSerializable("messageList", smsList.get(position).messages);
@@ -59,6 +60,7 @@ public class Tab1Fragment extends Fragment {
 
                 intent.putExtra("sender", smsList.get(position).sender);
                 intent.putExtra("senderName", smsList.get(position).senderName);
+                intent.putExtra("threadId", smsList.get(position).threadId);
 
                 startActivity(intent);
 
@@ -80,9 +82,9 @@ public class Tab1Fragment extends Fragment {
 
         public void updateMessageList(ArrayList<sms> newlist) {
 
-            smsList.clear();
-            smsList.addAll(newlist);
-            this.notifyDataSetChanged();
+//            smsList.clear();
+//            smsList.addAll(newlist);
+            //this.notifyDataSetChanged();
 
 
         }
