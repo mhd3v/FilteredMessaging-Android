@@ -23,6 +23,7 @@ import android.support.v7.widget.Toolbar;
 import android.telephony.SmsManager;
 import android.telephony.TelephonyManager;
 import android.view.View;
+import android.view.inputmethod.InputMethodManager;
 import android.widget.EditText;
 import android.widget.Toast;
 
@@ -120,6 +121,14 @@ public class NewMessage extends AppCompatActivity {
         if(!(sendernumber.length() == 0 && messagebody.length() == 0)){
 
             sendSms(sendernumber, messagebody);
+
+            try  { //close keyboard
+                InputMethodManager imm = (InputMethodManager)getSystemService(INPUT_METHOD_SERVICE);
+                imm.hideSoftInputFromWindow(getCurrentFocus().getWindowToken(), 0);
+            } catch (Exception e) {
+
+            }
+
 
 
         }

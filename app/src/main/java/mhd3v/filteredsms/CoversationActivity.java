@@ -9,6 +9,7 @@ import android.content.Context;
 import android.content.Intent;
 import android.content.IntentFilter;
 import android.content.pm.PackageManager;
+import android.database.Cursor;
 import android.net.Uri;
 import android.os.Build;
 import android.os.Bundle;
@@ -54,6 +55,8 @@ public class CoversationActivity extends AppCompatActivity {
     String senderName;
     String threadId;
 
+    boolean cameFromNotification = false;
+
 
     customAdapter adapter;
     static Intent intent;
@@ -69,24 +72,65 @@ public class CoversationActivity extends AppCompatActivity {
         super.onCreate(savedInstanceState);
         setContentView(R.layout.activity_coversation);
 
+        messageList = new ArrayList<>();
 
         intent = getIntent();
 
-       /* if(intent.getAction().equals("android.intent.action.mhd3v")){
-            Log.d("data11",intent.getDataString());
-        }
+        if(intent.getAction().equals("android.intent.action.NotificationClicked")){
+
+            cameFromNotification = true;
+
+            Cursor cursor = getContentResolver().query(Uri.parse("content://sms/"), null,  "thread_id=" + intent.getStringExtra("threadId"), null, null);
+
+            try {
+                Thread.sleep(1000);
+            } catch (InterruptedException e) {
+                e.printStackTrace();
+            }
+
+            cursor.moveToFirst();
+
+                int indexBody = cursor.getColumnIndex("body");
+                int indexAddress = cursor.getColumnIndex("address");
+                String type = Integer.toString(cursor.getColumnIndex("type"));
+
+                do{
+
+                    if (cursor.getString(Integer.parseInt(type)).equalsIgnoreCase("1")) {
+
+                        //received messages
+                        messages newMessage = new messages(cursor.getString(indexBody) ,cursor.getString(cursor.getColumnIndex("date")));
+                        messageList.add(newMessage);
+
+
+                    }
+
+                    else if (cursor.getString(Integer.parseInt(type)).equalsIgnoreCase("2")) {
+
+                        messages newMessage = new messages(cursor.getString(indexBody) ,cursor.getString(cursor.getColumnIndex("date")));
+                        newMessage.isUserMessage = true;
+                        messageList.add(newMessage);
+                    }
+                }while (cursor.moveToNext());
+
+
+
+            }
+
         else{
             Bundle args = intent.getBundleExtra("BUNDLE");
             messageList = (ArrayList<messages>) args.getSerializable("messageList");
-        }*/
-        Bundle args = intent.getBundleExtra("BUNDLE");
-        messageList = (ArrayList<messages>) args.getSerializable("messageList");
+        }
+
+//        Bundle args = intent.getBundleExtra("BUNDLE");
+//        messageList = (ArrayList<messages>) args.getSerializable("messageList");
 
         Collections.reverse(messageList);
 
         sender = intent.getStringExtra("sender");
         senderName = intent.getStringExtra("senderName");
         threadId = intent.getStringExtra("threadId");
+
 
 
         ListView conversation = (ListView) findViewById(R.id.conversationList);
@@ -164,8 +208,12 @@ public class CoversationActivity extends AppCompatActivity {
 
                 TextView userTimeText = view.findViewById(R.id.userTime);
 
-                String time = convertDate(messageList.get(i).time,"dd/MM hh:mm aa");
-                Log.d("usertime", time);
+                String time;
+
+                if(!messageList.get(i).time.equals("Sending..."))
+                    time = convertDate(messageList.get(i).time,"dd/MM hh:mm aa");
+                else
+                    time = "Sending...";
                 userTimeText.setText(time);
                 userTimeText.setVisibility(View.VISIBLE);
 
@@ -196,15 +244,6 @@ public class CoversationActivity extends AppCompatActivity {
 
     }
 
-    @Override
-    public void onStart() {
-        super.onStart();
-        active = true;
-        conversationInstance = this;
-    }
-
-
-
 
     public void onSendClick(View view) {
 
@@ -215,11 +254,19 @@ public class CoversationActivity extends AppCompatActivity {
 
             if(!(input.getText().toString().trim().length() == 0)){
 
+                messages newSms = new messages(input.getText().toString() ,"Sending...");
 
+                newSms.isUserMessage = true;
 
-                sendSms(sender,input.getText().toString());
+                ArrayList<messages> newMessageList = new ArrayList<>();
 
+                newMessageList.addAll(messageList);
 
+                newMessageList.add(newSms);
+
+                adapter.updateMessageList(newMessageList);
+
+                sendSms(sender,input.getText().toString(), newSms);
 
                 try  { //close keyboard
                     InputMethodManager imm = (InputMethodManager)getSystemService(INPUT_METHOD_SERVICE);
@@ -238,16 +285,97 @@ public class CoversationActivity extends AppCompatActivity {
 
 
 
+    }
 
-
+    @Override
+    public void onStart() {
+        super.onStart();
+        active = true;
+        conversationInstance = this;
     }
 
     @Override
     public void onStop() {
         super.onStop();
-        active = true;
         conversationInstance = null;
 
+        if(cameFromNotification){
+            Intent intent = new Intent(this, MainActivity.class);
+            intent.setFlags(Intent.FLAG_ACTIVITY_CLEAR_TOP);
+            startActivity(intent);
+        }
+
+
+    }
+
+
+    void updateViewsAndDB(String address, String message, String time, messages newSms){
+
+        String defaultSmsApp = Telephony.Sms.getDefaultSmsPackage(this);
+
+        if(defaultSmsApp.equals("mhd3v.filteredsms")){
+            ContentValues values = new ContentValues();
+            values.put("address", address);//sender name
+            values.put("body", message);
+            this.getContentResolver().insert(Uri.parse("content://sms/sent"), values);
+        }
+
+
+       // newSms.time = time;
+
+        ArrayList<messages> newMessageList = new ArrayList<>();
+
+        newMessageList.addAll(messageList);
+
+        newMessageList.get(newMessageList.size()-1).time = time;
+
+        adapter.updateMessageList(newMessageList);
+
+        //Toast.makeText(this, "Message sent!", Toast.LENGTH_SHORT).show();
+    }
+
+
+    private void sendSms(final String address, final String message, final messages newSms) {
+        if (simExists()) {
+            try {
+                String SENT = "SMS_SENT";
+
+                PendingIntent sentPI = PendingIntent.getBroadcast(this, 0, new Intent(SENT), 0);
+
+                registerReceiver(new BroadcastReceiver() {
+                    @Override
+                    public void onReceive(Context arg0, Intent arg1) {
+                        int resultCode = getResultCode();
+                        switch (resultCode) {
+                            case Activity.RESULT_OK:
+                                Toast.makeText(getBaseContext(), "SMS sent", Toast.LENGTH_LONG).show();
+                                updateViewsAndDB(address, message, Long.toString(System.currentTimeMillis()), newSms);
+                                break;
+                            case SmsManager.RESULT_ERROR_GENERIC_FAILURE:
+                                Toast.makeText(getBaseContext(), "Generic failure", Toast.LENGTH_LONG).show();
+                                break;
+                            case SmsManager.RESULT_ERROR_NO_SERVICE:
+                                Toast.makeText(getBaseContext(), "No service", Toast.LENGTH_LONG).show();
+                                break;
+                            case SmsManager.RESULT_ERROR_NULL_PDU:
+                                Toast.makeText(getBaseContext(), "Null PDU", Toast.LENGTH_LONG).show();
+                                break;
+                            case SmsManager.RESULT_ERROR_RADIO_OFF:
+                                Toast.makeText(getBaseContext(), "Radio off", Toast.LENGTH_LONG).show();
+                                break;
+                        }
+                    }
+                }, new IntentFilter(SENT));
+
+                SmsManager smsMgr = SmsManager.getDefault();
+                smsMgr.sendTextMessage(address, null, message, sentPI, null);
+            } catch (Exception e) {
+                Toast.makeText(this, e.getMessage() + "!\n" + "Failed to send SMS", Toast.LENGTH_LONG).show();
+                e.printStackTrace();
+            }
+        } else {
+            Toast.makeText(this, SimState + " " + "Cannot send SMS", Toast.LENGTH_LONG).show();
+        }
     }
 
     /**
@@ -278,76 +406,6 @@ public class CoversationActivity extends AppCompatActivity {
                     break;
             }
             return false;
-        }
-    }
-
-    void updateViewsAndDB(String address, String message, String time){
-
-        String defaultSmsApp = Telephony.Sms.getDefaultSmsPackage(this);
-
-        if(defaultSmsApp.equals("mhd3v.filteredsms")){
-            ContentValues values = new ContentValues();
-            values.put("address", address);//sender name
-            values.put("body", message);
-            this.getContentResolver().insert(Uri.parse("content://sms/sent"), values);
-        }
-
-        messages newSms = new messages(message ,time);
-
-        newSms.isUserMessage = true;
-
-        ArrayList<messages> newMessageList = new ArrayList<>();
-
-        newMessageList.addAll(messageList);
-
-        newMessageList.add(newSms);
-
-        adapter.updateMessageList(newMessageList);
-
-        //Toast.makeText(this, "Message sent!", Toast.LENGTH_SHORT).show();
-    }
-
-
-    private void sendSms(final String address, final String message) {
-        if (simExists()) {
-            try {
-                String SENT = "SMS_SENT";
-
-                PendingIntent sentPI = PendingIntent.getBroadcast(this, 0, new Intent(SENT), 0);
-
-                registerReceiver(new BroadcastReceiver() {
-                    @Override
-                    public void onReceive(Context arg0, Intent arg1) {
-                        int resultCode = getResultCode();
-                        switch (resultCode) {
-                            case Activity.RESULT_OK:
-                                Toast.makeText(getBaseContext(), "SMS sent", Toast.LENGTH_LONG).show();
-                                updateViewsAndDB(address, message, Long.toString(System.currentTimeMillis()));
-                                break;
-                            case SmsManager.RESULT_ERROR_GENERIC_FAILURE:
-                                Toast.makeText(getBaseContext(), "Generic failure", Toast.LENGTH_LONG).show();
-                                break;
-                            case SmsManager.RESULT_ERROR_NO_SERVICE:
-                                Toast.makeText(getBaseContext(), "No service", Toast.LENGTH_LONG).show();
-                                break;
-                            case SmsManager.RESULT_ERROR_NULL_PDU:
-                                Toast.makeText(getBaseContext(), "Null PDU", Toast.LENGTH_LONG).show();
-                                break;
-                            case SmsManager.RESULT_ERROR_RADIO_OFF:
-                                Toast.makeText(getBaseContext(), "Radio off", Toast.LENGTH_LONG).show();
-                                break;
-                        }
-                    }
-                }, new IntentFilter(SENT));
-
-                SmsManager smsMgr = SmsManager.getDefault();
-                smsMgr.sendTextMessage(address, null, message, sentPI, null);
-            } catch (Exception e) {
-                Toast.makeText(this, e.getMessage() + "!\n" + "Failed to send SMS", Toast.LENGTH_LONG).show();
-                e.printStackTrace();
-            }
-        } else {
-            Toast.makeText(this, SimState + " " + "Cannot send SMS", Toast.LENGTH_LONG).show();
         }
     }
 

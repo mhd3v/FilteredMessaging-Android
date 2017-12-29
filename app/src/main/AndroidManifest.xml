@@ -46,9 +46,9 @@
         <activity android:name=".CoversationActivity"
             android:theme="@style/AppTheme.NoActionBar">
 
-            <!--<intent-filter>-->
-                <!--<action android:name="android.intent.action.mhd3v" />-->
-            <!--</intent-filter>-->
+            <intent-filter>
+                <action android:name="android.intent.action.NotificationClicked" />
+            </intent-filter>
 
         </activity>
 

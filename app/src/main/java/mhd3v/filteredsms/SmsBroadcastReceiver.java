@@ -108,21 +108,19 @@ public class SmsBroadcastReceiver extends BroadcastReceiver {
 
                             if (isContact == true) {
 
-//                                Intent defineIntent = new Intent();
-//                                defineIntent.setAction("android.intent.action.mhd3v");
-//                                defineIntent.setData(Uri.parse("content://mms-sms/conversations/"+cursor.getString(cursor.getColumnIndex("thread_id"))));
+                                Intent conversationThreadIntent = new Intent(context, CoversationActivity.class);
+                                conversationThreadIntent.setAction("android.intent.action.NotificationClicked");
+                                conversationThreadIntent.putExtra("threadId", cursor.getString(cursor.getColumnIndex("thread_id")));
+                                conversationThreadIntent.putExtra("senderName",contactName);
+                                conversationThreadIntent.putExtra("sender",address);
 
-
-//                                Intent resultIntent = new Intent(context, CoversationActivity.class);
-//                                resultIntent.setAction("android.intent.action.mhd3v");
-//                                resultIntent.setData(Uri.parse("content://mms-sms/conversations/"+cursor.getString(cursor.getColumnIndex("thread_id"))));
-//                                PendingIntent resultPendingIntent =
-//                                        PendingIntent.getActivity(
-//                                                context,
-//                                                0,
-//                                                resultIntent,
-//                                                PendingIntent.FLAG_UPDATE_CURRENT
-//                                        );
+                                PendingIntent conversationThreadPendingIntent =
+                                        PendingIntent.getActivity(
+                                                context,
+                                                0,
+                                                conversationThreadIntent,
+                                                PendingIntent.FLAG_UPDATE_CURRENT
+                                        );
 
 
                                 NotificationCompat.Builder mBuilder =
@@ -130,7 +128,7 @@ public class SmsBroadcastReceiver extends BroadcastReceiver {
                                                 .setSmallIcon(R.drawable.main_icon_nobg)
                                                 .setContentTitle(contactName)
                                                 .setContentText(smsBody)
-//                                                .setContentIntent(resultPendingIntent)
+                                                .setContentIntent(conversationThreadPendingIntent)
                                                 .setDefaults(Notification.DEFAULT_SOUND | Notification.DEFAULT_VIBRATE | Notification.DEFAULT_LIGHTS);
 
                                 int id = (int) System.currentTimeMillis();
@@ -151,16 +149,31 @@ public class SmsBroadcastReceiver extends BroadcastReceiver {
 
                         if (isContact == true) {
 
+                            Intent conversationThreadIntent = new Intent(context, CoversationActivity.class);
+                            conversationThreadIntent.setAction("android.intent.action.NotificationClicked");
+                            conversationThreadIntent.putExtra("threadId", cursor.getString(cursor.getColumnIndex("thread_id")));
+                            conversationThreadIntent.putExtra("senderName",contactName);
+                            conversationThreadIntent.putExtra("sender",address);
+
+                            PendingIntent conversationThreadPendingIntent =
+                                    PendingIntent.getActivity(
+                                            context,
+                                            0,
+                                            conversationThreadIntent,
+                                            PendingIntent.FLAG_UPDATE_CURRENT
+                                    );
+
+
                             NotificationCompat.Builder mBuilder =
                                     new NotificationCompat.Builder(context)
                                             .setSmallIcon(R.drawable.main_icon_nobg)
                                             .setContentTitle(contactName)
                                             .setContentText(smsBody)
+                                            .setContentIntent(conversationThreadPendingIntent)
                                             .setDefaults(Notification.DEFAULT_SOUND | Notification.DEFAULT_VIBRATE | Notification.DEFAULT_LIGHTS);
 
-
-
                             int id = (int) System.currentTimeMillis();
+
 
                             mNotificationManager = (NotificationManager) context.getSystemService(Context.NOTIFICATION_SERVICE);
                             mNotificationManager.notify(id, mBuilder.build());
