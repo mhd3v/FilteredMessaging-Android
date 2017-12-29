@@ -62,6 +62,8 @@ public class Tab1Fragment extends Fragment {
                 intent.putExtra("senderName", smsList.get(position).senderName);
                 intent.putExtra("threadId", smsList.get(position).threadId);
 
+                intent.setAction("frag1");
+
                 startActivity(intent);
 
             }

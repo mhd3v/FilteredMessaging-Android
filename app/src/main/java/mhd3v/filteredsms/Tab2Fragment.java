@@ -65,6 +65,8 @@ public class Tab2Fragment extends Fragment {
                 intent.putExtra("senderName", "");
                 intent.putExtra("threadId", smsList.get(position).threadId);
 
+                intent.setAction("frag2");
+
                 startActivity(intent);
 
             }
@@ -85,14 +87,6 @@ public class Tab2Fragment extends Fragment {
         @Override
         public Object getItem(int i) {
             return null;
-        }
-
-        public void updateMessageList(ArrayList<sms> newlist) {
-
-//            smsList.clear();
-//            smsList.addAll(newlist);
-           // this.notifyDataSetChanged();
-
         }
 
         @Override
