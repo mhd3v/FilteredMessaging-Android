@@ -418,11 +418,11 @@ public class MainActivity extends AppCompatActivity{
         @Override
         protected Void doInBackground(Void... params) {
 
-            try {
-                Thread.sleep(1000); //waiting for db update
-            } catch (InterruptedException e) {
-                e.printStackTrace();
-            }
+//            try {
+//                Thread.sleep(1000); //waiting for db update
+//            } catch (InterruptedException e) {
+//                e.printStackTrace();
+//            }
 
                 knownSms.clear();
                 smsList.clear();

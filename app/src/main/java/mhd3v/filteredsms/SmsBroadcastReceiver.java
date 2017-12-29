@@ -1,6 +1,7 @@
 package mhd3v.filteredsms;
 
 
+import android.app.Notification;
 import android.app.NotificationManager;
 import android.content.BroadcastReceiver;
 import android.content.ContentResolver;
@@ -8,6 +9,7 @@ import android.content.ContentValues;
 import android.content.Context;
 import android.content.Intent;
 import android.database.Cursor;
+import android.media.RingtoneManager;
 import android.net.Uri;
 import android.os.Bundle;
 import android.provider.ContactsContract;
@@ -28,115 +30,131 @@ public class SmsBroadcastReceiver extends BroadcastReceiver {
     String address;
     String smsBody;
     boolean isContact;
-    Cursor cursor;
 
+    private static final String ACTION_SMS_NEW = "android.provider.Telephony.SMS_RECEIVED";
+
+
+    @Override
     public void onReceive(Context context, Intent intent) {
-        Bundle intentExtras = intent.getExtras();
 
-        if (intentExtras != null) {
-            Object[] sms = (Object[]) intentExtras.get(SMS_BUNDLE);
-            String smsMessageStr = "";
-            for (int i = 0; i < sms.length; ++i) {
-                String format = intentExtras.getString("format");
-                SmsMessage smsMessage = SmsMessage.createFromPdu((byte[]) sms[i], format);
+        final String action = intent.getAction();
+
+        if (ACTION_SMS_NEW.equals(action)) {
+
+            Bundle intentExtras = intent.getExtras();
+
+            if (intentExtras != null) {
+                Object[] sms = (Object[]) intentExtras.get(SMS_BUNDLE);
+
+                for (int i = 0; i < sms.length; ++i) {
+                    String format = intentExtras.getString("format");
+                    SmsMessage smsMessage = SmsMessage.createFromPdu((byte[]) sms[i], format);
+
+                    smsBody = smsMessage.getMessageBody().toString();
+                    address = smsMessage.getOriginatingAddress();
+
+                    Log.d("mahad", smsBody);
 
 
-                smsBody = smsMessage.getMessageBody().toString();
-                address = smsMessage.getOriginatingAddress();
+                    String defaultSmsApp = Telephony.Sms.getDefaultSmsPackage(context);
 
-                smsMessageStr += "SMS From: " + address + "\n";
-                smsMessageStr += smsBody + "\n";
+                    if (defaultSmsApp.equals("mhd3v.filteredsms")) {
 
-                String defaultSmsApp = Telephony.Sms.getDefaultSmsPackage(context);
+                            ContentValues values = new ContentValues();
+                            values.put("address", address);
+                            values.put("body", smsBody);
+                            context.getContentResolver().insert(Uri.parse("content://sms/inbox"), values);
 
-                if(defaultSmsApp.equals("mhd3v.filteredsms")){
-                    ContentValues values = new ContentValues();
-                    values.put("address", address);//sender name
-                    values.put("body", smsBody);
-                    context.getContentResolver().insert(Uri.parse("content://sms/inbox"), values);
+                    }
+
+                    Cursor cursor = context.getContentResolver().query(Uri
+                            .parse("content://sms"), null, null, null, null);
+
+                    cursor.moveToFirst();
+
+                    MainActivity mainActivityInstance = MainActivity.inst;
+                    CoversationActivity conversationInstance = CoversationActivity.conversationInstance;
+
+                    if (conversationInstance != null) {
+
+                        if (conversationInstance.threadId.equals(cursor.getString(cursor.getColumnIndex("thread_id")))) {
+
+                            messages newSms = new messages(smsBody, Long.toString(System.currentTimeMillis()));
+
+                            ArrayList<messages> newMessageList = new ArrayList<>();
+
+                            newMessageList.addAll(conversationInstance.messageList);
+                            newMessageList.add(newSms);
+
+                            conversationInstance.adapter.updateMessageList(newMessageList);
+
+                            CoversationActivity.refreshMain();
+
+                        } else
+                            CoversationActivity.refreshMain();
+
+                    } else if (mainActivityInstance != null) {
+
+                        if (mainActivityInstance.active)
+                            mainActivityInstance.refreshOnExtraThread();
+
+                        else {
+
+                            mainActivityInstance.refreshInbox = true;
+
+                            isContact = false;
+
+                            String contactName = getContactName(context, address);
+
+                            if (isContact == true) {
+
+                                Uri sound = RingtoneManager.getDefaultUri(RingtoneManager.TYPE_NOTIFICATION);
+
+                                NotificationCompat.Builder mBuilder =
+                                        new NotificationCompat.Builder(context)
+                                                .setSmallIcon(R.drawable.ic_android_black_24dp)
+                                                .setContentTitle(contactName)
+                                                .setContentText(smsBody)
+                                                .setDefaults(Notification.DEFAULT_SOUND | Notification.DEFAULT_VIBRATE | Notification.DEFAULT_LIGHTS);
+
+
+                                mNotificationManager = (NotificationManager) context.getSystemService(Context.NOTIFICATION_SERVICE);
+                                mNotificationManager.notify(001, mBuilder.build());
+
+                            }
+
+                        }
+
+                    } else {
+
+                        isContact = false;
+
+                        String contactName = getContactName(context, address);
+
+                        if (isContact == true) {
+
+                            Uri sound = RingtoneManager.getDefaultUri(RingtoneManager.TYPE_NOTIFICATION);
+
+                            NotificationCompat.Builder mBuilder =
+                                    new NotificationCompat.Builder(context)
+                                            .setSmallIcon(R.drawable.ic_android_black_24dp)
+                                            .setContentTitle(contactName)
+                                            .setContentText(smsBody)
+                                            .setDefaults(Notification.DEFAULT_SOUND | Notification.DEFAULT_VIBRATE | Notification.DEFAULT_LIGHTS);
+
+
+
+                            mNotificationManager = (NotificationManager) context.getSystemService(Context.NOTIFICATION_SERVICE);
+                            mNotificationManager.notify(001, mBuilder.build());
+                        }
+                    }
+
+
                 }
-
-                cursor = context.getContentResolver().query(Uri
-                        .parse("content://sms"), null, null, null, null);
-
-                try {
-                    Thread.sleep(1000);
-                } catch (InterruptedException e) {
-                    e.printStackTrace();
-                }
-
-                cursor.moveToFirst();
-
-            }
-
-            MainActivity mainActivityInstance = MainActivity.inst;
-
-            CoversationActivity conversationInstance = CoversationActivity.conversationInstance;
-
-            if (conversationInstance != null) {
-
-                if(conversationInstance.threadId.equals(cursor.getString(cursor.getColumnIndex("thread_id")))){
-
-                    messages newSms = new messages(smsBody ,Long.toString(System.currentTimeMillis()));
-
-                    ArrayList<messages> newMessageList = new ArrayList<>();
-
-                    newMessageList.addAll(conversationInstance.messageList);
-
-                    newMessageList.add(newSms);
-
-                    conversationInstance.adapter.updateMessageList(newMessageList);
-
-                    CoversationActivity.refreshMain();
-
-                }
-
-                else {
-
-                    CoversationActivity.refreshMain();
-
-                }
-
-
-            }
-
-            else if(mainActivityInstance.active){
-
-                mainActivityInstance.refreshOnExtraThread();
-
-            }
-
-            else if(!mainActivityInstance.active){
-
-                mainActivityInstance.refreshInbox = true;
-
-                isContact = false;
-
-                String contactName = getContactName(context, address);
-
-                if(isContact == true) {
-
-                    NotificationCompat.Builder mBuilder =
-                            new NotificationCompat.Builder(context)
-                                    .setSmallIcon(R.drawable.ic_android_black_24dp)
-                                    .setContentTitle(contactName)
-                                    .setContentText(smsBody);
-
-
-                    mNotificationManager = (NotificationManager) context.getSystemService(Context.NOTIFICATION_SERVICE);
-
-
-                    mNotificationManager.notify(001, mBuilder.build());
-
-                }
-
-            }
-
-            else {
-
             }
 
         }
+
 
 
     }
@@ -160,6 +178,8 @@ public class SmsBroadcastReceiver extends BroadcastReceiver {
 
         return Name;
     }
+
+
 
 
 }
