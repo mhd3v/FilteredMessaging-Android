@@ -3,6 +3,7 @@ package mhd3v.filteredsms;
 
 import android.app.Notification;
 import android.app.NotificationManager;
+import android.app.PendingIntent;
 import android.content.BroadcastReceiver;
 import android.content.ContentResolver;
 import android.content.ContentValues;
@@ -54,7 +55,6 @@ public class SmsBroadcastReceiver extends BroadcastReceiver {
                     address = smsMessage.getOriginatingAddress();
 
                     Log.d("mahad", smsBody);
-
 
                     String defaultSmsApp = Telephony.Sms.getDefaultSmsPackage(context);
 
@@ -108,18 +108,36 @@ public class SmsBroadcastReceiver extends BroadcastReceiver {
 
                             if (isContact == true) {
 
-                                Uri sound = RingtoneManager.getDefaultUri(RingtoneManager.TYPE_NOTIFICATION);
+//                                Intent defineIntent = new Intent();
+//                                defineIntent.setAction("android.intent.action.mhd3v");
+//                                defineIntent.setData(Uri.parse("content://mms-sms/conversations/"+cursor.getString(cursor.getColumnIndex("thread_id"))));
+
+
+//                                Intent resultIntent = new Intent(context, CoversationActivity.class);
+//                                resultIntent.setAction("android.intent.action.mhd3v");
+//                                resultIntent.setData(Uri.parse("content://mms-sms/conversations/"+cursor.getString(cursor.getColumnIndex("thread_id"))));
+//                                PendingIntent resultPendingIntent =
+//                                        PendingIntent.getActivity(
+//                                                context,
+//                                                0,
+//                                                resultIntent,
+//                                                PendingIntent.FLAG_UPDATE_CURRENT
+//                                        );
+
 
                                 NotificationCompat.Builder mBuilder =
                                         new NotificationCompat.Builder(context)
-                                                .setSmallIcon(R.drawable.ic_android_black_24dp)
+                                                .setSmallIcon(R.drawable.main_icon_nobg)
                                                 .setContentTitle(contactName)
                                                 .setContentText(smsBody)
+//                                                .setContentIntent(resultPendingIntent)
                                                 .setDefaults(Notification.DEFAULT_SOUND | Notification.DEFAULT_VIBRATE | Notification.DEFAULT_LIGHTS);
+
+                                int id = (int) System.currentTimeMillis();
 
 
                                 mNotificationManager = (NotificationManager) context.getSystemService(Context.NOTIFICATION_SERVICE);
-                                mNotificationManager.notify(001, mBuilder.build());
+                                mNotificationManager.notify(id, mBuilder.build());
 
                             }
 
@@ -133,19 +151,19 @@ public class SmsBroadcastReceiver extends BroadcastReceiver {
 
                         if (isContact == true) {
 
-                            Uri sound = RingtoneManager.getDefaultUri(RingtoneManager.TYPE_NOTIFICATION);
-
                             NotificationCompat.Builder mBuilder =
                                     new NotificationCompat.Builder(context)
-                                            .setSmallIcon(R.drawable.ic_android_black_24dp)
+                                            .setSmallIcon(R.drawable.main_icon_nobg)
                                             .setContentTitle(contactName)
                                             .setContentText(smsBody)
                                             .setDefaults(Notification.DEFAULT_SOUND | Notification.DEFAULT_VIBRATE | Notification.DEFAULT_LIGHTS);
 
 
 
+                            int id = (int) System.currentTimeMillis();
+
                             mNotificationManager = (NotificationManager) context.getSystemService(Context.NOTIFICATION_SERVICE);
-                            mNotificationManager.notify(001, mBuilder.build());
+                            mNotificationManager.notify(id, mBuilder.build());
                         }
                     }
 

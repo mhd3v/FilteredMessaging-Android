@@ -37,6 +37,8 @@ import java.util.Collections;
 import java.util.Date;
 import java.util.List;
 
+import static android.content.Intent.ACTION_VIEW;
+
 public class CoversationActivity extends AppCompatActivity {
 
     ArrayList<messages> messageList;
@@ -69,6 +71,14 @@ public class CoversationActivity extends AppCompatActivity {
 
 
         intent = getIntent();
+
+       /* if(intent.getAction().equals("android.intent.action.mhd3v")){
+            Log.d("data11",intent.getDataString());
+        }
+        else{
+            Bundle args = intent.getBundleExtra("BUNDLE");
+            messageList = (ArrayList<messages>) args.getSerializable("messageList");
+        }*/
         Bundle args = intent.getBundleExtra("BUNDLE");
         messageList = (ArrayList<messages>) args.getSerializable("messageList");
 
