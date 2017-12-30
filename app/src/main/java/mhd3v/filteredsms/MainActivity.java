@@ -1,7 +1,6 @@
 package mhd3v.filteredsms;
 
 import android.Manifest;
-import android.annotation.TargetApi;
 import android.content.ContentResolver;
 import android.content.Context;
 import android.content.Intent;
@@ -20,7 +19,6 @@ import android.support.v7.app.AppCompatActivity;
 import android.support.v7.widget.Toolbar;
 import android.util.Log;
 import android.view.View;
-import android.widget.ArrayAdapter;
 import android.widget.ProgressBar;
 import android.widget.Toast;
 
@@ -95,15 +93,7 @@ public class MainActivity extends AppCompatActivity{
             }
         });
 
-//        tb.findViewById(R.id.newmessagebutton).setOnClickListener(new View.OnClickListener() {
-//            @Override
-//            public void onClick(View v) {
-//                Intent intent = new Intent(MainActivity.this, NewMessage.class);
-//                startActivity(intent);
-//
-//            }
-//        });
-    }
+}
 
     void setupFragments(ViewPager viewPager) {
         SectionsPageAdapter adapter = new SectionsPageAdapter(getSupportFragmentManager());
@@ -148,7 +138,6 @@ public class MainActivity extends AppCompatActivity{
             }
         }
     }
-
 
 
     @Override
@@ -409,20 +398,18 @@ public class MainActivity extends AppCompatActivity{
         @Override
         protected void onPreExecute() {
             super.onPreExecute();
-            knownInstance.knownList.setVisibility(View.GONE);
-            unknownInstance.unknownList.setVisibility(View.GONE);
-            pb.setVisibility(View.VISIBLE);
+
+            if(knownInstance!=null){
+                knownInstance.knownList.setVisibility(View.GONE);
+                unknownInstance.unknownList.setVisibility(View.GONE);
+                pb.setVisibility(View.VISIBLE);
+            }
+
 
         }
 
         @Override
         protected Void doInBackground(Void... params) {
-
-//            try {
-//                Thread.sleep(1000); //waiting for db update
-//            } catch (InterruptedException e) {
-//                e.printStackTrace();
-//            }
 
                 knownSms.clear();
                 smsList.clear();
