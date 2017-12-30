@@ -33,7 +33,6 @@ public class SmsBroadcastReceiver extends BroadcastReceiver {
     boolean isContact;
     Cursor cursor;
     NotificationCompat.InboxStyle inboxStyle;
-    int value = 0;
 
     private static final String ACTION_SMS_NEW = "android.provider.Telephony.SMS_RECEIVED";
 
@@ -121,8 +120,6 @@ public class SmsBroadcastReceiver extends BroadcastReceiver {
 
         }
 
-
-
     }
 
     public String getContactName(Context context, String phoneNo) {
@@ -181,7 +178,7 @@ public class SmsBroadcastReceiver extends BroadcastReceiver {
 
             String previousNotification = sp.getString(threadId,"");
 
-            String[] result = previousNotification.split("\n", 4);
+            String[] result = previousNotification.split("\n");
 
 
             for(int i=0; i < result.length; i++){
@@ -195,8 +192,9 @@ public class SmsBroadcastReceiver extends BroadcastReceiver {
             NotificationCompat.Builder mBuilder =
                     new NotificationCompat.Builder(context)
                             .setSmallIcon(R.drawable.main_icon_nobg)
-                            .setNumber(4)
+                            .setNumber(result.length)
                             .setContentTitle(contactName)
+                            .setContentText(result[result.length-1])
                             .setStyle(inboxStyle)
                             .setContentIntent(conversationThreadPendingIntent)
                             .setDefaults(Notification.DEFAULT_SOUND | Notification.DEFAULT_VIBRATE | Notification.DEFAULT_LIGHTS);
