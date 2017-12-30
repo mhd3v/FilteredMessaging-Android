@@ -80,17 +80,15 @@ public class CoversationActivity extends AppCompatActivity {
         senderName = intent.getStringExtra("senderName");
         threadId = intent.getStringExtra("threadId");
 
+        SharedPreferences sp = PreferenceManager.getDefaultSharedPreferences(this);
+        SharedPreferences.Editor editor = sp.edit();
+        editor.remove(threadId);
+        editor.apply();
+
+        NotificationManager notificationManager = (NotificationManager) this.getSystemService(Context.NOTIFICATION_SERVICE);
+        notificationManager.cancel(Integer.parseInt(threadId));
+
         if(intent.getAction().equals("android.intent.action.NotificationClicked")){
-
-            SharedPreferences sp = PreferenceManager.getDefaultSharedPreferences(this);
-            SharedPreferences.Editor editor = sp.edit();
-
-            editor.remove(threadId);
-            editor.apply();
-
-            NotificationManager notificationManager = (NotificationManager) this.getSystemService(Context.NOTIFICATION_SERVICE);
-
-            notificationManager.cancel(Integer.parseInt(threadId));
 
             cameFromNotification = true;
 
@@ -123,9 +121,9 @@ public class CoversationActivity extends AppCompatActivity {
                 }
                 while (cursor.moveToNext());
 
-            }
+        }
 
-        else{
+        else {
             Bundle args = intent.getBundleExtra("BUNDLE");
             messageList = (ArrayList<messages>) args.getSerializable("messageList");
         }
@@ -195,8 +193,6 @@ public class CoversationActivity extends AppCompatActivity {
         public View getView(int i, View view, ViewGroup viewGroup) {
 
             view = getLayoutInflater().inflate(R.layout.conversation_list,null);
-
-
 
             if(messageList.get(i).isUserMessage){
 
