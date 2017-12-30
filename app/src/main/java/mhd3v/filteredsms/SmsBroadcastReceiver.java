@@ -1,6 +1,5 @@
 package mhd3v.filteredsms;
 
-
 import android.app.Notification;
 import android.app.NotificationManager;
 import android.app.PendingIntent;
@@ -9,10 +8,11 @@ import android.content.ContentResolver;
 import android.content.ContentValues;
 import android.content.Context;
 import android.content.Intent;
+import android.content.SharedPreferences;
 import android.database.Cursor;
-import android.media.RingtoneManager;
 import android.net.Uri;
 import android.os.Bundle;
+import android.preference.PreferenceManager;
 import android.provider.ContactsContract;
 import android.provider.Telephony;
 import android.support.v4.app.NotificationCompat;
@@ -31,6 +31,9 @@ public class SmsBroadcastReceiver extends BroadcastReceiver {
     String address;
     String smsBody;
     boolean isContact;
+    Cursor cursor;
+    NotificationCompat.InboxStyle inboxStyle;
+    int value = 0;
 
     private static final String ACTION_SMS_NEW = "android.provider.Telephony.SMS_RECEIVED";
 
@@ -67,7 +70,7 @@ public class SmsBroadcastReceiver extends BroadcastReceiver {
 
                     }
 
-                    Cursor cursor = context.getContentResolver().query(Uri
+                    cursor = context.getContentResolver().query(Uri
                             .parse("content://sms"), null, null, null, null);
 
                     cursor.moveToFirst();
@@ -75,7 +78,7 @@ public class SmsBroadcastReceiver extends BroadcastReceiver {
                     MainActivity mainActivityInstance = MainActivity.inst;
                     CoversationActivity conversationInstance = CoversationActivity.conversationInstance;
 
-                    if (conversationInstance != null) {
+                    if (conversationInstance != null) { //conversation thread is active
 
                         if (conversationInstance.threadId.equals(cursor.getString(cursor.getColumnIndex("thread_id")))) {
 
@@ -93,7 +96,9 @@ public class SmsBroadcastReceiver extends BroadcastReceiver {
                         } else
                             CoversationActivity.refreshMain();
 
-                    } else if (mainActivityInstance != null) {
+                    }
+
+                    else if (mainActivityInstance != null) {
 
                         if (mainActivityInstance.active)
                             mainActivityInstance.refreshOnExtraThread();
@@ -101,83 +106,13 @@ public class SmsBroadcastReceiver extends BroadcastReceiver {
                         else {
 
                             mainActivityInstance.refreshInbox = true;
-
-                            isContact = false;
-
-                            String contactName = getContactName(context, address);
-
-                            if (isContact == true) {
-
-                                Intent conversationThreadIntent = new Intent(context, CoversationActivity.class);
-                                conversationThreadIntent.setAction("android.intent.action.NotificationClicked");
-                                conversationThreadIntent.putExtra("threadId", cursor.getString(cursor.getColumnIndex("thread_id")));
-                                conversationThreadIntent.putExtra("senderName",contactName);
-                                conversationThreadIntent.putExtra("sender",address);
-
-                                PendingIntent conversationThreadPendingIntent =
-                                        PendingIntent.getActivity(
-                                                context,
-                                                0,
-                                                conversationThreadIntent,
-                                                PendingIntent.FLAG_UPDATE_CURRENT
-                                        );
-
-
-                                NotificationCompat.Builder mBuilder =
-                                        new NotificationCompat.Builder(context)
-                                                .setSmallIcon(R.drawable.main_icon_nobg)
-                                                .setContentTitle(contactName)
-                                                .setContentText(smsBody)
-                                                .setContentIntent(conversationThreadPendingIntent)
-                                                .setDefaults(Notification.DEFAULT_SOUND | Notification.DEFAULT_VIBRATE | Notification.DEFAULT_LIGHTS);
-
-                                int id = (int) System.currentTimeMillis();
-
-
-                                mNotificationManager = (NotificationManager) context.getSystemService(Context.NOTIFICATION_SERVICE);
-                                mNotificationManager.notify(id, mBuilder.build());
-
-                            }
-
+                            setNotification(context);
                         }
+                    }
 
-                    } else {
+                    else { //MainActivity not instantiated
 
-                        isContact = false;
-
-                        String contactName = getContactName(context, address);
-
-                        if (isContact == true) {
-
-                            Intent conversationThreadIntent = new Intent(context, CoversationActivity.class);
-                            conversationThreadIntent.setAction("android.intent.action.NotificationClicked");
-                            conversationThreadIntent.putExtra("threadId", cursor.getString(cursor.getColumnIndex("thread_id")));
-                            conversationThreadIntent.putExtra("senderName",contactName);
-                            conversationThreadIntent.putExtra("sender",address);
-
-                            PendingIntent conversationThreadPendingIntent =
-                                    PendingIntent.getActivity(
-                                            context,
-                                            0,
-                                            conversationThreadIntent,
-                                            PendingIntent.FLAG_UPDATE_CURRENT
-                                    );
-
-
-                            NotificationCompat.Builder mBuilder =
-                                    new NotificationCompat.Builder(context)
-                                            .setSmallIcon(R.drawable.main_icon_nobg)
-                                            .setContentTitle(contactName)
-                                            .setContentText(smsBody)
-                                            .setContentIntent(conversationThreadPendingIntent)
-                                            .setDefaults(Notification.DEFAULT_SOUND | Notification.DEFAULT_VIBRATE | Notification.DEFAULT_LIGHTS);
-
-                            int id = (int) System.currentTimeMillis();
-
-
-                            mNotificationManager = (NotificationManager) context.getSystemService(Context.NOTIFICATION_SERVICE);
-                            mNotificationManager.notify(id, mBuilder.build());
-                        }
+                        setNotification(context);
                     }
 
 
@@ -210,8 +145,69 @@ public class SmsBroadcastReceiver extends BroadcastReceiver {
         return Name;
     }
 
+    void setNotification(Context context){
+
+        isContact = false;
+
+        String contactName = getContactName(context, address);
+
+        if (isContact == true) {
+
+            Intent conversationThreadIntent = new Intent(context, CoversationActivity.class);
+            conversationThreadIntent.setAction("android.intent.action.NotificationClicked");
+            conversationThreadIntent.putExtra("threadId", cursor.getString(cursor.getColumnIndex("thread_id")));
+            conversationThreadIntent.putExtra("senderName",contactName);
+            conversationThreadIntent.putExtra("sender",address);
+
+            PendingIntent conversationThreadPendingIntent =
+                    PendingIntent.getActivity(
+                            context,
+                            0,
+                            conversationThreadIntent,
+                            PendingIntent.FLAG_UPDATE_CURRENT
+                    );
+
+            inboxStyle = new NotificationCompat.InboxStyle();
+
+            SharedPreferences sp = PreferenceManager.getDefaultSharedPreferences(context);
+
+            SharedPreferences.Editor editor = sp.edit();
+
+            String threadId = cursor.getString(cursor.getColumnIndex("thread_id"));
+
+            editor.putString(threadId, sp.getString(threadId,"")+smsBody+"\n");
+
+            editor.commit();
+
+            String previousNotification = sp.getString(threadId,"");
+
+            String[] result = previousNotification.split("\n", 4);
 
 
+            for(int i=0; i < result.length; i++){
+
+                if(!(result[i].equals(null)))
+                    inboxStyle.addLine(result[i]);
+            }
+
+            inboxStyle.setBigContentTitle(contactName);
+
+            NotificationCompat.Builder mBuilder =
+                    new NotificationCompat.Builder(context)
+                            .setSmallIcon(R.drawable.main_icon_nobg)
+                            .setNumber(4)
+                            .setContentTitle(contactName)
+                            .setStyle(inboxStyle)
+                            .setContentIntent(conversationThreadPendingIntent)
+                            .setDefaults(Notification.DEFAULT_SOUND | Notification.DEFAULT_VIBRATE | Notification.DEFAULT_LIGHTS);
+
+            int id = Integer.parseInt(cursor.getString(cursor.getColumnIndex("thread_id"))); //assign ID on base of threadID
+
+            mNotificationManager = (NotificationManager) context.getSystemService(Context.NOTIFICATION_SERVICE);
+            mNotificationManager.notify(id, mBuilder.build());
+
+        }
+    }
 
 }
 

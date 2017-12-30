@@ -2,17 +2,20 @@ package mhd3v.filteredsms;
 
 import android.Manifest;
 import android.app.Activity;
+import android.app.NotificationManager;
 import android.app.PendingIntent;
 import android.content.BroadcastReceiver;
 import android.content.ContentValues;
 import android.content.Context;
 import android.content.Intent;
 import android.content.IntentFilter;
+import android.content.SharedPreferences;
 import android.content.pm.PackageManager;
 import android.database.Cursor;
 import android.net.Uri;
 import android.os.Build;
 import android.os.Bundle;
+import android.preference.PreferenceManager;
 import android.provider.Telephony;
 import android.support.v4.content.ContextCompat;
 import android.support.v7.app.AppCompatActivity;
@@ -47,8 +50,6 @@ public class CoversationActivity extends AppCompatActivity {
 
     SmsManager smsManager;
 
-    static boolean askMainToRefresh = false;
-
     static boolean active = false;
 
     String sender;
@@ -56,7 +57,6 @@ public class CoversationActivity extends AppCompatActivity {
     String threadId;
 
     boolean cameFromNotification = false;
-
 
     customAdapter adapter;
     static Intent intent;
@@ -76,7 +76,21 @@ public class CoversationActivity extends AppCompatActivity {
 
         intent = getIntent();
 
+        sender = intent.getStringExtra("sender");
+        senderName = intent.getStringExtra("senderName");
+        threadId = intent.getStringExtra("threadId");
+
         if(intent.getAction().equals("android.intent.action.NotificationClicked")){
+
+            SharedPreferences sp = PreferenceManager.getDefaultSharedPreferences(this);
+            SharedPreferences.Editor editor = sp.edit();
+
+            editor.remove(threadId);
+            editor.apply();
+
+            NotificationManager notificationManager = (NotificationManager) this.getSystemService(Context.NOTIFICATION_SERVICE);
+
+            notificationManager.cancel(Integer.parseInt(threadId));
 
             cameFromNotification = true;
 
@@ -91,29 +105,23 @@ public class CoversationActivity extends AppCompatActivity {
             cursor.moveToFirst();
 
                 int indexBody = cursor.getColumnIndex("body");
-                int indexAddress = cursor.getColumnIndex("address");
                 String type = Integer.toString(cursor.getColumnIndex("type"));
 
                 do{
 
                     if (cursor.getString(Integer.parseInt(type)).equalsIgnoreCase("1")) {
-
                         //received messages
                         messages newMessage = new messages(cursor.getString(indexBody) ,cursor.getString(cursor.getColumnIndex("date")));
                         messageList.add(newMessage);
-
-
                     }
 
                     else if (cursor.getString(Integer.parseInt(type)).equalsIgnoreCase("2")) {
-
                         messages newMessage = new messages(cursor.getString(indexBody) ,cursor.getString(cursor.getColumnIndex("date")));
                         newMessage.isUserMessage = true;
                         messageList.add(newMessage);
                     }
-                }while (cursor.moveToNext());
-
-
+                }
+                while (cursor.moveToNext());
 
             }
 
@@ -122,16 +130,7 @@ public class CoversationActivity extends AppCompatActivity {
             messageList = (ArrayList<messages>) args.getSerializable("messageList");
         }
 
-//        Bundle args = intent.getBundleExtra("BUNDLE");
-//        messageList = (ArrayList<messages>) args.getSerializable("messageList");
-
         Collections.reverse(messageList);
-
-        sender = intent.getStringExtra("sender");
-        senderName = intent.getStringExtra("senderName");
-        threadId = intent.getStringExtra("threadId");
-
-
 
         ListView conversation = (ListView) findViewById(R.id.conversationList);
         adapter = new customAdapter();
@@ -162,7 +161,6 @@ public class CoversationActivity extends AppCompatActivity {
 
 
     public static void refreshMain() {
-        //askMainToRefresh = true;
         MainActivity mainInstance  = MainActivity.getInstance();
         mainInstance.refreshInbox = true;
     }
@@ -305,33 +303,39 @@ public class CoversationActivity extends AppCompatActivity {
             startActivity(intent);
         }
 
-
     }
 
+    void updateViewsAndDB(String address, String message, String time, messages newSms, boolean status){
 
-    void updateViewsAndDB(String address, String message, String time, messages newSms){
+        if(status){
 
-        String defaultSmsApp = Telephony.Sms.getDefaultSmsPackage(this);
+            String defaultSmsApp = Telephony.Sms.getDefaultSmsPackage(this);
 
-        if(defaultSmsApp.equals("mhd3v.filteredsms")){
-            ContentValues values = new ContentValues();
-            values.put("address", address);//sender name
-            values.put("body", message);
-            this.getContentResolver().insert(Uri.parse("content://sms/sent"), values);
+            if(defaultSmsApp.equals("mhd3v.filteredsms")){
+                ContentValues values = new ContentValues();
+                values.put("address", address);
+                values.put("body", message);
+                this.getContentResolver().insert(Uri.parse("content://sms/sent"), values);
+            }
+
+
+            ArrayList<messages> newMessageList = new ArrayList<>();
+            newMessageList.addAll(messageList);
+            newMessageList.get(newMessageList.size()-1).time = time;
+
+            adapter.updateMessageList(newMessageList);
+
         }
 
+        else{
 
-       // newSms.time = time;
+            ArrayList<messages> newMessageList = new ArrayList<>();
+            newMessageList.addAll(messageList);
+            newMessageList.remove(newMessageList.size()-1);
 
-        ArrayList<messages> newMessageList = new ArrayList<>();
+            adapter.updateMessageList(newMessageList);
+        }
 
-        newMessageList.addAll(messageList);
-
-        newMessageList.get(newMessageList.size()-1).time = time;
-
-        adapter.updateMessageList(newMessageList);
-
-        //Toast.makeText(this, "Message sent!", Toast.LENGTH_SHORT).show();
     }
 
 
@@ -349,19 +353,23 @@ public class CoversationActivity extends AppCompatActivity {
                         switch (resultCode) {
                             case Activity.RESULT_OK:
                                 Toast.makeText(getBaseContext(), "SMS sent", Toast.LENGTH_LONG).show();
-                                updateViewsAndDB(address, message, Long.toString(System.currentTimeMillis()), newSms);
+                                updateViewsAndDB(address, message, Long.toString(System.currentTimeMillis()), newSms, true);
                                 break;
                             case SmsManager.RESULT_ERROR_GENERIC_FAILURE:
                                 Toast.makeText(getBaseContext(), "Generic failure", Toast.LENGTH_LONG).show();
+                                updateViewsAndDB(address, message, Long.toString(System.currentTimeMillis()), newSms, false);
                                 break;
                             case SmsManager.RESULT_ERROR_NO_SERVICE:
                                 Toast.makeText(getBaseContext(), "No service", Toast.LENGTH_LONG).show();
+                                updateViewsAndDB(address, message, Long.toString(System.currentTimeMillis()), newSms, false);
                                 break;
                             case SmsManager.RESULT_ERROR_NULL_PDU:
                                 Toast.makeText(getBaseContext(), "Null PDU", Toast.LENGTH_LONG).show();
+                                updateViewsAndDB(address, message, Long.toString(System.currentTimeMillis()), newSms, false);
                                 break;
                             case SmsManager.RESULT_ERROR_RADIO_OFF:
                                 Toast.makeText(getBaseContext(), "Radio off", Toast.LENGTH_LONG).show();
+                                updateViewsAndDB(address, message, Long.toString(System.currentTimeMillis()), newSms, false);
                                 break;
                         }
                     }
@@ -369,6 +377,7 @@ public class CoversationActivity extends AppCompatActivity {
 
                 SmsManager smsMgr = SmsManager.getDefault();
                 smsMgr.sendTextMessage(address, null, message, sentPI, null);
+
             } catch (Exception e) {
                 Toast.makeText(this, e.getMessage() + "!\n" + "Failed to send SMS", Toast.LENGTH_LONG).show();
                 e.printStackTrace();
@@ -378,11 +387,7 @@ public class CoversationActivity extends AppCompatActivity {
         }
     }
 
-    /**
-     * @return true if SIM card exists
-     * false if SIM card is locked or doesn't exists <br/><br/>
-     * <b>Note:</b> This method requires permissions <b> "android.permission.READ_PHONE_STATE" </b>
-     */
+
     public boolean simExists()
     {
         TelephonyManager telephonyManager = (TelephonyManager) getSystemService(Context.TELEPHONY_SERVICE);
@@ -408,9 +413,6 @@ public class CoversationActivity extends AppCompatActivity {
             return false;
         }
     }
-
-
-
 
 
 }

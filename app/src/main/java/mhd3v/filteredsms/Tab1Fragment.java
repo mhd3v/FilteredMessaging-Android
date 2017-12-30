@@ -80,17 +80,6 @@ public class Tab1Fragment extends Fragment {
             return smsList.size();
         }
 
-
-
-        public void updateMessageList(ArrayList<sms> newlist) {
-
-//            smsList.clear();
-//            smsList.addAll(newlist);
-            //this.notifyDataSetChanged();
-
-
-        }
-
         @Override
         public Object getItem(int i) {
             return null;

@@ -45,6 +45,7 @@
 
         <activity android:name=".CoversationActivity"
             android:theme="@style/AppTheme.NoActionBar">
+            <uses-permission android:name="android.permission.SEND_SMS" />
 
             <intent-filter>
                 <action android:name="android.intent.action.NotificationClicked" />
