@@ -50,7 +50,6 @@ public class CoversationActivity extends AppCompatActivity {
 
     SmsManager smsManager;
 
-    static boolean active = false;
 
     String sender;
     String senderName;
@@ -284,7 +283,6 @@ public class CoversationActivity extends AppCompatActivity {
     @Override
     public void onStart() {
         super.onStart();
-        active = true;
         conversationInstance = this;
     }
 

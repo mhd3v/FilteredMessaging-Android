@@ -51,7 +51,7 @@ public class MainActivity extends AppCompatActivity{
     ProgressBar pb;
 
     private static final int READ_SMS_PERMISSIONS_REQUEST = 1;
-    private static final int READ_CONTACTS_PERMISSIONS_REQUEST = 1;
+    private static final int READ_CONTACTS_PERMISSIONS_REQUEST = 2;
 
     public static MainActivity instance() {
 
@@ -67,6 +67,10 @@ public class MainActivity extends AppCompatActivity{
                 != PackageManager.PERMISSION_GRANTED){
             getPermissionToReadSMS();
 
+        }
+        else if (ContextCompat.checkSelfPermission(this, Manifest.permission.READ_CONTACTS)
+                != PackageManager.PERMISSION_GRANTED){
+            getPermissionToReadContacts();
         }
 
         else
@@ -105,7 +109,7 @@ public class MainActivity extends AppCompatActivity{
             }
         });
 
-}
+    }
 
     void setupFragments(ViewPager viewPager) {
         SectionsPageAdapter adapter = new SectionsPageAdapter(getSupportFragmentManager());
@@ -131,6 +135,9 @@ public class MainActivity extends AppCompatActivity{
                         READ_SMS_PERMISSIONS_REQUEST);
             }
         }
+
+        else
+            getPermissionToReadContacts();
 
 
     }
@@ -158,29 +165,39 @@ public class MainActivity extends AppCompatActivity{
                                            @NonNull int[] grantResults) {
         // Make sure it's our original READ_CONTACTS request
         if (requestCode == READ_SMS_PERMISSIONS_REQUEST) {
-            if (grantResults.length == 1 &&
+            if (grantResults.length > 0 &&
                     grantResults[0] == PackageManager.PERMISSION_GRANTED ) {
-                Toast.makeText(this, "Read SMS permission granted", Toast.LENGTH_SHORT).show();
-                getPermissionToReadContacts();
-            } else {
+
+                if(ContextCompat.checkSelfPermission(this, Manifest.permission.READ_CONTACTS)
+                        != PackageManager.PERMISSION_GRANTED)
+                    getPermissionToReadContacts();
+                else
+                    refreshOnExtraThread();
+
+            }
+
+            else {
                 Toast.makeText(this, "Read SMS permission denied", Toast.LENGTH_SHORT).show();
             }
 
         }
 
         if (requestCode == READ_CONTACTS_PERMISSIONS_REQUEST ) {
-            if (grantResults.length == 2 &&
-                    grantResults[1] == PackageManager.PERMISSION_GRANTED ) {
-                Toast.makeText(this, "Read Contacts permission granted", Toast.LENGTH_SHORT).show();
-                refreshSmsInbox();
-            } else {
+            if (grantResults.length > 0 &&
+                    grantResults[0] == PackageManager.PERMISSION_GRANTED ) {
+
+                if(ContextCompat.checkSelfPermission(this, Manifest.permission.READ_SMS)
+                        != PackageManager.PERMISSION_GRANTED)
+                    getPermissionToReadSMS();
+                else
+                    refreshOnExtraThread();
+
+            }
+
+            else {
                 Toast.makeText(this, "Read Contacts permission denied", Toast.LENGTH_SHORT).show();
             }
 
-        }
-
-        else {
-            super.onRequestPermissionsResult(requestCode, permissions, grantResults);
         }
 
 
@@ -423,118 +440,118 @@ public class MainActivity extends AppCompatActivity{
         @Override
         protected Void doInBackground(Void... params) {
 
-                knownSms.clear();
-                smsList.clear();
-                unknownSms.clear();
+            knownSms.clear();
+            smsList.clear();
+            unknownSms.clear();
 
 
-                Cursor cursor = getContentResolver().query(Uri
-                        .parse("content://sms"), null, null, null, null);
+            Cursor cursor = getContentResolver().query(Uri
+                    .parse("content://sms"), null, null, null, null);
 
 
-                int indexBody = cursor.getColumnIndex("body");
-                int indexAddress = cursor.getColumnIndex("address");
+            int indexBody = cursor.getColumnIndex("body");
+            int indexAddress = cursor.getColumnIndex("address");
 
 
-                cursor.moveToFirst();
+            cursor.moveToFirst();
 
 
-                String type = Integer.toString(cursor.getColumnIndex("type"));
+            String type = Integer.toString(cursor.getColumnIndex("type"));
 
 
-                do {
+            do {
 
-                    isContact = false;
+                isContact = false;
 
-                    if (cursor.getString(Integer.parseInt(type)).equalsIgnoreCase("1")) {
+                if (cursor.getString(Integer.parseInt(type)).equalsIgnoreCase("1")) {
 
-                        //received messages
+                    //received messages
 
-                        boolean found = false;
+                    boolean found = false;
 
-                        for (int i = 0; i < smsList.size(); i++) {
+                    for (int i = 0; i < smsList.size(); i++) {
 
-                            if (smsList.get(i).threadId.equals(cursor.getString(cursor.getColumnIndex("thread_id")))) {
-                                String date = cursor.getString(cursor
-                                        .getColumnIndex("date"));
-                                smsList.get(i).addNewSenderMessage(cursor.getString(indexBody), date);
-                                found = true;
-                            }
-
-                        }
-                        if (found == false) {
-
+                        if (smsList.get(i).threadId.equals(cursor.getString(cursor.getColumnIndex("thread_id")))) {
                             String date = cursor.getString(cursor
                                     .getColumnIndex("date"));
+                            smsList.get(i).addNewSenderMessage(cursor.getString(indexBody), date);
+                            found = true;
+                        }
 
-                            sms newSms = new sms(cursor.getString(indexAddress), cursor.getString(cursor.getColumnIndex("thread_id")));
-                            newSms.addNewSenderMessage(cursor.getString(indexBody), date);
-                            smsList.add(newSms);
+                    }
+                    if (found == false) {
 
-                            String contactName;
-                            contactName = getContactName(inst, newSms.sender);
+                        String date = cursor.getString(cursor
+                                .getColumnIndex("date"));
 
-                            if(isContact == true){
+                        sms newSms = new sms(cursor.getString(indexAddress), cursor.getString(cursor.getColumnIndex("thread_id")));
+                        newSms.addNewSenderMessage(cursor.getString(indexBody), date);
+                        smsList.add(newSms);
 
-                                newSms.senderName = contactName;
-                                knownSms.add(newSms);
-                            }
-                            else {
+                        String contactName;
+                        contactName = getContactName(inst, newSms.sender);
 
-                                unknownSms.add(newSms);
-                            }
+                        if(isContact == true){
 
+                            newSms.senderName = contactName;
+                            knownSms.add(newSms);
+                        }
+                        else {
+
+                            unknownSms.add(newSms);
                         }
 
                     }
 
-                    else if (cursor.getString(Integer.parseInt(type)).equalsIgnoreCase("2")) {
+                }
 
-                        ///sent messages
+                else if (cursor.getString(Integer.parseInt(type)).equalsIgnoreCase("2")) {
 
-                        boolean found = false;
+                    ///sent messages
 
-                        for (int i = 0; i < smsList.size(); i++) {
+                    boolean found = false;
 
-                            if (smsList.get(i).threadId.equals(cursor.getString(cursor.getColumnIndex("thread_id")))) {
+                    for (int i = 0; i < smsList.size(); i++) {
 
-                                String date = cursor.getString(cursor.getColumnIndex("date"));
+                        if (smsList.get(i).threadId.equals(cursor.getString(cursor.getColumnIndex("thread_id")))) {
 
-                                smsList.get(i).addNewUserMessage(cursor.getString(indexBody), date);
-                                found = true;
-                            }
+                            String date = cursor.getString(cursor.getColumnIndex("date"));
+
+                            smsList.get(i).addNewUserMessage(cursor.getString(indexBody), date);
+                            found = true;
                         }
+                    }
 
-                        if (found == false) {
-                            String date = cursor.getString(cursor
-                                    .getColumnIndex("date"));
+                    if (found == false) {
+                        String date = cursor.getString(cursor
+                                .getColumnIndex("date"));
 
-                            sms newSms = new sms(cursor.getString(indexAddress),cursor.getString(cursor.getColumnIndex("thread_id")));
+                        sms newSms = new sms(cursor.getString(indexAddress),cursor.getString(cursor.getColumnIndex("thread_id")));
 
-                            newSms.addNewUserMessage(cursor.getString(indexBody), date);
+                        newSms.addNewUserMessage(cursor.getString(indexBody), date);
 
-                            smsList.add(newSms);
+                        smsList.add(newSms);
 
-                            String contactName;
-                            contactName = getContactName(inst, newSms.sender);
+                        String contactName;
+                        contactName = getContactName(inst, newSms.sender);
 
-                            if(isContact == true){
+                        if(isContact == true){
 
-                                newSms.senderName = contactName;
-                                knownSms.add(newSms);
-                            }
-                            else {
+                            newSms.senderName = contactName;
+                            knownSms.add(newSms);
+                        }
+                        else {
 
-                                unknownSms.add(newSms);
-                            }
-
+                            unknownSms.add(newSms);
                         }
 
                     }
 
-                } while (cursor.moveToNext());
+                }
 
-                return null;
+            } while (cursor.moveToNext());
+
+            return null;
 
         }
 
