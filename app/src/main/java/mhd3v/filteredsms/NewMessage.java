@@ -15,8 +15,10 @@ import android.support.v7.app.AppCompatActivity;
 import android.os.Bundle;
 import android.telephony.SmsManager;
 import android.telephony.TelephonyManager;
+import android.util.Log;
 import android.view.View;
 import android.view.inputmethod.InputMethodManager;
+import android.widget.Button;
 import android.widget.EditText;
 import android.widget.Toast;
 
@@ -27,26 +29,34 @@ public class NewMessage extends AppCompatActivity {
     Intent intent;
     private String SimState = "";
 
-    EditText senderEt;
+    EditText textPhone;
     EditText messageEt;
+    String phone_number;
 
     @Override
     protected void onCreate(Bundle savedInstanceState) {
         super.onCreate(savedInstanceState);
         setContentView(R.layout.activity_new_message);
 
-        senderEt = ((EditText) findViewById(R.id.edittext_contactnumber));
+        textPhone = ((EditText) findViewById(R.id.edittext_contactnumber));
         messageEt = ((EditText) findViewById(R.id.edittext_chatbox));
+        phone_number = "";
 
+        textPhone.setOnClickListener(new View.OnClickListener() {
+            @Override
+            public void onClick(View view) {
+                textPhone.setText("");
+                phone_number = "";
+            }
+        });
     }
+
 
     public void onAddContactIcon(View view) {
 
         intent = new Intent(Intent.ACTION_PICK, ContactsContract.Contacts.CONTENT_URI);
         intent.setType(ContactsContract.Contacts.CONTENT_TYPE);
         startActivityForResult(intent, PICK_CONTACT);
-
-
     }
 
     @Override
@@ -77,9 +87,11 @@ public class NewMessage extends AppCompatActivity {
 
                         //Get the first phone number
                         if(cursorNum.moveToNext()){
-                            int columnIndex_number = cursorNum.getColumnIndex(ContactsContract.CommonDataKinds.Phone.NUMBER);
-                            String stringNumber = cursorNum.getString(columnIndex_number);
-                            textPhone.setText(stringNumber);
+                            phone_number = cursorNum.getString(cursorNum.getColumnIndex(ContactsContract.CommonDataKinds.Phone.NUMBER));
+                            String contactName = cursorNum.getString(cursorNum.getColumnIndex(ContactsContract.Contacts.DISPLAY_NAME));
+                            Log.d("aqib", contactName);
+                            Log.d("aqib1", phone_number);
+                            textPhone.setText(contactName);
                         }
 
                     }else{
@@ -101,10 +113,16 @@ public class NewMessage extends AppCompatActivity {
 
     public void onSendClick(View view) {
 
-        String sendernumber = senderEt.getText().toString();
+        if(phone_number.equals(""))
+            phone_number = textPhone.getText().toString();
+
+        String sendernumber = phone_number;
         String messagebody = messageEt.getText().toString();
 
         if(!(sendernumber.length() == 0 && messagebody.length() == 0)){
+
+            Button send = (Button) findViewById(R.id.button_chatbox_send);
+            send.setClickable(false);
 
             sendSms(sendernumber, messagebody);
 
