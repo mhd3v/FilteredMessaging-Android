@@ -82,17 +82,17 @@ public class CoversationActivity extends AppCompatActivity {
 
         SharedPreferences sp = PreferenceManager.getDefaultSharedPreferences(this);
         SharedPreferences.Editor editor = sp.edit();
-        editor.remove(threadId);
+        editor.clear();
         editor.apply();
 
         NotificationManager notificationManager = (NotificationManager) this.getSystemService(Context.NOTIFICATION_SERVICE);
-        notificationManager.cancel(Integer.parseInt(threadId));
+        notificationManager.cancelAll();
 
         if(intent.getAction().equals("android.intent.action.NotificationClicked")){
 
             cameFromNotification = true;
 
-            Cursor cursor = getContentResolver().query(Uri.parse("content://sms/"), null,  "thread_id=" + intent.getStringExtra("threadId"), null, null);
+            Cursor cursor = getContentResolver().query(Uri.parse("content://sms/"), null,  "thread_id=" + threadId, null, null);
 
             try {
                 Thread.sleep(1000);
@@ -241,7 +241,7 @@ public class CoversationActivity extends AppCompatActivity {
 
     public void onSendClick(View view) {
 
-            smsManager = SmsManager.getDefault();
+            //  smsManager = SmsManager.getDefault();
 
             input = (EditText) findViewById(R.id.edittext_chatbox);
 

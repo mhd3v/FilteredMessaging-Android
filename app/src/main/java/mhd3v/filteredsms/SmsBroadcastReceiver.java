@@ -50,7 +50,7 @@ public class SmsBroadcastReceiver extends BroadcastReceiver {
                 Object[] sms = (Object[]) intentExtras.get(SMS_BUNDLE);
 
                 for (int i = 0; i < sms.length; ++i) {
-                    String format = intentExtras.getString("format");
+                    String format =  intentExtras.getString("format");
                     SmsMessage smsMessage = SmsMessage.createFromPdu((byte[]) sms[i], format);
 
                     smsBody = smsMessage.getMessageBody().toString();

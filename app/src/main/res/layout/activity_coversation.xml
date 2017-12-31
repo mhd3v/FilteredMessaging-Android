@@ -60,7 +60,9 @@
             tools:layout_constraintBottom_creator="1"
             tools:layout_constraintLeft_creator="1"
             tools:layout_constraintRight_creator="1"
-            tools:layout_constraintTop_creator="1" />
+            tools:layout_constraintTop_creator="1"
+            android:layout_marginRight="0dp"
+            android:layout_marginLeft="0dp" />
 
         <!-- A horizontal line between the chatbox and RecyclerView -->
         <View
