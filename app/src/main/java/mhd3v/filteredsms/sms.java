@@ -10,6 +10,7 @@ import java.util.ArrayList;
 public class sms{
 
     String threadId;
+    boolean knownThread = false;
 
     String sender;
     String senderName;
