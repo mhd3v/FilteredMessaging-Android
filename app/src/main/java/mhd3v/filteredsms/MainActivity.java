@@ -23,6 +23,7 @@ import android.support.v4.content.ContextCompat;
 import android.support.v4.view.ViewPager;
 import android.support.v7.app.AppCompatActivity;
 import android.support.v7.widget.Toolbar;
+import android.text.format.DateFormat;
 import android.util.Log;
 import android.view.View;
 import android.widget.ProgressBar;
@@ -65,6 +66,7 @@ public class MainActivity extends AppCompatActivity{
 
     @Override
     protected void onCreate(Bundle savedInstanceState) {
+
         super.onCreate(savedInstanceState);
         setContentView(R.layout.activity_main);
 
@@ -78,7 +80,7 @@ public class MainActivity extends AppCompatActivity{
             getPermissionToReadContacts();
         }
 
-        else{
+        else {
 
             //this.deleteDatabase("filteredDatabase");
 
@@ -88,18 +90,18 @@ public class MainActivity extends AppCompatActivity{
 
             filteredDatabase.execSQL("CREATE TABLE IF NOT EXISTS "
                     + TableName
-                    + " (thread_id VARCHAR, address VARCHAR, body VARCHAR, type INT, date VARCHAR, sender VARCHAR, sender_name VARCHAR );");
+                    + " (thread_id VARCHAR, address VARCHAR, body VARCHAR, type INT, date VARCHAR, date_string VARCHAR, sender VARCHAR, sender_name VARCHAR );");
 
 
-            Cursor knownCursor = filteredDatabase.rawQuery("select DISTINCT thread_id from " + TableName, null);
+            Cursor knownCursor = filteredDatabase.rawQuery("select DISTINCT thread_id from (select thread_id, date_string from " + TableName + " ORDER BY date_string DESC) ORDER BY date_string DESC;", null);
 
             if(knownCursor.moveToFirst())
                 openExistingDatabase(knownCursor);
 
-            else{
+            else
                 refreshSmsInbox();
-            }
 
+            filteredDatabase.close();
 
         }
 
@@ -143,7 +145,7 @@ public class MainActivity extends AppCompatActivity{
 
         do{
 
-            Cursor c = filteredDatabase.rawQuery("select * from messageTable where thread_id =" + cursor.getString(cursor.getColumnIndex("thread_id")), null);
+            Cursor c = filteredDatabase.rawQuery("select * from messageTable where thread_id =" + cursor.getString(cursor.getColumnIndex("thread_id"))+ " ORDER BY date_string DESC", null);
 
             if(c.moveToFirst()){
 
@@ -157,7 +159,7 @@ public class MainActivity extends AppCompatActivity{
 
 
                     do{
-                        messages message = new messages(c.getString(c.getColumnIndex("body")), c.getString(c.getColumnIndex("date")));
+                        messages message = new messages(c.getString(c.getColumnIndex("body")), c.getString(c.getColumnIndex("date_string")));
 
                         if(c.getString(c.getColumnIndex("type")).equals("2")){
                             message.isUserMessage = true;
@@ -168,7 +170,7 @@ public class MainActivity extends AppCompatActivity{
                     while(c.moveToNext());
 
                     knownSms.add(newSms);
-                    c.close();
+
 
                 }
 
@@ -181,7 +183,7 @@ public class MainActivity extends AppCompatActivity{
 
                     do{
 
-                        messages message = new messages(c.getString(c.getColumnIndex("body")), c.getString(c.getColumnIndex("date")));
+                        messages message = new messages(c.getString(c.getColumnIndex("body")), c.getString(c.getColumnIndex("date_string")));
 
                         if(c.getString(c.getColumnIndex("type")).equals("2")){
                             message.isUserMessage = true;
@@ -193,106 +195,18 @@ public class MainActivity extends AppCompatActivity{
 
 
                     unknownSms.add(newSms);
-                    c.close();
+
                 }
             }
 
+            c.close();
         }
         while(cursor.moveToNext());
         cursor.close();
-    }
-
-    void setupFragments(ViewPager viewPager) {
-        SectionsPageAdapter adapter = new SectionsPageAdapter(getSupportFragmentManager());
-
-        adapter.addFragment(new Tab1Fragment(), "Known");
-        adapter.addFragment(new Tab2Fragment(), "Unknown");
-
-        viewPager.setAdapter(adapter);
-    }
-
-
-    public void getPermissionToReadSMS() {
-        if (ContextCompat.checkSelfPermission(this, Manifest.permission.READ_SMS)
-                != PackageManager.PERMISSION_GRANTED) {
-            if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.M) {
-                if (shouldShowRequestPermissionRationale(
-                        Manifest.permission.READ_SMS)) {
-                    Toast.makeText(this, "Please allow permission!", Toast.LENGTH_SHORT).show();
-                }
-            }
-            if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.M) {
-                requestPermissions(new String[]{Manifest.permission.READ_SMS},
-                        READ_SMS_PERMISSIONS_REQUEST);
-            }
-        }
-
-        else
-            getPermissionToReadContacts();
-
 
     }
 
-    public void getPermissionToReadContacts() {
-        if (ContextCompat.checkSelfPermission(this, Manifest.permission.READ_CONTACTS)
-                != PackageManager.PERMISSION_GRANTED) {
-            if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.M) {
-                if (shouldShowRequestPermissionRationale(
-                        Manifest.permission.READ_CONTACTS)) {
-                    Toast.makeText(this, "Please allow permission!", Toast.LENGTH_SHORT).show();
-                }
-            }
-            if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.M) {
-                requestPermissions(new String[]{Manifest.permission.READ_CONTACTS},
-                        READ_CONTACTS_PERMISSIONS_REQUEST);
-            }
-        }
-    }
 
-
-    @Override
-    public void onRequestPermissionsResult(int requestCode,
-                                           @NonNull String permissions[],
-                                           @NonNull int[] grantResults) {
-        // Make sure it's our original READ_CONTACTS request
-        if (requestCode == READ_SMS_PERMISSIONS_REQUEST) {
-            if (grantResults.length > 0 &&
-                    grantResults[0] == PackageManager.PERMISSION_GRANTED ) {
-
-                if(ContextCompat.checkSelfPermission(this, Manifest.permission.READ_CONTACTS)
-                        != PackageManager.PERMISSION_GRANTED)
-                    getPermissionToReadContacts();
-                else
-                    refreshOnExtraThread();
-
-            }
-
-            else {
-                Toast.makeText(this, "Read SMS permission denied", Toast.LENGTH_SHORT).show();
-            }
-
-        }
-
-        if (requestCode == READ_CONTACTS_PERMISSIONS_REQUEST ) {
-            if (grantResults.length > 0 &&
-                    grantResults[0] == PackageManager.PERMISSION_GRANTED ) {
-
-                if(ContextCompat.checkSelfPermission(this, Manifest.permission.READ_SMS)
-                        != PackageManager.PERMISSION_GRANTED)
-                    getPermissionToReadSMS();
-                else
-                    refreshOnExtraThread();
-
-            }
-
-            else {
-                Toast.makeText(this, "Read Contacts permission denied", Toast.LENGTH_SHORT).show();
-            }
-
-        }
-
-
-    }
 
     public void refreshSmsInbox() {
 
@@ -324,6 +238,9 @@ public class MainActivity extends AppCompatActivity{
                         String date = cursor.getString(cursor
                                 .getColumnIndex("date"));
 
+                        String dateTime = convertDate(date,"yyyy/MM/dd hh:mm:ss");
+
+
                         int threadId= cursor.getInt(cursor.getColumnIndex("thread_id"));
 
                         if(smsList.get(i).knownThread)
@@ -331,14 +248,13 @@ public class MainActivity extends AppCompatActivity{
                         else
                             cv.put("sender", "unknown");
 
-                        cv.put("date", date);
+                        cv.put("date", dateTime);
+                        cv.put("date_string", date);
                         cv.put("address", cursor.getString(indexAddress));
                         cv.put("body", cursor.getString(indexBody));
                         cv.put("thread_id", threadId);
                         cv.put("type",1);
 
-
-                        String where = "thread_id='" + threadId + "'";
 
                         filteredDatabase.insert("messageTable", null ,cv );
 
@@ -351,14 +267,17 @@ public class MainActivity extends AppCompatActivity{
 
                     String date = cursor.getString(cursor
                             .getColumnIndex("date"));
+                    String dateTime = convertDate(date,"yyyy/MM/dd hh:mm:ss");
 
                     sms newSms = new sms(cursor.getString(indexAddress), cursor.getString(cursor.getColumnIndex("thread_id")));
                     newSms.addNewSenderMessage(cursor.getString(indexBody), date);
+
                     smsList.add(newSms);
 
                     int threadId= cursor.getInt(cursor.getColumnIndex("thread_id"));
 
-                    cv.put("date", date);
+                    cv.put("date", dateTime);
+                    cv.put("date_string", date);
                     cv.put("address", cursor.getString(indexAddress));
                     cv.put("body", cursor.getString(indexBody));
                     cv.put("thread_id", threadId);
@@ -375,15 +294,11 @@ public class MainActivity extends AppCompatActivity{
                         newSms.knownThread = true;
                         knownSms.add(newSms);
 
-
-                        String where = "thread_id='" + threadId + "'";
-
                         cv.put("sender", "known");
                         cv.put("sender_name",contactName);
 
                         filteredDatabase.insertOrThrow("messageTable", null, cv);
 
-                        //filteredDatabase.update("messageTable", cv , where, null);
 
                     }
                     else {
@@ -394,8 +309,6 @@ public class MainActivity extends AppCompatActivity{
                         cv.put("sender_name","");
 
                         filteredDatabase.insertOrThrow("messageTable", null, cv);
-
-                        //filteredDatabase.update("messageTable", cv , where, null);
 
                     }
 
@@ -416,6 +329,7 @@ public class MainActivity extends AppCompatActivity{
                     if (smsList.get(i).threadId.equals(cursor.getString(cursor.getColumnIndex("thread_id")))) {
 
                         String date = cursor.getString(cursor.getColumnIndex("date"));
+                        String dateTime = convertDate(date,"yyyy/MM/dd hh:mm:ss");
 
                         int threadId= cursor.getInt(cursor.getColumnIndex("thread_id"));
 
@@ -424,13 +338,12 @@ public class MainActivity extends AppCompatActivity{
                         else
                             cv.put("sender", "unknown");
 
-                        cv.put("date", date);
+                        cv.put("date", dateTime);
+                        cv.put("date_string", date);
                         cv.put("address", cursor.getString(indexAddress));
                         cv.put("body", cursor.getString(indexBody));
                         cv.put("thread_id", threadId);
                         cv.put("type",2);
-
-                        String where = "thread_id='" + threadId + "'";
 
                         filteredDatabase.insert("messageTable", null, cv );
 
@@ -443,6 +356,8 @@ public class MainActivity extends AppCompatActivity{
                     String date = cursor.getString(cursor
                             .getColumnIndex("date"));
 
+                    String dateTime = convertDate(date,"yyyy/MM/dd hh:mm:ss");
+
                     sms newSms = new sms(cursor.getString(indexAddress),cursor.getString(cursor.getColumnIndex("thread_id")));
 
                     newSms.addNewUserMessage(cursor.getString(indexBody), date);
@@ -451,7 +366,8 @@ public class MainActivity extends AppCompatActivity{
 
                     int threadId= cursor.getInt(cursor.getColumnIndex("thread_id"));
 
-                    cv.put("date", date);
+                    cv.put("date", dateTime);
+                    cv.put("date_string", date);
                     cv.put("address", cursor.getString(cursor.getColumnIndex("address")));
                     cv.put("body", cursor.getString(indexBody));
                     cv.put("thread_id", threadId);
@@ -472,8 +388,6 @@ public class MainActivity extends AppCompatActivity{
                         knownSms.add(newSms);
                     }
                     else {
-
-                        String where = "thread_id='" + threadId + "'";
 
                         cv.put("sender", "unknown");
                         cv.put("sender_name","");
@@ -626,112 +540,22 @@ public class MainActivity extends AppCompatActivity{
             smsList.clear();
             unknownSms.clear();
 
+            filteredDatabase = openOrCreateDatabase("filteredDatabase", MODE_PRIVATE, null);
 
-            Cursor cursor = getContentResolver().query(Uri
-                    .parse("content://sms"), null, null, null, null);
+            String TableName = "messageTable";
+
+            filteredDatabase.execSQL("CREATE TABLE IF NOT EXISTS "
+                    + TableName
+                    + " (thread_id VARCHAR, address VARCHAR, body VARCHAR, type INT, date VARCHAR, date_string VARCHAR, sender VARCHAR, sender_name VARCHAR );");
+
+            Cursor knownCursor = filteredDatabase.rawQuery("select DISTINCT thread_id from (select thread_id, date_string from " + TableName + " ORDER BY date_string DESC) ORDER BY date_string DESC;", null);
+
+            knownCursor.moveToFirst();
+
+            openExistingDatabase(knownCursor);
 
 
-            int indexBody = cursor.getColumnIndex("body");
-            int indexAddress = cursor.getColumnIndex("address");
-
-
-            cursor.moveToFirst();
-
-
-            String type = Integer.toString(cursor.getColumnIndex("type"));
-
-
-            do {
-
-                isContact = false;
-
-                if (cursor.getString(Integer.parseInt(type)).equalsIgnoreCase("1")) {
-
-                    //received messages
-
-                    boolean found = false;
-
-                    for (int i = 0; i < smsList.size(); i++) {
-
-                        if (smsList.get(i).threadId.equals(cursor.getString(cursor.getColumnIndex("thread_id")))) {
-                            String date = cursor.getString(cursor
-                                    .getColumnIndex("date"));
-                            smsList.get(i).addNewSenderMessage(cursor.getString(indexBody), date);
-                            found = true;
-                        }
-
-                    }
-                    if (found == false) {
-
-                        String date = cursor.getString(cursor
-                                .getColumnIndex("date"));
-
-                        sms newSms = new sms(cursor.getString(indexAddress), cursor.getString(cursor.getColumnIndex("thread_id")));
-                        newSms.addNewSenderMessage(cursor.getString(indexBody), date);
-                        smsList.add(newSms);
-
-                        String contactName;
-                        contactName = getContactName(inst, newSms.sender);
-
-                        if(isContact == true){
-
-                            newSms.senderName = contactName;
-                            knownSms.add(newSms);
-                        }
-                        else {
-
-                            unknownSms.add(newSms);
-                        }
-
-                    }
-
-                }
-
-                else if (cursor.getString(Integer.parseInt(type)).equalsIgnoreCase("2")) {
-
-                    ///sent messages
-
-                    boolean found = false;
-
-                    for (int i = 0; i < smsList.size(); i++) {
-
-                        if (smsList.get(i).threadId.equals(cursor.getString(cursor.getColumnIndex("thread_id")))) {
-
-                            String date = cursor.getString(cursor.getColumnIndex("date"));
-
-                            smsList.get(i).addNewUserMessage(cursor.getString(indexBody), date);
-                            found = true;
-                        }
-                    }
-
-                    if (found == false) {
-                        String date = cursor.getString(cursor
-                                .getColumnIndex("date"));
-
-                        sms newSms = new sms(cursor.getString(indexAddress),cursor.getString(cursor.getColumnIndex("thread_id")));
-
-                        newSms.addNewUserMessage(cursor.getString(indexBody), date);
-
-                        smsList.add(newSms);
-
-                        String contactName;
-                        contactName = getContactName(inst, newSms.sender);
-
-                        if(isContact == true){
-
-                            newSms.senderName = contactName;
-                            knownSms.add(newSms);
-                        }
-                        else {
-
-                            unknownSms.add(newSms);
-                        }
-
-                    }
-
-                }
-
-            } while (cursor.moveToNext());
+            filteredDatabase.close();
 
             return null;
 
@@ -744,6 +568,102 @@ public class MainActivity extends AppCompatActivity{
             refreshFragments();
 
         }
+    }
+
+    void setupFragments(ViewPager viewPager) {
+        SectionsPageAdapter adapter = new SectionsPageAdapter(getSupportFragmentManager());
+
+        adapter.addFragment(new Tab1Fragment(), "Known");
+        adapter.addFragment(new Tab2Fragment(), "Unknown");
+
+        viewPager.setAdapter(adapter);
+    }
+
+
+    public void getPermissionToReadSMS() {
+        if (ContextCompat.checkSelfPermission(this, Manifest.permission.READ_SMS)
+                != PackageManager.PERMISSION_GRANTED) {
+            if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.M) {
+                if (shouldShowRequestPermissionRationale(
+                        Manifest.permission.READ_SMS)) {
+                    Toast.makeText(this, "Please allow permission!", Toast.LENGTH_SHORT).show();
+                }
+            }
+            if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.M) {
+                requestPermissions(new String[]{Manifest.permission.READ_SMS},
+                        READ_SMS_PERMISSIONS_REQUEST);
+            }
+        }
+
+        else
+            getPermissionToReadContacts();
+
+
+    }
+
+    public void getPermissionToReadContacts() {
+        if (ContextCompat.checkSelfPermission(this, Manifest.permission.READ_CONTACTS)
+                != PackageManager.PERMISSION_GRANTED) {
+            if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.M) {
+                if (shouldShowRequestPermissionRationale(
+                        Manifest.permission.READ_CONTACTS)) {
+                    Toast.makeText(this, "Please allow permission!", Toast.LENGTH_SHORT).show();
+                }
+            }
+            if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.M) {
+                requestPermissions(new String[]{Manifest.permission.READ_CONTACTS},
+                        READ_CONTACTS_PERMISSIONS_REQUEST);
+            }
+        }
+    }
+
+
+    @Override
+    public void onRequestPermissionsResult(int requestCode,
+                                           @NonNull String permissions[],
+                                           @NonNull int[] grantResults) {
+        // Make sure it's our original READ_CONTACTS request
+        if (requestCode == READ_SMS_PERMISSIONS_REQUEST) {
+            if (grantResults.length > 0 &&
+                    grantResults[0] == PackageManager.PERMISSION_GRANTED ) {
+
+                if(ContextCompat.checkSelfPermission(this, Manifest.permission.READ_CONTACTS)
+                        != PackageManager.PERMISSION_GRANTED)
+                    getPermissionToReadContacts();
+                else
+                    refreshOnExtraThread();
+
+            }
+
+            else {
+                Toast.makeText(this, "Read SMS permission denied", Toast.LENGTH_SHORT).show();
+            }
+
+        }
+
+        if (requestCode == READ_CONTACTS_PERMISSIONS_REQUEST ) {
+            if (grantResults.length > 0 &&
+                    grantResults[0] == PackageManager.PERMISSION_GRANTED ) {
+
+                if(ContextCompat.checkSelfPermission(this, Manifest.permission.READ_SMS)
+                        != PackageManager.PERMISSION_GRANTED)
+                    getPermissionToReadSMS();
+                else
+                    refreshOnExtraThread();
+
+            }
+
+            else {
+                Toast.makeText(this, "Read Contacts permission denied", Toast.LENGTH_SHORT).show();
+            }
+
+        }
+
+
+    }
+
+    public String convertDate(String dateInMilliseconds,String dateFormat) {
+        return DateFormat.format(dateFormat, Long.parseLong(dateInMilliseconds)).toString();
     }
 
 }

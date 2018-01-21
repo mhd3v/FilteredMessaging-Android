@@ -10,6 +10,7 @@ import android.content.Context;
 import android.content.Intent;
 import android.content.SharedPreferences;
 import android.database.Cursor;
+import android.database.sqlite.SQLiteDatabase;
 import android.net.Uri;
 import android.os.Bundle;
 import android.preference.PreferenceManager;
@@ -17,9 +18,12 @@ import android.provider.ContactsContract;
 import android.provider.Telephony;
 import android.support.v4.app.NotificationCompat;
 import android.telephony.SmsMessage;
+import android.text.format.DateFormat;
 import android.util.Log;
 
 import java.util.ArrayList;
+
+import static android.content.Context.MODE_PRIVATE;
 
 /**
  * Created by Mahad on 12/22/2017.
@@ -33,6 +37,7 @@ public class SmsBroadcastReceiver extends BroadcastReceiver {
     boolean isContact;
     Cursor cursor;
     NotificationCompat.InboxStyle inboxStyle;
+    SQLiteDatabase filteredDatabase;
 
     private static final String ACTION_SMS_NEW = "android.provider.Telephony.SMS_RECEIVED";
 
@@ -62,11 +67,59 @@ public class SmsBroadcastReceiver extends BroadcastReceiver {
 
                     if (defaultSmsApp.equals("mhd3v.filteredsms")) {
 
-                            ContentValues values = new ContentValues();
-                            values.put("address", address);
-                            values.put("body", smsBody);
-                            context.getContentResolver().insert(Uri.parse("content://sms/inbox"), values);
+                        ContentValues cv = new ContentValues();
+                        cv.put("address", address);
+                        cv.put("body", smsBody);
+                        context.getContentResolver().insert(Uri.parse("content://sms/inbox"), cv);
+                        cv.clear();
 
+                        filteredDatabase = context.openOrCreateDatabase("filteredDatabase", MODE_PRIVATE, null);
+
+                        cursor = context.getContentResolver().query(Uri.parse("content://sms"), null, null, null, null);
+                        cursor.moveToFirst();
+
+                        String date = cursor.getString(cursor.getColumnIndex("date"));
+                        String dateTime = convertDate(date,"yyyy/MM/dd hh:mm:ss");
+
+                        Log.d("time", dateTime);
+
+                        cv.put("thread_id", cursor.getString(cursor.getColumnIndex("thread_id")));
+                        cv.put("date", dateTime);
+                        cv.put("date_string", date);
+                        cv.put("type", 1);
+                        cv.put("address", cursor.getString(cursor.getColumnIndex("address")));
+                        cv.put("body", cursor.getString(cursor.getColumnIndex("body")));
+
+                        isContact = false;
+
+                        String contactName = getContactName(context, address);
+
+                        if (isContact == true){
+                            cv.put("sender_name", contactName);
+                            cv.put("sender", "known");
+                        }
+                        else{
+                            cv.put("sender_name", "");
+                            cv.put("sender", "unknown");
+                        }
+
+                        Long result = filteredDatabase.insertOrThrow("messageTable", null, cv);
+
+                        Log.d("insertionResult", Long.toString(result));
+
+                        cursor.close();
+
+//                        cursor = filteredDatabase.rawQuery("SELECT * FROM messageTable ORDER BY ROWID DESC LIMIT 1",null);
+//
+//                        cursor.moveToFirst();
+//
+//                        Log.d("log1", cursor.getString(cursor.getColumnIndex("thread_id")));
+//                        Log.d("log1", cursor.getString(cursor.getColumnIndex("body")));
+//                        Log.d("log1", cursor.getString(cursor.getColumnIndex("address")));
+//                        Log.d("log1", cursor.getString(cursor.getColumnIndex("sender_name")));
+//                        Log.d("log1", cursor.getString(cursor.getColumnIndex("date")));
+
+                        filteredDatabase.close();
                     }
 
                     cursor = context.getContentResolver().query(Uri
@@ -205,6 +258,10 @@ public class SmsBroadcastReceiver extends BroadcastReceiver {
             mNotificationManager.notify(id, mBuilder.build());
 
         }
+    }
+
+    public String convertDate(String dateInMilliseconds,String dateFormat) {
+        return DateFormat.format(dateFormat, Long.parseLong(dateInMilliseconds)).toString();
     }
 
 }
