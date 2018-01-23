@@ -71,56 +71,44 @@ public class SmsBroadcastReceiver extends BroadcastReceiver {
                         cv.put("address", address);
                         cv.put("body", smsBody);
                         context.getContentResolver().insert(Uri.parse("content://sms/inbox"), cv);
-                        cv.clear();
-
-                        filteredDatabase = context.openOrCreateDatabase("filteredDatabase", MODE_PRIVATE, null);
-
-                        cursor = context.getContentResolver().query(Uri.parse("content://sms"), null, null, null, null);
-                        cursor.moveToFirst();
-
-                        String date = cursor.getString(cursor.getColumnIndex("date"));
-                        String dateTime = convertDate(date,"yyyy/MM/dd hh:mm:ss");
-
-                        Log.d("time", dateTime);
-
-                        cv.put("thread_id", cursor.getString(cursor.getColumnIndex("thread_id")));
-                        cv.put("date", dateTime);
-                        cv.put("date_string", date);
-                        cv.put("type", 1);
-                        cv.put("address", cursor.getString(cursor.getColumnIndex("address")));
-                        cv.put("body", cursor.getString(cursor.getColumnIndex("body")));
-
-                        isContact = false;
-
-                        String contactName = getContactName(context, address);
-
-                        if (isContact == true){
-                            cv.put("sender_name", contactName);
-                            cv.put("sender", "known");
-                        }
-                        else{
-                            cv.put("sender_name", "");
-                            cv.put("sender", "unknown");
-                        }
-
-                        Long result = filteredDatabase.insertOrThrow("messageTable", null, cv);
-
-                        Log.d("insertionResult", Long.toString(result));
-
-                        cursor.close();
-
-//                        cursor = filteredDatabase.rawQuery("SELECT * FROM messageTable ORDER BY ROWID DESC LIMIT 1",null);
-//
-//                        cursor.moveToFirst();
-//
-//                        Log.d("log1", cursor.getString(cursor.getColumnIndex("thread_id")));
-//                        Log.d("log1", cursor.getString(cursor.getColumnIndex("body")));
-//                        Log.d("log1", cursor.getString(cursor.getColumnIndex("address")));
-//                        Log.d("log1", cursor.getString(cursor.getColumnIndex("sender_name")));
-//                        Log.d("log1", cursor.getString(cursor.getColumnIndex("date")));
-
-                        filteredDatabase.close();
                     }
+
+                    ContentValues cv = new ContentValues();
+
+                    filteredDatabase = context.openOrCreateDatabase("filteredDatabase", MODE_PRIVATE, null);
+
+                    cursor = context.getContentResolver().query(Uri.parse("content://sms"), null, null, null, null);
+                    cursor.moveToFirst();
+
+                    String date = cursor.getString(cursor.getColumnIndex("date"));
+                    String dateTime = convertDate(date,"yyyy/MM/dd hh:mm:ss");
+
+                    Log.d("time", dateTime);
+
+                    cv.put("thread_id", cursor.getString(cursor.getColumnIndex("thread_id")));
+                    cv.put("date", dateTime);
+                    cv.put("date_string", date);
+                    cv.put("type", 1);
+                    cv.put("address", cursor.getString(cursor.getColumnIndex("address")));
+                    cv.put("body", cursor.getString(cursor.getColumnIndex("body")));
+
+                    isContact = false;
+
+                    String contactName = getContactName(context, address);
+
+                    if (isContact == true){
+                        cv.put("sender_name", contactName);
+                        cv.put("sender", "known");
+                    }
+                    else{
+                        cv.put("sender_name", "");
+                        cv.put("sender", "unknown");
+                    }
+
+                   filteredDatabase.insertOrThrow("messageTable", null, cv);
+
+                    cursor.close();
+                    filteredDatabase.close();
 
                     cursor = context.getContentResolver().query(Uri
                             .parse("content://sms"), null, null, null, null);

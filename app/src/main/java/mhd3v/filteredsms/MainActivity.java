@@ -5,6 +5,7 @@ import android.app.NotificationManager;
 import android.content.ContentResolver;
 import android.content.ContentValues;
 import android.content.Context;
+import android.content.DialogInterface;
 import android.content.Intent;
 import android.content.SharedPreferences;
 import android.content.pm.PackageManager;
@@ -16,11 +17,13 @@ import android.os.Build;
 import android.os.Bundle;
 import android.preference.PreferenceManager;
 import android.provider.ContactsContract;
+import android.provider.Telephony;
 import android.support.annotation.NonNull;
 import android.support.constraint.ConstraintLayout;
 import android.support.design.widget.TabLayout;
 import android.support.v4.content.ContextCompat;
 import android.support.v4.view.ViewPager;
+import android.support.v7.app.AlertDialog;
 import android.support.v7.app.AppCompatActivity;
 import android.support.v7.widget.Toolbar;
 import android.text.format.DateFormat;
@@ -666,7 +669,7 @@ public class MainActivity extends AppCompatActivity{
         return inst;
     }
 
-    void setDeletionMode(final Tab1Fragment passedInstance){
+    void setFilteredDeletionMode(final Tab1Fragment passedInstance){
 
         cancelButtonFiltered = tb.getMenu().findItem(R.id.cancelButton);
         final MenuItem deleteButton = tb.getMenu().findItem(R.id.deleteButton);
@@ -698,17 +701,46 @@ public class MainActivity extends AppCompatActivity{
             @Override
             public void onClick(View v) {
 
-                for(int i=0; i< passedInstance.threadsToDelete.length; i++){
+                String defaultSmsApp = Telephony.Sms.getDefaultSmsPackage(MainActivity.this);
 
-                    if(passedInstance.threadsToDelete[i] != null)
-                        Toast.makeText(MainActivity.this, passedInstance.threadsToDelete[i], Toast.LENGTH_SHORT).show();
+                if (defaultSmsApp.equals("mhd3v.filteredsms")){
+
+                    final ArrayList<String> threadIds = new ArrayList<String>();
+
+                    filteredDatabase = openOrCreateDatabase("filteredDatabase", MODE_PRIVATE, null);
+
+                    for(int i=0; i< passedInstance.threadsToDelete.length; i++){
+
+                        if(passedInstance.threadsToDelete[i] != null)
+                            threadIds.add(passedInstance.threadsToDelete[i]);
+                    }
+
+                    new AlertDialog.Builder(MainActivity.this)
+                            .setTitle("Deleting Conversations")
+                            .setMessage("Are you sure you want to delete "+ threadIds.size() + " conversation(s)?")
+                            .setPositiveButton("Yes", new DialogInterface.OnClickListener() {
+                                @Override
+                                public void onClick(DialogInterface dialog, int which) {
+
+                                    for(int i =0; i<threadIds.size(); i++ ){
+                                        getContentResolver().delete(Uri.parse("content://sms/conversations/" + threadIds.get(i)),null,null);
+                                        filteredDatabase.execSQL("delete from messageTable where thread_id = " + threadIds.get(i)+ ";");
+                                    }
+                                    filteredDatabase.close();
+                                    cancelDeletionMode(passedInstance, deleteButton);
+                                    refreshOnExtraThread();
+                                }
+                            }).setNegativeButton("No", null).show();
                 }
+
+                else
+                    Toast.makeText(MainActivity.this, "Set as default app to delete messages!", Toast.LENGTH_SHORT).show();
 
             }
         });
     }
 
-    void setDeletionMode(final Tab2Fragment passedInstance){
+    void setUnfilteredDeletionMode(final Tab2Fragment passedInstance){
 
         cancelButtonUnfiltered = tb.getMenu().findItem(R.id.cancelButton);
         final MenuItem deleteButton = tb.getMenu().findItem(R.id.deleteButton);
@@ -731,6 +763,7 @@ public class MainActivity extends AppCompatActivity{
 
                 cancelButtonUnfiltered.setVisible(false);
                 deleteButton.setVisible(false);
+                cancelButtonUnfiltered.setVisible(false);
                 tb.setTitle("Filtered Messaging");
 
             }
@@ -740,11 +773,40 @@ public class MainActivity extends AppCompatActivity{
             @Override
             public void onClick(View v) {
 
-                for(int i=0; i< passedInstance.threadsToDelete.length; i++){
+                String defaultSmsApp = Telephony.Sms.getDefaultSmsPackage(MainActivity.this);
 
-                    if(passedInstance.threadsToDelete[i] != null)
-                        Toast.makeText(MainActivity.this, passedInstance.threadsToDelete[i], Toast.LENGTH_SHORT).show();
+                if (defaultSmsApp.equals("mhd3v.filteredsms")){
+
+                    final ArrayList<String> threadIds = new ArrayList<String>();
+
+                    filteredDatabase = openOrCreateDatabase("filteredDatabase", MODE_PRIVATE, null);
+
+                    for(int i=0; i< passedInstance.threadsToDelete.length; i++){
+
+                        if(passedInstance.threadsToDelete[i] != null)
+                            threadIds.add(passedInstance.threadsToDelete[i]);
+                    }
+
+                    new AlertDialog.Builder(MainActivity.this)
+                            .setTitle("Deleting Conversations")
+                            .setMessage("Are you sure you want to delete "+ threadIds.size() + " conversation(s)?")
+                            .setPositiveButton("Yes", new DialogInterface.OnClickListener() {
+                                @Override
+                                public void onClick(DialogInterface dialog, int which) {
+
+                                    for(int i =0; i<threadIds.size(); i++ ){
+                                        getContentResolver().delete(Uri.parse("content://sms/conversations/" + threadIds.get(i)),null,null);
+                                        filteredDatabase.execSQL("delete from messageTable where thread_id = " + threadIds.get(i)+ ";");
+                                    }
+                                    filteredDatabase.close();
+                                    cancelDeletionMode(passedInstance, deleteButton);
+                                    refreshOnExtraThread();
+                                }
+                            }).setNegativeButton("No", null).show();
                 }
+
+                else
+                    Toast.makeText(MainActivity.this, "Set as default app to delete messages!", Toast.LENGTH_SHORT).show();
 
             }
         });
@@ -781,8 +843,6 @@ public class MainActivity extends AppCompatActivity{
         deleteButton.setVisible(false);
 
     }
-
-
 
 
 }

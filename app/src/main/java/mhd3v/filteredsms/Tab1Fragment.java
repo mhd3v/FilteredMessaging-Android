@@ -83,7 +83,7 @@ public class Tab1Fragment extends Fragment {
                 }
 
 
-                main.setDeletionMode(thisInstance);
+                main.setFilteredDeletionMode(thisInstance);
 
 
                 if(deletionMode){
@@ -97,7 +97,7 @@ public class Tab1Fragment extends Fragment {
                             if(!selectedViews[position]) {
                                 contactPicture.setImageResource(R.drawable.knownsenderselected);
                                 selectedViews[position] = true;
-                                threadsToDelete[position] = smsList.get(position).senderName;
+                                threadsToDelete[position] = smsList.get(position).threadId;
                             }
 
                             else{
