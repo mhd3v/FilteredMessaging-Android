@@ -30,6 +30,11 @@ public class Tab2Fragment extends Fragment {
 
     Tab2Fragment.customAdapter unknownAdapter;
     ListView unknownList;
+    Tab2Fragment thisInstance;
+
+    boolean[] selectedViews;
+    String[] threadsToDelete;
+    static boolean deletionMode = false;
 
     @Nullable
     @Override
@@ -40,15 +45,72 @@ public class Tab2Fragment extends Fragment {
         MainActivity activity = (MainActivity) getActivity();
         activity.setUnknownInstance(this);
 
+        thisInstance = this;
+
         unknownList = view.findViewById(R.id.unknownList);
 
         smsList = activity.getUnknownSms();
 
+        selectedViews = new boolean[smsList.size()];
+        threadsToDelete = new String[smsList.size()];
+
         unknownAdapter = new customAdapter();
-
         activity.setUnknownAdapter(unknownAdapter);
-
         unknownList.setAdapter(unknownAdapter);
+
+        setDefaultListener();
+
+        unknownList.setOnItemLongClickListener(new AdapterView.OnItemLongClickListener() {
+            @Override
+            public boolean onItemLongClick(AdapterView<?> adapterView, View view, int position, long id) {
+
+                deletionMode = true;
+
+                MainActivity main = (MainActivity) getActivity();
+
+                if(main.knownInstance.deletionMode){  //if tab1 is in deletion mode
+                    main.cancelDeletionMode(main.knownInstance, main.cancelButtonFiltered);
+                }
+
+                main.setDeletionMode(thisInstance);
+
+
+                if(deletionMode){
+
+                    unknownList.setOnItemClickListener(new AdapterView.OnItemClickListener() {
+                        @Override
+                        public void onItemClick(AdapterView<?> parent, View view, int position, long id) {
+
+                            ImageView contactPicture = view.findViewById(R.id.contactPicture);
+
+                            if(!selectedViews[position]) {
+                                contactPicture.setImageResource(R.drawable.unknownsenderselected);
+                                selectedViews[position] = true;
+                                threadsToDelete[position] = smsList.get(position).sender;
+                            }
+
+                            else{
+                                contactPicture.setImageResource(R.drawable.unknownsender);
+                                selectedViews[position] = false;
+                                threadsToDelete[position] = null;
+                            }
+
+                        }
+                    });
+                }
+
+
+                return false;
+            }
+        });
+
+
+
+        return view;
+    }
+
+
+    void setDefaultListener(){
 
         unknownList.setOnItemClickListener(new AdapterView.OnItemClickListener() {
             @Override
@@ -72,8 +134,6 @@ public class Tab2Fragment extends Fragment {
             }
         });
 
-
-        return view;
     }
 
 
@@ -115,8 +175,14 @@ public class Tab2Fragment extends Fragment {
             else
                 text.setText(smsList.get(i).messages.get(0).messageBody);
 
+
             ImageView contactPicture = view.findViewById(R.id.contactPicture);
-            contactPicture.setImageResource(R.drawable.unknownsender);
+
+            if(!selectedViews[i])
+                contactPicture.setImageResource(R.drawable.unknownsender);
+            else
+                contactPicture.setImageResource(R.drawable.unknownsenderselected);
+
 
 
             return view;
@@ -127,6 +193,8 @@ public class Tab2Fragment extends Fragment {
             return DateFormat.format(dateFormat, Long.parseLong(dateInMilliseconds)).toString();
         }
     }
+
+
 
 
 }

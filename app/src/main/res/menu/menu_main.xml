@@ -3,12 +3,19 @@
     xmlns:tools="http://schemas.android.com/tools"
     tools:context="mhd3v.filteredsms.MainActivity">
     <item
-        android:id="@+id/settingsButton"
-        android:title="settings"
+        android:id="@+id/cancelButton"
         android:checkable="false"
         android:enabled="true"
-        android:icon="@drawable/settings"
-        android:visible="true"
+        android:icon="@drawable/cancel"
+        android:title="cancel"
+        android:visible="false"
+        app:showAsAction="always" />
+    <item
+        android:id="@+id/deleteButton"
+        android:checkable="false"
+        android:icon="@drawable/delete"
+        android:title="delete"
+        android:visible="false"
         app:showAsAction="always" />
     <item
         android:id="@+id/newmessagebutton"
@@ -18,4 +25,15 @@
         android:title="new_message"
         android:visible="false"
         app:showAsAction="always" />
+
+    <item
+        android:id="@+id/settingsButton"
+        android:checkable="false"
+        android:enabled="true"
+        android:icon="@drawable/settings"
+        android:title="settings"
+        android:onClick="setSettingOnClick"
+        />
+
+
 </menu>

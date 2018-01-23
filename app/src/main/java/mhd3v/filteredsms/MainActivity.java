@@ -9,7 +9,6 @@ import android.content.Intent;
 import android.content.SharedPreferences;
 import android.content.pm.PackageManager;
 import android.database.Cursor;
-import android.database.SQLException;
 import android.database.sqlite.SQLiteDatabase;
 import android.net.Uri;
 import android.os.AsyncTask;
@@ -18,6 +17,7 @@ import android.os.Bundle;
 import android.preference.PreferenceManager;
 import android.provider.ContactsContract;
 import android.support.annotation.NonNull;
+import android.support.constraint.ConstraintLayout;
 import android.support.design.widget.TabLayout;
 import android.support.v4.content.ContextCompat;
 import android.support.v4.view.ViewPager;
@@ -25,11 +25,13 @@ import android.support.v7.app.AppCompatActivity;
 import android.support.v7.widget.Toolbar;
 import android.text.format.DateFormat;
 import android.util.Log;
+import android.view.MenuItem;
 import android.view.View;
 import android.widget.ProgressBar;
 import android.widget.Toast;
 
 import java.util.ArrayList;
+import java.util.Arrays;
 
 public class MainActivity extends AppCompatActivity{
 
@@ -59,6 +61,11 @@ public class MainActivity extends AppCompatActivity{
 
     SQLiteDatabase filteredDatabase;
 
+    Toolbar tb;
+
+    MenuItem cancelButtonFiltered;
+    MenuItem cancelButtonUnfiltered;
+
     public static MainActivity instance() {
 
         return inst;
@@ -81,19 +88,19 @@ public class MainActivity extends AppCompatActivity{
         }
 
         else {
-
             //this.deleteDatabase("filteredDatabase");
 
             filteredDatabase = openOrCreateDatabase("filteredDatabase", MODE_PRIVATE, null);
 
-            String TableName = "messageTable";
 
-            filteredDatabase.execSQL("CREATE TABLE IF NOT EXISTS "
-                    + TableName
-                    + " (thread_id VARCHAR, address VARCHAR, body VARCHAR, type INT, date VARCHAR, date_string VARCHAR, sender VARCHAR, sender_name VARCHAR );");
+            filteredDatabase.execSQL("CREATE TABLE IF NOT EXISTS messageTable " +
+                    "(thread_id VARCHAR, address VARCHAR, body VARCHAR, type INT" +
+                    ", date VARCHAR, date_string VARCHAR, sender VARCHAR, sender_name VARCHAR );");
 
 
-            Cursor knownCursor = filteredDatabase.rawQuery("select DISTINCT thread_id from (select thread_id, date_string from " + TableName + " ORDER BY date_string DESC) ORDER BY date_string DESC;", null);
+            Cursor knownCursor = filteredDatabase.rawQuery("select DISTINCT thread_id from " +
+                    "(select thread_id, date_string from messageTable ORDER BY date_string DESC) " +
+                    "ORDER BY date_string DESC;", null);
 
             if(knownCursor.moveToFirst())
                 openExistingDatabase(knownCursor);
@@ -105,6 +112,7 @@ public class MainActivity extends AppCompatActivity{
 
         }
 
+        pb = (ProgressBar) findViewById(R.id.progressBar2);
 
         //release any held notifications
         SharedPreferences sp = PreferenceManager.getDefaultSharedPreferences(this);
@@ -114,30 +122,18 @@ public class MainActivity extends AppCompatActivity{
         NotificationManager notificationManager = (NotificationManager) this.getSystemService(Context.NOTIFICATION_SERVICE);
         notificationManager.cancelAll();
 
-
         mSectionsPageAdapter = new SectionsPageAdapter(getSupportFragmentManager());
 
         mViewPager = (ViewPager)findViewById(R.id.container);
         setupFragments(mViewPager);
 
-        pb = (ProgressBar) findViewById(R.id.progressBar2);
-
         TabLayout tabLayout = (TabLayout) findViewById(R.id.tabs);
         tabLayout.setupWithViewPager(mViewPager);
 
-        Toolbar tb = (Toolbar) findViewById(R.id.toolbar);
+        tb = (Toolbar) findViewById(R.id.toolbar);
         tb.setTitle("Filtered Messaging");
 
         tb.inflateMenu(R.menu.menu_main);
-
-        tb.findViewById(R.id.settingsButton).setOnClickListener(new View.OnClickListener() {
-            @Override
-            public void onClick(View v) {
-                Intent intent = new Intent(MainActivity.this, SettingsActivity.class);
-                startActivity(intent);
-
-            }
-        });
 
     }
 
@@ -206,8 +202,6 @@ public class MainActivity extends AppCompatActivity{
 
     }
 
-
-
     public void refreshSmsInbox() {
 
         Cursor cursor = getContentResolver().query(Uri
@@ -224,7 +218,6 @@ public class MainActivity extends AppCompatActivity{
             isContact = false;
 
             if (cursor.getString(Integer.parseInt(type)).equalsIgnoreCase("1")) {
-
 
                 //received messages
 
@@ -255,7 +248,6 @@ public class MainActivity extends AppCompatActivity{
                         cv.put("thread_id", threadId);
                         cv.put("type",1);
 
-
                         filteredDatabase.insert("messageTable", null ,cv );
 
                         smsList.get(i).addNewSenderMessage(cursor.getString(indexBody), date);
@@ -284,7 +276,6 @@ public class MainActivity extends AppCompatActivity{
                     cv.put("type",1);
 
 
-
                     String contactName;
                     contactName = getContactName(this, newSms.sender);
 
@@ -298,7 +289,6 @@ public class MainActivity extends AppCompatActivity{
                         cv.put("sender_name",contactName);
 
                         filteredDatabase.insertOrThrow("messageTable", null, cv);
-
 
                     }
                     else {
@@ -402,65 +392,10 @@ public class MainActivity extends AppCompatActivity{
 
         } while (cursor.moveToNext());
 
-    }
-
-    public ArrayList<sms> getKnownSms() {
-
-        return knownSms;
-    }
-    public ArrayList<sms> getUnknownSms() {
-
-        return unknownSms;
-    }
-
-    public ArrayList<sms> getSmsList() {
-
-        return smsList;
-    }
-
-    public String getContactName(Context context, String phoneNo) {
-        ContentResolver cr = context.getContentResolver();
-        Uri uri = Uri.withAppendedPath(ContactsContract.PhoneLookup.CONTENT_FILTER_URI, Uri.encode(phoneNo));
-        Cursor cursor = cr.query(uri, new String[]{ContactsContract.PhoneLookup.DISPLAY_NAME}, null, null, null);
-        if (cursor == null) {
-            return phoneNo;
-        }
-        String Name = phoneNo;
-        if (cursor.moveToFirst()) {
-            isContact = true;
-            Name = cursor.getString(cursor.getColumnIndex(ContactsContract.PhoneLookup.DISPLAY_NAME));
-        }
-
-        if (cursor != null && !cursor.isClosed()) {
-            cursor.close();
-        }
-
-        return Name;
-    }
-
-
-    @Override
-    public void onStart() {
-
-        super.onStart();
-        active = true;
-        inst = this;
-
-        if(refreshInbox){
-            refreshOnExtraThread();
-        }
+        cursor.close();
 
     }
 
-    @Override
-    public void onStop() {
-        super.onStop();
-        active = false;
-    }
-
-    public static MainActivity getInstance(){
-        return inst;
-    }
 
     void refreshFragments(){
 
@@ -488,33 +423,10 @@ public class MainActivity extends AppCompatActivity{
 
     }
 
-    public void setKnownInstance(Tab1Fragment knownInstance) {
-        this.knownInstance = knownInstance;
-    }
+    public void setSettingOnClick(MenuItem item) {
 
-    public void setUnknownInstance(Tab2Fragment unknownInstance) {
-        this.unknownInstance = unknownInstance;
-    }
+        startActivity(new Intent(MainActivity.this, SettingsActivity.class));
 
-    public void setKnownAdapter(Tab1Fragment.customAdapter adapter) {
-
-        knownAdapter = adapter;
-    }
-
-    public void setUnknownAdapter(Tab2Fragment.customAdapter adapter) {
-        unknownAdapter = adapter;
-    }
-
-    public void refreshOnExtraThread() {
-
-        new refreshInboxOnNewThread().execute();
-
-
-    }
-
-    public void fabClicked(View view) {
-        Intent intent = new Intent(MainActivity.this, NewMessage.class);
-        startActivity(intent);
     }
 
 
@@ -573,8 +485,8 @@ public class MainActivity extends AppCompatActivity{
     void setupFragments(ViewPager viewPager) {
         SectionsPageAdapter adapter = new SectionsPageAdapter(getSupportFragmentManager());
 
-        adapter.addFragment(new Tab1Fragment(), "Known");
-        adapter.addFragment(new Tab2Fragment(), "Unknown");
+        adapter.addFragment(new Tab1Fragment(), "Filtered");
+        adapter.addFragment(new Tab2Fragment(), "Unfiltered");
 
         viewPager.setAdapter(adapter);
     }
@@ -665,5 +577,212 @@ public class MainActivity extends AppCompatActivity{
     public String convertDate(String dateInMilliseconds,String dateFormat) {
         return DateFormat.format(dateFormat, Long.parseLong(dateInMilliseconds)).toString();
     }
+
+    public ArrayList<sms> getKnownSms() {
+
+        return knownSms;
+    }
+    public ArrayList<sms> getUnknownSms() {
+
+        return unknownSms;
+    }
+
+    public ArrayList<sms> getSmsList() {
+
+        return smsList;
+    }
+
+    public String getContactName(Context context, String phoneNo) {
+        ContentResolver cr = context.getContentResolver();
+        Uri uri = Uri.withAppendedPath(ContactsContract.PhoneLookup.CONTENT_FILTER_URI, Uri.encode(phoneNo));
+        Cursor cursor = cr.query(uri, new String[]{ContactsContract.PhoneLookup.DISPLAY_NAME}, null, null, null);
+        if (cursor == null) {
+            return phoneNo;
+        }
+        String Name = phoneNo;
+        if (cursor.moveToFirst()) {
+            isContact = true;
+            Name = cursor.getString(cursor.getColumnIndex(ContactsContract.PhoneLookup.DISPLAY_NAME));
+        }
+
+        if (cursor != null && !cursor.isClosed()) {
+            cursor.close();
+        }
+
+        return Name;
+    }
+
+
+    @Override
+    public void onStart() {
+
+        super.onStart();
+        active = true;
+        inst = this;
+
+        if(refreshInbox){
+            refreshOnExtraThread();
+        }
+
+    }
+
+    @Override
+    public void onStop() {
+        super.onStop();
+        active = false;
+    }
+
+    public void setKnownInstance(Tab1Fragment knownInstance) {
+        this.knownInstance = knownInstance;
+    }
+
+    public void setUnknownInstance(Tab2Fragment unknownInstance) {
+        this.unknownInstance = unknownInstance;
+    }
+
+    public void setKnownAdapter(Tab1Fragment.customAdapter adapter) {
+
+        knownAdapter = adapter;
+    }
+
+    public void setUnknownAdapter(Tab2Fragment.customAdapter adapter) {
+        unknownAdapter = adapter;
+    }
+
+    public void refreshOnExtraThread() {
+
+        new refreshInboxOnNewThread().execute();
+
+
+    }
+
+    public void fabClicked(View view) {
+        Intent intent = new Intent(MainActivity.this, NewMessage.class);
+        startActivity(intent);
+    }
+
+
+    public static MainActivity getInstance(){
+        return inst;
+    }
+
+    void setDeletionMode(final Tab1Fragment passedInstance){
+
+        cancelButtonFiltered = tb.getMenu().findItem(R.id.cancelButton);
+        final MenuItem deleteButton = tb.getMenu().findItem(R.id.deleteButton);
+
+        tb.setTitle("Deletion Mode");
+        cancelButtonFiltered.setVisible(true);
+        deleteButton.setVisible(true);
+
+        tb.findViewById(R.id.cancelButton).setOnClickListener(new View.OnClickListener() {
+            @Override
+            public void onClick(View v) {
+
+                passedInstance.deletionMode = false;
+
+                Arrays.fill(passedInstance.selectedViews, Boolean.FALSE);
+                Arrays.fill(passedInstance.threadsToDelete, null);
+
+                passedInstance.setDefaultListener();
+                passedInstance.knownAdapter.notifyDataSetChanged();
+
+                cancelButtonFiltered.setVisible(false);
+                deleteButton.setVisible(false);
+                tb.setTitle("Filtered Messaging");
+
+            }
+        });
+
+        tb.findViewById(R.id.deleteButton).setOnClickListener(new View.OnClickListener() {
+            @Override
+            public void onClick(View v) {
+
+                for(int i=0; i< passedInstance.threadsToDelete.length; i++){
+
+                    if(passedInstance.threadsToDelete[i] != null)
+                        Toast.makeText(MainActivity.this, passedInstance.threadsToDelete[i], Toast.LENGTH_SHORT).show();
+                }
+
+            }
+        });
+    }
+
+    void setDeletionMode(final Tab2Fragment passedInstance){
+
+        cancelButtonUnfiltered = tb.getMenu().findItem(R.id.cancelButton);
+        final MenuItem deleteButton = tb.getMenu().findItem(R.id.deleteButton);
+
+        tb.setTitle("Deletion Mode");
+        cancelButtonUnfiltered.setVisible(true);
+        deleteButton.setVisible(true);
+
+        tb.findViewById(R.id.cancelButton).setOnClickListener(new View.OnClickListener() {
+            @Override
+            public void onClick(View v) {
+
+                passedInstance.deletionMode = false;
+
+                Arrays.fill(passedInstance.selectedViews, Boolean.FALSE);
+                Arrays.fill(passedInstance.threadsToDelete, null);
+
+                passedInstance.setDefaultListener();
+                passedInstance.unknownAdapter.notifyDataSetChanged();
+
+                cancelButtonUnfiltered.setVisible(false);
+                deleteButton.setVisible(false);
+                tb.setTitle("Filtered Messaging");
+
+            }
+        });
+
+        tb.findViewById(R.id.deleteButton).setOnClickListener(new View.OnClickListener() {
+            @Override
+            public void onClick(View v) {
+
+                for(int i=0; i< passedInstance.threadsToDelete.length; i++){
+
+                    if(passedInstance.threadsToDelete[i] != null)
+                        Toast.makeText(MainActivity.this, passedInstance.threadsToDelete[i], Toast.LENGTH_SHORT).show();
+                }
+
+            }
+        });
+    }
+
+    void cancelDeletionMode(Tab2Fragment passedInstance, MenuItem deleteButton ){
+
+        passedInstance.deletionMode = false;
+
+        Arrays.fill(passedInstance.selectedViews, Boolean.FALSE);
+        Arrays.fill(passedInstance.threadsToDelete, null);
+
+        passedInstance.setDefaultListener();
+        passedInstance.unknownAdapter.notifyDataSetChanged();
+
+        tb.setTitle("Filtered Messaging");
+        cancelButtonUnfiltered.setVisible(false);
+        deleteButton.setVisible(false);
+
+    }
+
+    void cancelDeletionMode(Tab1Fragment passedInstance, MenuItem deleteButton ){
+
+        passedInstance.deletionMode = false;
+
+        Arrays.fill(passedInstance.selectedViews, Boolean.FALSE);
+        Arrays.fill(passedInstance.threadsToDelete, null);
+
+        passedInstance.setDefaultListener();
+        passedInstance.knownAdapter.notifyDataSetChanged();
+
+        tb.setTitle("Filtered Messaging");
+        cancelButtonFiltered.setVisible(false);
+        deleteButton.setVisible(false);
+
+    }
+
+
+
 
 }
