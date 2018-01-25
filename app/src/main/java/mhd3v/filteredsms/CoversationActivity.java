@@ -12,6 +12,7 @@ import android.content.IntentFilter;
 import android.content.SharedPreferences;
 import android.content.pm.PackageManager;
 import android.database.Cursor;
+import android.database.sqlite.SQLiteDatabase;
 import android.net.Uri;
 import android.os.Build;
 import android.os.Bundle;
@@ -286,18 +287,18 @@ public class CoversationActivity extends AppCompatActivity {
         conversationInstance = this;
     }
 
-    @Override
-    public void onStop() {
-        super.onStop();
-        conversationInstance = null;
-
-        if(cameFromNotification){
-            Intent intent = new Intent(this, MainActivity.class);
-            intent.setFlags(Intent.FLAG_ACTIVITY_CLEAR_TOP);
-            startActivity(intent);
-        }
-
-    }
+//    @Override
+//    public void onStop() {
+//        super.onStop();
+//        conversationInstance = null;
+//
+//        if(cameFromNotification){
+//            Intent intent = new Intent(this, MainActivity.class);
+//            intent.setFlags(Intent.FLAG_ACTIVITY_CLEAR_TOP);
+//            startActivity(intent);
+//        }
+//
+//    }
 
     void updateViewsAndDB(String address, String message, String time, messages newSms, boolean status){
 
@@ -306,11 +307,34 @@ public class CoversationActivity extends AppCompatActivity {
             String defaultSmsApp = Telephony.Sms.getDefaultSmsPackage(this);
 
             if(defaultSmsApp.equals("mhd3v.filteredsms")){
+                Log.d("test", "coning");
                 ContentValues values = new ContentValues();
                 values.put("address", address);
                 values.put("body", message);
                 this.getContentResolver().insert(Uri.parse("content://sms/sent"), values);
             }
+
+
+            ContentValues cv = new ContentValues();
+
+            Cursor cursor = this.getContentResolver().query(Uri.parse("content://sms"), null, null, null, null);
+            cursor.moveToFirst();
+
+            cv.put("thread_id", cursor.getString(cursor.getColumnIndex("thread_id")));
+            cv.put("date_string", time);
+            cv.put("type", 2);
+            cv.put("address", cursor.getString(cursor.getColumnIndex("address")));
+            cv.put("body", cursor.getString(cursor.getColumnIndex("body")));
+
+            if(senderName.equals(""))
+                cv.put("sender_name", "");
+            else
+                cv.put("sender_name", senderName);
+
+            SQLiteDatabase filteredDatabase = openOrCreateDatabase("filteredDatabase", MODE_PRIVATE, null);
+
+            filteredDatabase.insert("messageTable", null, cv);
+            filteredDatabase.close();
 
 
             ArrayList<messages> newMessageList = new ArrayList<>();
@@ -341,31 +365,40 @@ public class CoversationActivity extends AppCompatActivity {
                 PendingIntent sentPI = PendingIntent.getBroadcast(this, 0, new Intent(SENT), 0);
 
                 registerReceiver(new BroadcastReceiver() {
+                    int i = 1;
                     @Override
                     public void onReceive(Context arg0, Intent arg1) {
                         int resultCode = getResultCode();
-                        switch (resultCode) {
-                            case Activity.RESULT_OK:
-                                Toast.makeText(getBaseContext(), "SMS sent", Toast.LENGTH_LONG).show();
-                                updateViewsAndDB(address, message, Long.toString(System.currentTimeMillis()), newSms, true);
-                                break;
-                            case SmsManager.RESULT_ERROR_GENERIC_FAILURE:
-                                Toast.makeText(getBaseContext(), "Generic failure", Toast.LENGTH_LONG).show();
-                                updateViewsAndDB(address, message, Long.toString(System.currentTimeMillis()), newSms, false);
-                                break;
-                            case SmsManager.RESULT_ERROR_NO_SERVICE:
-                                Toast.makeText(getBaseContext(), "No service", Toast.LENGTH_LONG).show();
-                                updateViewsAndDB(address, message, Long.toString(System.currentTimeMillis()), newSms, false);
-                                break;
-                            case SmsManager.RESULT_ERROR_NULL_PDU:
-                                Toast.makeText(getBaseContext(), "Null PDU", Toast.LENGTH_LONG).show();
-                                updateViewsAndDB(address, message, Long.toString(System.currentTimeMillis()), newSms, false);
-                                break;
-                            case SmsManager.RESULT_ERROR_RADIO_OFF:
-                                Toast.makeText(getBaseContext(), "Radio off", Toast.LENGTH_LONG).show();
-                                updateViewsAndDB(address, message, Long.toString(System.currentTimeMillis()), newSms, false);
-                                break;
+                        if(i == 1){
+                            switch (resultCode) {
+                                case Activity.RESULT_OK:
+                                    Toast.makeText(getBaseContext(), "SMS sent", Toast.LENGTH_LONG).show();
+                                    updateViewsAndDB(address, message, Long.toString(System.currentTimeMillis()), newSms, true);
+                                    i++;
+                                    break;
+                                case SmsManager.RESULT_ERROR_GENERIC_FAILURE:
+                                    Toast.makeText(getBaseContext(), "Generic failure", Toast.LENGTH_LONG).show();
+                                    updateViewsAndDB(address, message, Long.toString(System.currentTimeMillis()), newSms, false);
+                                    i++;
+                                    break;
+                                case SmsManager.RESULT_ERROR_NO_SERVICE:
+                                    Toast.makeText(getBaseContext(), "No service", Toast.LENGTH_LONG).show();
+                                    updateViewsAndDB(address, message, Long.toString(System.currentTimeMillis()), newSms, false);
+                                    i++;
+                                    break;
+                                case SmsManager.RESULT_ERROR_NULL_PDU:
+                                    Toast.makeText(getBaseContext(), "Null PDU", Toast.LENGTH_LONG).show();
+                                    updateViewsAndDB(address, message, Long.toString(System.currentTimeMillis()), newSms, false);
+                                    i++;
+                                    break;
+                                case SmsManager.RESULT_ERROR_RADIO_OFF:
+                                    Toast.makeText(getBaseContext(), "Radio off", Toast.LENGTH_LONG).show();
+                                    updateViewsAndDB(address, message, Long.toString(System.currentTimeMillis()), newSms, false);
+                                    i++;
+                                    break;
+                            }
                         }
+
                     }
                 }, new IntentFilter(SENT));
 

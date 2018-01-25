@@ -61,8 +61,6 @@ public class SmsBroadcastReceiver extends BroadcastReceiver {
                     smsBody = smsMessage.getMessageBody().toString();
                     address = smsMessage.getOriginatingAddress();
 
-                    Log.d("mahad", smsBody);
-
                     String defaultSmsApp = Telephony.Sms.getDefaultSmsPackage(context);
 
                     if (defaultSmsApp.equals("mhd3v.filteredsms")) {
@@ -76,14 +74,15 @@ public class SmsBroadcastReceiver extends BroadcastReceiver {
                     ContentValues cv = new ContentValues();
 
                     filteredDatabase = context.openOrCreateDatabase("filteredDatabase", MODE_PRIVATE, null);
+                    filteredDatabase.execSQL("CREATE TABLE IF NOT EXISTS messageTable " +
+                            "(thread_id VARCHAR, address VARCHAR, body VARCHAR, type INT" +
+                            ", date VARCHAR, date_string VARCHAR, sender VARCHAR, sender_name VARCHAR );");
 
                     cursor = context.getContentResolver().query(Uri.parse("content://sms"), null, null, null, null);
                     cursor.moveToFirst();
 
                     String date = cursor.getString(cursor.getColumnIndex("date"));
                     String dateTime = convertDate(date,"yyyy/MM/dd hh:mm:ss");
-
-                    Log.d("time", dateTime);
 
                     cv.put("thread_id", cursor.getString(cursor.getColumnIndex("thread_id")));
                     cv.put("date", dateTime);
@@ -93,19 +92,33 @@ public class SmsBroadcastReceiver extends BroadcastReceiver {
                     cv.put("body", cursor.getString(cursor.getColumnIndex("body")));
 
                     isContact = false;
-
                     String contactName = getContactName(context, address);
 
-                    if (isContact == true){
+                    ContentValues filteredThreadsCv = new ContentValues();
+
+                    filteredDatabase.execSQL("CREATE TABLE IF NOT EXISTS filteredThreads " +
+                            "(thread_id VARCHAR, filtered_status VARCHAR, date_string VARCHAR);");
+
+                    if (isContact){
+                        filteredThreadsCv.put("thread_id",cursor.getString(cursor.getColumnIndex("thread_id")));
+                        filteredThreadsCv.put("filtered_status","filtered");
+                        filteredThreadsCv.put("date_string", date);
+                        filteredDatabase.insert("filteredThreads", null, filteredThreadsCv);
+
                         cv.put("sender_name", contactName);
                         cv.put("sender", "known");
                     }
                     else{
+                        filteredThreadsCv.put("thread_id",cursor.getString(cursor.getColumnIndex("thread_id")));
+                        filteredThreadsCv.put("filtered_status","unfiltered");
+                        filteredThreadsCv.put("date_string", date);
+                        filteredDatabase.insert("filteredThreads", null, filteredThreadsCv);
+
                         cv.put("sender_name", "");
                         cv.put("sender", "unknown");
                     }
 
-                   filteredDatabase.insertOrThrow("messageTable", null, cv);
+                    filteredDatabase.insertOrThrow("messageTable", null, cv);
 
                     cursor.close();
                     filteredDatabase.close();
@@ -133,8 +146,10 @@ public class SmsBroadcastReceiver extends BroadcastReceiver {
 
                             CoversationActivity.refreshMain();
 
-                        } else
+                        } else{
                             CoversationActivity.refreshMain();
+                            setNotification(context);
+                        }
 
                     }
 

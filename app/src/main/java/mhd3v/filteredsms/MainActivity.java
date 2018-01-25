@@ -19,7 +19,6 @@ import android.preference.PreferenceManager;
 import android.provider.ContactsContract;
 import android.provider.Telephony;
 import android.support.annotation.NonNull;
-import android.support.constraint.ConstraintLayout;
 import android.support.design.widget.TabLayout;
 import android.support.v4.content.ContextCompat;
 import android.support.v4.view.ViewPager;
@@ -69,11 +68,6 @@ public class MainActivity extends AppCompatActivity{
     MenuItem cancelButtonFiltered;
     MenuItem cancelButtonUnfiltered;
 
-    public static MainActivity instance() {
-
-        return inst;
-    }
-
     @Override
     protected void onCreate(Bundle savedInstanceState) {
 
@@ -81,39 +75,45 @@ public class MainActivity extends AppCompatActivity{
         setContentView(R.layout.activity_main);
 
         if (ContextCompat.checkSelfPermission(this, Manifest.permission.READ_SMS)
-                != PackageManager.PERMISSION_GRANTED){
+                != PackageManager.PERMISSION_GRANTED)
             getPermissionToReadSMS();
 
-        }
+
         else if (ContextCompat.checkSelfPermission(this, Manifest.permission.READ_CONTACTS)
-                != PackageManager.PERMISSION_GRANTED){
+                != PackageManager.PERMISSION_GRANTED)
             getPermissionToReadContacts();
-        }
+
+
 
         else {
-            //this.deleteDatabase("filteredDatabase");
+            this.deleteDatabase("filteredDatabase");
 
-            filteredDatabase = openOrCreateDatabase("filteredDatabase", MODE_PRIVATE, null);
-
-
-            filteredDatabase.execSQL("CREATE TABLE IF NOT EXISTS messageTable " +
-                    "(thread_id VARCHAR, address VARCHAR, body VARCHAR, type INT" +
-                    ", date VARCHAR, date_string VARCHAR, sender VARCHAR, sender_name VARCHAR );");
+            createOrOpenDb();
 
 
-            Cursor knownCursor = filteredDatabase.rawQuery("select DISTINCT thread_id from " +
-                    "(select thread_id, date_string from messageTable ORDER BY date_string DESC) " +
-                    "ORDER BY date_string DESC;", null);
+            Cursor threadCursor = filteredDatabase.rawQuery("select * from messageTable;", null);
 
-            if(knownCursor.moveToFirst())
-                openExistingDatabase(knownCursor);
+            if(threadCursor.moveToFirst()){
+
+                threadCursor = filteredDatabase.rawQuery("select DISTINCT thread_id, filtered_status from (select thread_id, filtered_status, date_string " +
+                        "from filteredThreads ORDER BY date_string DESC) " +
+                        "ORDER BY date_string DESC;", null);
+
+                threadCursor.moveToFirst();
+                openExistingDatabase(threadCursor);
+            }
 
             else
                 refreshSmsInbox();
 
             filteredDatabase.close();
-
         }
+
+        loadLayout();
+
+    }
+
+    private void loadLayout() {
 
         pb = (ProgressBar) findViewById(R.id.progressBar2);
 
@@ -137,18 +137,28 @@ public class MainActivity extends AppCompatActivity{
         tb.setTitle("Filtered Messaging");
 
         tb.inflateMenu(R.menu.menu_main);
+    }
 
+    private void createOrOpenDb() {
+
+        filteredDatabase = openOrCreateDatabase("filteredDatabase", MODE_PRIVATE, null);
+
+        filteredDatabase.execSQL("CREATE TABLE IF NOT EXISTS messageTable " +
+                "(thread_id VARCHAR, address VARCHAR, body VARCHAR, type INT" +
+                ", date VARCHAR, date_string VARCHAR, sender VARCHAR, sender_name VARCHAR );");
     }
 
     private void openExistingDatabase(Cursor cursor) {
 
         do{
 
-            Cursor c = filteredDatabase.rawQuery("select * from messageTable where thread_id =" + cursor.getString(cursor.getColumnIndex("thread_id"))+ " ORDER BY date_string DESC", null);
+            //Log.d("thread_id", cursor.getString(cursor.getColumnIndex("thread_id")));
+
+            Cursor c = filteredDatabase.rawQuery("select * from messageTable where thread_id =" + cursor.getString(cursor.getColumnIndex("thread_id"))+ " ORDER BY date_string DESC;", null);
 
             if(c.moveToFirst()){
 
-                if(c.getString(c.getColumnIndex("sender")).equals("known")) {
+                if(cursor.getString(cursor.getColumnIndex("filtered_status")).equals("filtered")) {
 
                     String thread_Id = c.getString(c.getColumnIndex("thread_id"));
 
@@ -173,7 +183,7 @@ public class MainActivity extends AppCompatActivity{
 
                 }
 
-                else if(c.getString(c.getColumnIndex("sender")).equals("unknown")){
+                else if(cursor.getString(cursor.getColumnIndex("filtered_status")).equals("unfiltered")){
 
                     String thread_Id = c.getString(c.getColumnIndex("thread_id"));
 
@@ -282,7 +292,19 @@ public class MainActivity extends AppCompatActivity{
                     String contactName;
                     contactName = getContactName(this, newSms.sender);
 
-                    if(isContact == true){
+                    //SQLiteDatabase filteredDatabase = openOrCreateDatabase("filteredDatabase", MODE_PRIVATE, null);
+
+                    filteredDatabase.execSQL("CREATE TABLE IF NOT EXISTS filteredThreads " +
+                            "(thread_id VARCHAR, filtered_status VARCHAR, date_string VARCHAR);");
+
+                    ContentValues filteredThreadsCv = new ContentValues();
+
+                    if(isContact){
+
+                        filteredThreadsCv.put("thread_id",threadId);
+                        filteredThreadsCv.put("filtered_status","filtered");
+                        filteredThreadsCv.put("date_string", date);
+                        filteredDatabase.insert("filteredThreads", null, filteredThreadsCv);
 
                         newSms.senderName = contactName;
                         newSms.knownThread = true;
@@ -296,6 +318,11 @@ public class MainActivity extends AppCompatActivity{
                     }
                     else {
 
+                        filteredThreadsCv.put("thread_id",threadId);
+                        filteredThreadsCv.put("filtered_status","unfiltered");
+                        filteredThreadsCv.put("date_string", date);
+                        filteredDatabase.insert("filteredThreads", null, filteredThreadsCv);
+
                         unknownSms.add(newSms);
 
                         cv.put("sender", "unknown");
@@ -304,6 +331,7 @@ public class MainActivity extends AppCompatActivity{
                         filteredDatabase.insertOrThrow("messageTable", null, cv);
 
                     }
+
 
                 }
 
@@ -345,7 +373,7 @@ public class MainActivity extends AppCompatActivity{
                     }
                 }
 
-                if (found == false) {
+                if (!found) {
                     String date = cursor.getString(cursor
                             .getColumnIndex("date"));
 
@@ -370,7 +398,17 @@ public class MainActivity extends AppCompatActivity{
                     String contactName;
                     contactName = getContactName(this, newSms.sender);
 
-                    if(isContact == true){
+                    filteredDatabase.execSQL("CREATE TABLE IF NOT EXISTS filteredThreads " +
+                            "(thread_id VARCHAR, filtered_status VARCHAR, date_string VARCHAR);");
+
+                    ContentValues filteredThreadsCv = new ContentValues();
+
+                    if(isContact){
+
+                        filteredThreadsCv.put("thread_id",threadId);
+                        filteredThreadsCv.put("filtered_status","filtered");
+                        filteredThreadsCv.put("date_string", date);
+                        filteredDatabase.insert("filteredThreads", null, filteredThreadsCv);
 
                         cv.put("sender", "known");
                         cv.put("sender_name",contactName);
@@ -381,6 +419,11 @@ public class MainActivity extends AppCompatActivity{
                         knownSms.add(newSms);
                     }
                     else {
+
+                        filteredThreadsCv.put("thread_id",threadId);
+                        filteredThreadsCv.put("filtered_status","unfiltered");
+                        filteredThreadsCv.put("date_string", date);
+                        filteredDatabase.insert("filteredThreads", null, filteredThreadsCv);
 
                         cv.put("sender", "unknown");
                         cv.put("sender_name","");
@@ -401,8 +444,6 @@ public class MainActivity extends AppCompatActivity{
 
 
     void refreshFragments(){
-
-        Log.d("mahad", "refreshing because refresh inbox true");
 
         ArrayList<sms> newKnownList = new ArrayList<>();
         ArrayList<sms> newUnknownList = new ArrayList<>();
@@ -457,17 +498,14 @@ public class MainActivity extends AppCompatActivity{
 
             filteredDatabase = openOrCreateDatabase("filteredDatabase", MODE_PRIVATE, null);
 
-            String TableName = "messageTable";
+            Cursor threadCursor = filteredDatabase.rawQuery("select DISTINCT thread_id, filtered_status from (select thread_id, filtered_status, date_string " +
+                    "from filteredThreads ORDER BY date_string DESC) " +
+                    "ORDER BY date_string DESC;", null);
 
-            filteredDatabase.execSQL("CREATE TABLE IF NOT EXISTS "
-                    + TableName
-                    + " (thread_id VARCHAR, address VARCHAR, body VARCHAR, type INT, date VARCHAR, date_string VARCHAR, sender VARCHAR, sender_name VARCHAR );");
 
-            Cursor knownCursor = filteredDatabase.rawQuery("select DISTINCT thread_id from (select thread_id, date_string from " + TableName + " ORDER BY date_string DESC) ORDER BY date_string DESC;", null);
+            threadCursor.moveToFirst();
 
-            knownCursor.moveToFirst();
-
-            openExistingDatabase(knownCursor);
+            openExistingDatabase(threadCursor);
 
 
             filteredDatabase.close();
@@ -545,8 +583,13 @@ public class MainActivity extends AppCompatActivity{
                 if(ContextCompat.checkSelfPermission(this, Manifest.permission.READ_CONTACTS)
                         != PackageManager.PERMISSION_GRANTED)
                     getPermissionToReadContacts();
-                else
-                    refreshOnExtraThread();
+                else{
+                    createOrOpenDb();
+                    refreshSmsInbox();
+                    loadLayout();
+
+                }
+
 
             }
 
@@ -563,8 +606,11 @@ public class MainActivity extends AppCompatActivity{
                 if(ContextCompat.checkSelfPermission(this, Manifest.permission.READ_SMS)
                         != PackageManager.PERMISSION_GRANTED)
                     getPermissionToReadSMS();
-                else
-                    refreshOnExtraThread();
+                else{
+                    createOrOpenDb();
+                    refreshSmsInbox();
+                    loadLayout();
+                }
 
             }
 
@@ -573,7 +619,6 @@ public class MainActivity extends AppCompatActivity{
             }
 
         }
-
 
     }
 
@@ -596,6 +641,7 @@ public class MainActivity extends AppCompatActivity{
     }
 
     public String getContactName(Context context, String phoneNo) {
+        Log.d("phoneNo", phoneNo);
         ContentResolver cr = context.getContentResolver();
         Uri uri = Uri.withAppendedPath(ContactsContract.PhoneLookup.CONTENT_FILTER_URI, Uri.encode(phoneNo));
         Cursor cursor = cr.query(uri, new String[]{ContactsContract.PhoneLookup.DISPLAY_NAME}, null, null, null);
