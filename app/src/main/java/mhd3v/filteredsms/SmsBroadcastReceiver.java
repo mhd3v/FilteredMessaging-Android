@@ -10,6 +10,7 @@ import android.content.Context;
 import android.content.Intent;
 import android.content.SharedPreferences;
 import android.database.Cursor;
+import android.database.sqlite.SQLiteDatabase;
 import android.net.Uri;
 import android.os.Bundle;
 import android.preference.PreferenceManager;
@@ -17,9 +18,12 @@ import android.provider.ContactsContract;
 import android.provider.Telephony;
 import android.support.v4.app.NotificationCompat;
 import android.telephony.SmsMessage;
+import android.text.format.DateFormat;
 import android.util.Log;
 
 import java.util.ArrayList;
+
+import static android.content.Context.MODE_PRIVATE;
 
 /**
  * Created by Mahad on 12/22/2017.
@@ -33,6 +37,7 @@ public class SmsBroadcastReceiver extends BroadcastReceiver {
     boolean isContact;
     Cursor cursor;
     NotificationCompat.InboxStyle inboxStyle;
+    SQLiteDatabase filteredDatabase;
 
     private static final String ACTION_SMS_NEW = "android.provider.Telephony.SMS_RECEIVED";
 
@@ -56,18 +61,67 @@ public class SmsBroadcastReceiver extends BroadcastReceiver {
                     smsBody = smsMessage.getMessageBody().toString();
                     address = smsMessage.getOriginatingAddress();
 
-                    Log.d("mahad", smsBody);
-
                     String defaultSmsApp = Telephony.Sms.getDefaultSmsPackage(context);
 
                     if (defaultSmsApp.equals("mhd3v.filteredsms")) {
 
-                            ContentValues values = new ContentValues();
-                            values.put("address", address);
-                            values.put("body", smsBody);
-                            context.getContentResolver().insert(Uri.parse("content://sms/inbox"), values);
-
+                        ContentValues cv = new ContentValues();
+                        cv.put("address", address);
+                        cv.put("body", smsBody);
+                        context.getContentResolver().insert(Uri.parse("content://sms/inbox"), cv);
                     }
+
+                    ContentValues cv = new ContentValues();
+
+                    filteredDatabase = context.openOrCreateDatabase("filteredDatabase", MODE_PRIVATE, null);
+                    filteredDatabase.execSQL("CREATE TABLE IF NOT EXISTS messageTable " +
+                            "(thread_id VARCHAR, address VARCHAR, body VARCHAR, type INT" +
+                            ", date VARCHAR, date_string VARCHAR, sender VARCHAR, sender_name VARCHAR );");
+
+                    cursor = context.getContentResolver().query(Uri.parse("content://sms"), null, null, null, null);
+                    cursor.moveToFirst();
+
+                    String date = cursor.getString(cursor.getColumnIndex("date"));
+                    String dateTime = convertDate(date,"yyyy/MM/dd hh:mm:ss");
+
+                    cv.put("thread_id", cursor.getString(cursor.getColumnIndex("thread_id")));
+                    cv.put("date", dateTime);
+                    cv.put("date_string", date);
+                    cv.put("type", 1);
+                    cv.put("address", cursor.getString(cursor.getColumnIndex("address")));
+                    cv.put("body", cursor.getString(cursor.getColumnIndex("body")));
+
+                    isContact = false;
+                    String contactName = getContactName(context, address);
+
+                    ContentValues filteredThreadsCv = new ContentValues();
+
+                    filteredDatabase.execSQL("CREATE TABLE IF NOT EXISTS filteredThreads " +
+                            "(thread_id VARCHAR, filtered_status VARCHAR, date_string VARCHAR);");
+
+                    if (isContact){
+                        filteredThreadsCv.put("thread_id",cursor.getString(cursor.getColumnIndex("thread_id")));
+                        filteredThreadsCv.put("filtered_status","filtered");
+                        filteredThreadsCv.put("date_string", date);
+                        filteredDatabase.insert("filteredThreads", null, filteredThreadsCv);
+
+                        cv.put("sender_name", contactName);
+                        cv.put("sender", "known");
+                    }
+                    else{
+                        filteredThreadsCv.put("thread_id",cursor.getString(cursor.getColumnIndex("thread_id")));
+                        filteredThreadsCv.put("filtered_status","unfiltered");
+                        filteredThreadsCv.put("date_string", date);
+                        filteredDatabase.insert("filteredThreads", null, filteredThreadsCv);
+
+                        cv.put("sender_name", "");
+                        cv.put("sender", "unknown");
+                    }
+
+                    filteredDatabase.insertOrThrow("messageTable", null, cv);
+
+                    cursor.close();
+                    filteredDatabase.close();
 
                     cursor = context.getContentResolver().query(Uri
                             .parse("content://sms"), null, null, null, null);
@@ -92,8 +146,10 @@ public class SmsBroadcastReceiver extends BroadcastReceiver {
 
                             CoversationActivity.refreshMain();
 
-                        } else
+                        } else{
                             CoversationActivity.refreshMain();
+                            setNotification(context);
+                        }
 
                     }
 
@@ -120,26 +176,6 @@ public class SmsBroadcastReceiver extends BroadcastReceiver {
 
         }
 
-    }
-
-    public String getContactName(Context context, String phoneNo) {
-        ContentResolver cr = context.getContentResolver();
-        Uri uri = Uri.withAppendedPath(ContactsContract.PhoneLookup.CONTENT_FILTER_URI, Uri.encode(phoneNo));
-        Cursor cursor = cr.query(uri, new String[]{ContactsContract.PhoneLookup.DISPLAY_NAME}, null, null, null);
-        if (cursor == null) {
-            return phoneNo;
-        }
-        String Name = phoneNo;
-        if (cursor.moveToFirst()) {
-            isContact = true;
-            Name = cursor.getString(cursor.getColumnIndex(ContactsContract.PhoneLookup.DISPLAY_NAME));
-        }
-
-        if (cursor != null && !cursor.isClosed()) {
-            cursor.close();
-        }
-
-        return Name;
     }
 
     void setNotification(Context context){
@@ -205,6 +241,30 @@ public class SmsBroadcastReceiver extends BroadcastReceiver {
             mNotificationManager.notify(id, mBuilder.build());
 
         }
+    }
+
+    public String convertDate(String dateInMilliseconds,String dateFormat) {
+        return DateFormat.format(dateFormat, Long.parseLong(dateInMilliseconds)).toString();
+    }
+
+    public String getContactName(Context context, String phoneNo) {
+        ContentResolver cr = context.getContentResolver();
+        Uri uri = Uri.withAppendedPath(ContactsContract.PhoneLookup.CONTENT_FILTER_URI, Uri.encode(phoneNo));
+        Cursor cursor = cr.query(uri, new String[]{ContactsContract.PhoneLookup.DISPLAY_NAME}, null, null, null);
+        if (cursor == null) {
+            return phoneNo;
+        }
+        String Name = phoneNo;
+        if (cursor.moveToFirst()) {
+            isContact = true;
+            Name = cursor.getString(cursor.getColumnIndex(ContactsContract.PhoneLookup.DISPLAY_NAME));
+        }
+
+        if (cursor != null && !cursor.isClosed()) {
+            cursor.close();
+        }
+
+        return Name;
     }
 
 }

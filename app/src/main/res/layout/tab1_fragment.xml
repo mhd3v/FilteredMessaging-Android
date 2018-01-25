@@ -10,6 +10,7 @@
     tools:layout_editor_absoluteX="0dp">
 
     <ListView
+        style="@style/activated"
         android:paddingBottom="?attr/actionBarSize"
         android:id="@+id/knownList"
         android:layout_width="0dp"

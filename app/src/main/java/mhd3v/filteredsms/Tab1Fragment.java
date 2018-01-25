@@ -1,10 +1,13 @@
 package mhd3v.filteredsms;
 
 import android.content.Intent;
+import android.graphics.Color;
 import android.os.Bundle;
 import android.support.annotation.Nullable;
 import android.support.v4.app.Fragment;
+import android.support.v7.widget.Toolbar;
 import android.text.format.DateFormat;
+import android.view.KeyEvent;
 import android.view.LayoutInflater;
 import android.view.View;
 import android.view.ViewGroup;
@@ -14,7 +17,13 @@ import android.widget.ImageView;
 import android.widget.ListView;
 import android.widget.TextView;
 import android.text.TextUtils;
+import android.widget.Toast;
+
 import java.util.ArrayList;
+
+import static android.R.attr.activatedBackgroundIndicator;
+import static android.R.attr.color;
+import static android.R.attr.colorBackground;
 
 
 /**
@@ -24,9 +33,14 @@ import java.util.ArrayList;
 public class Tab1Fragment extends Fragment {
 
     ArrayList<sms> smsList = new ArrayList<>();
-    customAdapter knownAdapter;
 
+    customAdapter knownAdapter;
     ListView knownList;
+    Tab1Fragment thisInstance;
+
+    boolean[] selectedViews;
+    String[] threadsToDelete;
+    static boolean deletionMode = false;
 
     @Nullable
     @Override
@@ -35,19 +49,78 @@ public class Tab1Fragment extends Fragment {
         View view = inflater.inflate(R.layout.tab1_fragment, container, false);
 
         MainActivity activity = (MainActivity) getActivity();
-
         activity.setKnownInstance(this);
+
+        thisInstance = this;
 
         knownList = view.findViewById(R.id.knownList);
 
-        if(smsList.isEmpty())
+        //if(smsList.isEmpty())
         smsList = activity.getKnownSms();
+
+        selectedViews = new boolean[smsList.size()];
+        threadsToDelete = new String[smsList.size()];
 
         knownAdapter = new customAdapter();
 
         activity.setKnownAdapter(knownAdapter);
 
         knownList.setAdapter(knownAdapter);
+
+        setDefaultListener();
+
+
+        knownList.setOnItemLongClickListener(new AdapterView.OnItemLongClickListener() {
+            @Override
+            public boolean onItemLongClick(AdapterView<?> adapterView, View view, int position, long id) {
+
+                deletionMode = true;
+
+                MainActivity main = (MainActivity) getActivity();
+
+                if(main.unknownInstance.deletionMode){  //if tab2 is in deletion mode
+                    main.cancelDeletionMode(main.unknownInstance, main.cancelButtonUnfiltered);
+                }
+
+
+                main.setFilteredDeletionMode(thisInstance);
+
+
+                if(deletionMode){
+
+                    knownList.setOnItemClickListener(new AdapterView.OnItemClickListener() {
+                        @Override
+                        public void onItemClick(AdapterView<?> parent, View view, int position, long id) {
+
+                            ImageView contactPicture = view.findViewById(R.id.contactPicture);
+
+                            if(!selectedViews[position]) {
+                                contactPicture.setImageResource(R.drawable.knownsenderselected);
+                                selectedViews[position] = true;
+                                threadsToDelete[position] = smsList.get(position).threadId;
+                            }
+
+                            else{
+                                contactPicture.setImageResource(R.drawable.knownsender);
+                                selectedViews[position] = false;
+                                threadsToDelete[position] = null;
+                            }
+
+                        }
+                    });
+                }
+
+                return false;
+            }
+        });
+
+
+
+
+        return view;
+    }
+
+    public void setDefaultListener() {
 
         knownList.setOnItemClickListener(new AdapterView.OnItemClickListener() {
             @Override
@@ -69,11 +142,10 @@ public class Tab1Fragment extends Fragment {
             }
         });
 
-        return view;
     }
 
 
- public  class customAdapter extends BaseAdapter {
+    public  class customAdapter extends BaseAdapter {
 
         @Override
         public int getCount() {
@@ -111,7 +183,11 @@ public class Tab1Fragment extends Fragment {
                 text.setText(smsList.get(i).messages.get(0).messageBody);
 
             ImageView contactPicture = view.findViewById(R.id.contactPicture);
-            contactPicture.setImageResource(R.drawable.knownsender);
+
+            if(!selectedViews[i])
+                contactPicture.setImageResource(R.drawable.knownsender);
+            else
+                contactPicture.setImageResource(R.drawable.knownsenderselected);
 
             return view;
         }
@@ -122,7 +198,6 @@ public class Tab1Fragment extends Fragment {
 
 
     }
-
 
 
 }

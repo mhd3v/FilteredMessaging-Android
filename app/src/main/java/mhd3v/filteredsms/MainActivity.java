@@ -3,29 +3,37 @@ package mhd3v.filteredsms;
 import android.Manifest;
 import android.app.NotificationManager;
 import android.content.ContentResolver;
+import android.content.ContentValues;
 import android.content.Context;
+import android.content.DialogInterface;
 import android.content.Intent;
 import android.content.SharedPreferences;
 import android.content.pm.PackageManager;
 import android.database.Cursor;
+import android.database.sqlite.SQLiteDatabase;
 import android.net.Uri;
 import android.os.AsyncTask;
 import android.os.Build;
 import android.os.Bundle;
 import android.preference.PreferenceManager;
 import android.provider.ContactsContract;
+import android.provider.Telephony;
 import android.support.annotation.NonNull;
 import android.support.design.widget.TabLayout;
 import android.support.v4.content.ContextCompat;
 import android.support.v4.view.ViewPager;
+import android.support.v7.app.AlertDialog;
 import android.support.v7.app.AppCompatActivity;
 import android.support.v7.widget.Toolbar;
+import android.text.format.DateFormat;
 import android.util.Log;
+import android.view.MenuItem;
 import android.view.View;
 import android.widget.ProgressBar;
 import android.widget.Toast;
 
 import java.util.ArrayList;
+import java.util.Arrays;
 
 public class MainActivity extends AppCompatActivity{
 
@@ -53,28 +61,61 @@ public class MainActivity extends AppCompatActivity{
     private static final int READ_SMS_PERMISSIONS_REQUEST = 1;
     private static final int READ_CONTACTS_PERMISSIONS_REQUEST = 2;
 
-    public static MainActivity instance() {
+    SQLiteDatabase filteredDatabase;
 
-        return inst;
-    }
+    Toolbar tb;
+
+    MenuItem cancelButtonFiltered;
+    MenuItem cancelButtonUnfiltered;
 
     @Override
     protected void onCreate(Bundle savedInstanceState) {
+
         super.onCreate(savedInstanceState);
         setContentView(R.layout.activity_main);
 
         if (ContextCompat.checkSelfPermission(this, Manifest.permission.READ_SMS)
-                != PackageManager.PERMISSION_GRANTED){
+                != PackageManager.PERMISSION_GRANTED)
             getPermissionToReadSMS();
 
-        }
+
         else if (ContextCompat.checkSelfPermission(this, Manifest.permission.READ_CONTACTS)
-                != PackageManager.PERMISSION_GRANTED){
+                != PackageManager.PERMISSION_GRANTED)
             getPermissionToReadContacts();
+
+
+
+        else {
+            this.deleteDatabase("filteredDatabase");
+
+            createOrOpenDb();
+
+
+            Cursor threadCursor = filteredDatabase.rawQuery("select * from messageTable;", null);
+
+            if(threadCursor.moveToFirst()){
+
+                threadCursor = filteredDatabase.rawQuery("select DISTINCT thread_id, filtered_status from (select thread_id, filtered_status, date_string " +
+                        "from filteredThreads ORDER BY date_string DESC) " +
+                        "ORDER BY date_string DESC;", null);
+
+                threadCursor.moveToFirst();
+                openExistingDatabase(threadCursor);
+            }
+
+            else
+                refreshSmsInbox();
+
+            filteredDatabase.close();
         }
 
-        else
-            refreshSmsInbox();
+        loadLayout();
+
+    }
+
+    private void loadLayout() {
+
+        pb = (ProgressBar) findViewById(R.id.progressBar2);
 
         //release any held notifications
         SharedPreferences sp = PreferenceManager.getDefaultSharedPreferences(this);
@@ -84,38 +125,409 @@ public class MainActivity extends AppCompatActivity{
         NotificationManager notificationManager = (NotificationManager) this.getSystemService(Context.NOTIFICATION_SERVICE);
         notificationManager.cancelAll();
 
-
         mSectionsPageAdapter = new SectionsPageAdapter(getSupportFragmentManager());
 
         mViewPager = (ViewPager)findViewById(R.id.container);
         setupFragments(mViewPager);
 
-        pb = (ProgressBar) findViewById(R.id.progressBar2);
-
         TabLayout tabLayout = (TabLayout) findViewById(R.id.tabs);
         tabLayout.setupWithViewPager(mViewPager);
 
-        Toolbar tb = (Toolbar) findViewById(R.id.toolbar);
+        tb = (Toolbar) findViewById(R.id.toolbar);
         tb.setTitle("Filtered Messaging");
 
         tb.inflateMenu(R.menu.menu_main);
+    }
 
-        tb.findViewById(R.id.settingsButton).setOnClickListener(new View.OnClickListener() {
-            @Override
-            public void onClick(View v) {
-                Intent intent = new Intent(MainActivity.this, SettingsActivity.class);
-                startActivity(intent);
+    private void createOrOpenDb() {
+
+        filteredDatabase = openOrCreateDatabase("filteredDatabase", MODE_PRIVATE, null);
+
+        filteredDatabase.execSQL("CREATE TABLE IF NOT EXISTS messageTable " +
+                "(thread_id VARCHAR, address VARCHAR, body VARCHAR, type INT" +
+                ", date VARCHAR, date_string VARCHAR, sender VARCHAR, sender_name VARCHAR );");
+    }
+
+    private void openExistingDatabase(Cursor cursor) {
+
+        do{
+
+            //Log.d("thread_id", cursor.getString(cursor.getColumnIndex("thread_id")));
+
+            Cursor c = filteredDatabase.rawQuery("select * from messageTable where thread_id =" + cursor.getString(cursor.getColumnIndex("thread_id"))+ " ORDER BY date_string DESC;", null);
+
+            if(c.moveToFirst()){
+
+                if(cursor.getString(cursor.getColumnIndex("filtered_status")).equals("filtered")) {
+
+                    String thread_Id = c.getString(c.getColumnIndex("thread_id"));
+
+                    sms newSms = new sms(c.getString(c.getColumnIndex("address")), thread_Id);
+
+                    newSms.senderName = c.getString(c.getColumnIndex("sender_name"));
+
+
+                    do{
+                        messages message = new messages(c.getString(c.getColumnIndex("body")), c.getString(c.getColumnIndex("date_string")));
+
+                        if(c.getString(c.getColumnIndex("type")).equals("2")){
+                            message.isUserMessage = true;
+                        }
+
+                        newSms.messages.add(message);
+                    }
+                    while(c.moveToNext());
+
+                    knownSms.add(newSms);
+
+
+                }
+
+                else if(cursor.getString(cursor.getColumnIndex("filtered_status")).equals("unfiltered")){
+
+                    String thread_Id = c.getString(c.getColumnIndex("thread_id"));
+
+                    sms newSms = new sms(c.getString(c.getColumnIndex("address")), thread_Id);
+                    newSms.senderName = c.getString(c.getColumnIndex("sender_name"));
+
+                    do{
+
+                        messages message = new messages(c.getString(c.getColumnIndex("body")), c.getString(c.getColumnIndex("date_string")));
+
+                        if(c.getString(c.getColumnIndex("type")).equals("2")){
+                            message.isUserMessage = true;
+                        }
+
+                        newSms.messages.add(message);
+                    }
+                    while(c.moveToNext());
+
+
+                    unknownSms.add(newSms);
+
+                }
+            }
+
+            c.close();
+        }
+        while(cursor.moveToNext());
+        cursor.close();
+
+    }
+
+    public void refreshSmsInbox() {
+
+        Cursor cursor = getContentResolver().query(Uri
+                .parse("content://sms"), null, null, null, null);
+
+        int indexBody = cursor.getColumnIndex("body");
+        int indexAddress = cursor.getColumnIndex("address");
+        if (indexBody < 0 || !cursor.moveToFirst()) return;
+
+        String type = Integer.toString(cursor.getColumnIndex("type"));
+
+        do {
+
+            isContact = false;
+
+            if (cursor.getString(Integer.parseInt(type)).equalsIgnoreCase("1")) {
+
+                //received messages
+
+                boolean found = false;
+
+                ContentValues cv = new ContentValues();
+
+                for (int i = 0; i < smsList.size(); i++) {
+
+                    if (smsList.get(i).threadId.equals(cursor.getString(cursor.getColumnIndex("thread_id")))) {
+                        String date = cursor.getString(cursor
+                                .getColumnIndex("date"));
+
+                        String dateTime = convertDate(date,"yyyy/MM/dd hh:mm:ss");
+
+
+                        int threadId= cursor.getInt(cursor.getColumnIndex("thread_id"));
+
+                        if(smsList.get(i).knownThread)
+                            cv.put("sender", "known");
+                        else
+                            cv.put("sender", "unknown");
+
+                        cv.put("date", dateTime);
+                        cv.put("date_string", date);
+                        cv.put("address", cursor.getString(indexAddress));
+                        cv.put("body", cursor.getString(indexBody));
+                        cv.put("thread_id", threadId);
+                        cv.put("type",1);
+
+                        filteredDatabase.insert("messageTable", null ,cv );
+
+                        smsList.get(i).addNewSenderMessage(cursor.getString(indexBody), date);
+                        found = true;
+                    }
+
+                }
+                if (!found) {
+
+                    String date = cursor.getString(cursor
+                            .getColumnIndex("date"));
+                    String dateTime = convertDate(date,"yyyy/MM/dd hh:mm:ss");
+
+                    sms newSms = new sms(cursor.getString(indexAddress), cursor.getString(cursor.getColumnIndex("thread_id")));
+                    newSms.addNewSenderMessage(cursor.getString(indexBody), date);
+
+                    smsList.add(newSms);
+
+                    int threadId= cursor.getInt(cursor.getColumnIndex("thread_id"));
+
+                    cv.put("date", dateTime);
+                    cv.put("date_string", date);
+                    cv.put("address", cursor.getString(indexAddress));
+                    cv.put("body", cursor.getString(indexBody));
+                    cv.put("thread_id", threadId);
+                    cv.put("type",1);
+
+
+                    String contactName;
+                    contactName = getContactName(this, newSms.sender);
+
+                    //SQLiteDatabase filteredDatabase = openOrCreateDatabase("filteredDatabase", MODE_PRIVATE, null);
+
+                    filteredDatabase.execSQL("CREATE TABLE IF NOT EXISTS filteredThreads " +
+                            "(thread_id VARCHAR, filtered_status VARCHAR, date_string VARCHAR);");
+
+                    ContentValues filteredThreadsCv = new ContentValues();
+
+                    if(isContact){
+
+                        filteredThreadsCv.put("thread_id",threadId);
+                        filteredThreadsCv.put("filtered_status","filtered");
+                        filteredThreadsCv.put("date_string", date);
+                        filteredDatabase.insert("filteredThreads", null, filteredThreadsCv);
+
+                        newSms.senderName = contactName;
+                        newSms.knownThread = true;
+                        knownSms.add(newSms);
+
+                        cv.put("sender", "known");
+                        cv.put("sender_name",contactName);
+
+                        filteredDatabase.insertOrThrow("messageTable", null, cv);
+
+                    }
+                    else {
+
+                        filteredThreadsCv.put("thread_id",threadId);
+                        filteredThreadsCv.put("filtered_status","unfiltered");
+                        filteredThreadsCv.put("date_string", date);
+                        filteredDatabase.insert("filteredThreads", null, filteredThreadsCv);
+
+                        unknownSms.add(newSms);
+
+                        cv.put("sender", "unknown");
+                        cv.put("sender_name","");
+
+                        filteredDatabase.insertOrThrow("messageTable", null, cv);
+
+                    }
+
+
+                }
 
             }
-        });
 
+            else if (cursor.getString(Integer.parseInt(type)).equalsIgnoreCase("2")) {
+
+                //sent messages
+
+                boolean found = false;
+
+                ContentValues cv = new ContentValues();
+
+                for (int i = 0; i < smsList.size(); i++) {
+
+                    if (smsList.get(i).threadId.equals(cursor.getString(cursor.getColumnIndex("thread_id")))) {
+
+                        String date = cursor.getString(cursor.getColumnIndex("date"));
+                        String dateTime = convertDate(date,"yyyy/MM/dd hh:mm:ss");
+
+                        int threadId= cursor.getInt(cursor.getColumnIndex("thread_id"));
+
+                        if(smsList.get(i).knownThread)
+                            cv.put("sender", "known");
+                        else
+                            cv.put("sender", "unknown");
+
+                        cv.put("date", dateTime);
+                        cv.put("date_string", date);
+                        cv.put("address", cursor.getString(indexAddress));
+                        cv.put("body", cursor.getString(indexBody));
+                        cv.put("thread_id", threadId);
+                        cv.put("type",2);
+
+                        filteredDatabase.insert("messageTable", null, cv );
+
+                        smsList.get(i).addNewUserMessage(cursor.getString(indexBody), date);
+                        found = true;
+                    }
+                }
+
+                if (!found) {
+                    String date = cursor.getString(cursor
+                            .getColumnIndex("date"));
+
+                    String dateTime = convertDate(date,"yyyy/MM/dd hh:mm:ss");
+
+                    sms newSms = new sms(cursor.getString(indexAddress),cursor.getString(cursor.getColumnIndex("thread_id")));
+
+                    newSms.addNewUserMessage(cursor.getString(indexBody), date);
+
+                    smsList.add(newSms);
+
+                    int threadId= cursor.getInt(cursor.getColumnIndex("thread_id"));
+
+                    cv.put("date", dateTime);
+                    cv.put("date_string", date);
+                    cv.put("address", cursor.getString(cursor.getColumnIndex("address")));
+                    cv.put("body", cursor.getString(indexBody));
+                    cv.put("thread_id", threadId);
+                    cv.put("type",2);
+
+
+                    String contactName;
+                    contactName = getContactName(this, newSms.sender);
+
+                    filteredDatabase.execSQL("CREATE TABLE IF NOT EXISTS filteredThreads " +
+                            "(thread_id VARCHAR, filtered_status VARCHAR, date_string VARCHAR);");
+
+                    ContentValues filteredThreadsCv = new ContentValues();
+
+                    if(isContact){
+
+                        filteredThreadsCv.put("thread_id",threadId);
+                        filteredThreadsCv.put("filtered_status","filtered");
+                        filteredThreadsCv.put("date_string", date);
+                        filteredDatabase.insert("filteredThreads", null, filteredThreadsCv);
+
+                        cv.put("sender", "known");
+                        cv.put("sender_name",contactName);
+                        newSms.knownThread = true;
+                        filteredDatabase.insertOrThrow("messageTable", null, cv);
+
+                        newSms.senderName = contactName;
+                        knownSms.add(newSms);
+                    }
+                    else {
+
+                        filteredThreadsCv.put("thread_id",threadId);
+                        filteredThreadsCv.put("filtered_status","unfiltered");
+                        filteredThreadsCv.put("date_string", date);
+                        filteredDatabase.insert("filteredThreads", null, filteredThreadsCv);
+
+                        cv.put("sender", "unknown");
+                        cv.put("sender_name","");
+                        filteredDatabase.insertOrThrow("messageTable", null, cv);
+
+                        unknownSms.add(newSms);
+                    }
+
+                }
+
+            }
+
+        } while (cursor.moveToNext());
+
+        cursor.close();
+
+    }
+
+
+    void refreshFragments(){
+
+        ArrayList<sms> newKnownList = new ArrayList<>();
+        ArrayList<sms> newUnknownList = new ArrayList<>();
+
+        newKnownList.addAll(getKnownSms());
+        newUnknownList.addAll(getUnknownSms());
+
+        knownInstance.smsList.clear();
+        knownInstance.smsList.addAll(newKnownList);
+        knownAdapter.notifyDataSetChanged();
+
+        unknownInstance.smsList.clear();
+        unknownInstance.smsList.addAll(newUnknownList);
+        unknownAdapter.notifyDataSetChanged();
+
+        knownInstance.knownList.setVisibility(View.VISIBLE);
+        unknownInstance.unknownList.setVisibility(View.VISIBLE);
+        pb.setVisibility(View.GONE);
+
+        refreshInbox = false;
+
+    }
+
+    public void setSettingOnClick(MenuItem item) {
+
+        startActivity(new Intent(MainActivity.this, SettingsActivity.class));
+
+    }
+
+
+    class refreshInboxOnNewThread extends AsyncTask<Void, Void, Void> {
+
+        @Override
+        protected void onPreExecute() {
+            super.onPreExecute();
+
+            if(knownInstance!=null){
+                knownInstance.knownList.setVisibility(View.GONE);
+                unknownInstance.unknownList.setVisibility(View.GONE);
+                pb.setVisibility(View.VISIBLE);
+            }
+
+
+        }
+
+        @Override
+        protected Void doInBackground(Void... params) {
+
+            knownSms.clear();
+            smsList.clear();
+            unknownSms.clear();
+
+            filteredDatabase = openOrCreateDatabase("filteredDatabase", MODE_PRIVATE, null);
+
+            Cursor threadCursor = filteredDatabase.rawQuery("select DISTINCT thread_id, filtered_status from (select thread_id, filtered_status, date_string " +
+                    "from filteredThreads ORDER BY date_string DESC) " +
+                    "ORDER BY date_string DESC;", null);
+
+
+            threadCursor.moveToFirst();
+
+            openExistingDatabase(threadCursor);
+
+
+            filteredDatabase.close();
+
+            return null;
+
+        }
+
+        @Override
+        protected void onPostExecute(Void aVoid) {
+            super.onPostExecute(aVoid);
+
+            refreshFragments();
+
+        }
     }
 
     void setupFragments(ViewPager viewPager) {
         SectionsPageAdapter adapter = new SectionsPageAdapter(getSupportFragmentManager());
 
-        adapter.addFragment(new Tab1Fragment(), "Known");
-        adapter.addFragment(new Tab2Fragment(), "Unknown");
+        adapter.addFragment(new Tab1Fragment(), "Filtered");
+        adapter.addFragment(new Tab2Fragment(), "Unfiltered");
 
         viewPager.setAdapter(adapter);
     }
@@ -171,8 +583,13 @@ public class MainActivity extends AppCompatActivity{
                 if(ContextCompat.checkSelfPermission(this, Manifest.permission.READ_CONTACTS)
                         != PackageManager.PERMISSION_GRANTED)
                     getPermissionToReadContacts();
-                else
-                    refreshOnExtraThread();
+                else{
+                    createOrOpenDb();
+                    refreshSmsInbox();
+                    loadLayout();
+
+                }
+
 
             }
 
@@ -189,8 +606,11 @@ public class MainActivity extends AppCompatActivity{
                 if(ContextCompat.checkSelfPermission(this, Manifest.permission.READ_SMS)
                         != PackageManager.PERMISSION_GRANTED)
                     getPermissionToReadSMS();
-                else
-                    refreshOnExtraThread();
+                else{
+                    createOrOpenDb();
+                    refreshSmsInbox();
+                    loadLayout();
+                }
 
             }
 
@@ -200,113 +620,10 @@ public class MainActivity extends AppCompatActivity{
 
         }
 
-
     }
 
-    public void refreshSmsInbox() {
-
-        Cursor cursor = getContentResolver().query(Uri
-                .parse("content://sms"), null, null, null, null);
-
-        int indexBody = cursor.getColumnIndex("body");
-        int indexAddress = cursor.getColumnIndex("address");
-        if (indexBody < 0 || !cursor.moveToFirst()) return;
-
-
-        String type = Integer.toString(cursor.getColumnIndex("type"));
-
-        do {
-
-            isContact = false;
-
-            if (cursor.getString(Integer.parseInt(type)).equalsIgnoreCase("1")) {
-
-                //received messages
-
-                boolean found = false;
-
-                for (int i = 0; i < smsList.size(); i++) {
-
-                    if (smsList.get(i).threadId.equals(cursor.getString(cursor.getColumnIndex("thread_id")))) {
-                        String date = cursor.getString(cursor
-                                .getColumnIndex("date"));
-                        smsList.get(i).addNewSenderMessage(cursor.getString(indexBody), date);
-                        found = true;
-                    }
-
-                }
-                if (found == false) {
-
-                    String date = cursor.getString(cursor
-                            .getColumnIndex("date"));
-
-                    sms newSms = new sms(cursor.getString(indexAddress), cursor.getString(cursor.getColumnIndex("thread_id")));
-                    newSms.addNewSenderMessage(cursor.getString(indexBody), date);
-                    smsList.add(newSms);
-
-                    String contactName;
-                    contactName = getContactName(this, newSms.sender);
-
-                    if(isContact == true){
-
-                        newSms.senderName = contactName;
-                        knownSms.add(newSms);
-                    }
-                    else {
-
-                        unknownSms.add(newSms);
-                    }
-
-                }
-
-            }
-
-            else if (cursor.getString(Integer.parseInt(type)).equalsIgnoreCase("2")) {
-
-                //sent messages
-
-                boolean found = false;
-
-                for (int i = 0; i < smsList.size(); i++) {
-
-                    if (smsList.get(i).threadId.equals(cursor.getString(cursor.getColumnIndex("thread_id")))) {
-
-                        String date = cursor.getString(cursor.getColumnIndex("date"));
-
-                        smsList.get(i).addNewUserMessage(cursor.getString(indexBody), date);
-                        found = true;
-                    }
-                }
-
-                if (found == false) {
-                    String date = cursor.getString(cursor
-                            .getColumnIndex("date"));
-
-                    sms newSms = new sms(cursor.getString(indexAddress),cursor.getString(cursor.getColumnIndex("thread_id")));
-
-                    newSms.addNewUserMessage(cursor.getString(indexBody), date);
-
-                    smsList.add(newSms);
-
-                    String contactName;
-                    contactName = getContactName(this, newSms.sender);
-
-                    if(isContact == true){
-
-                        newSms.senderName = contactName;
-                        knownSms.add(newSms);
-                    }
-                    else {
-
-                        unknownSms.add(newSms);
-                    }
-
-                }
-
-            }
-
-        } while (cursor.moveToNext());
-
+    public String convertDate(String dateInMilliseconds,String dateFormat) {
+        return DateFormat.format(dateFormat, Long.parseLong(dateInMilliseconds)).toString();
     }
 
     public ArrayList<sms> getKnownSms() {
@@ -324,6 +641,7 @@ public class MainActivity extends AppCompatActivity{
     }
 
     public String getContactName(Context context, String phoneNo) {
+        Log.d("phoneNo", phoneNo);
         ContentResolver cr = context.getContentResolver();
         Uri uri = Uri.withAppendedPath(ContactsContract.PhoneLookup.CONTENT_FILTER_URI, Uri.encode(phoneNo));
         Cursor cursor = cr.query(uri, new String[]{ContactsContract.PhoneLookup.DISPLAY_NAME}, null, null, null);
@@ -363,36 +681,6 @@ public class MainActivity extends AppCompatActivity{
         active = false;
     }
 
-    public static MainActivity getInstance(){
-        return inst;
-    }
-
-    void refreshFragments(){
-
-        Log.d("mahad", "refreshing because refresh inbox true");
-
-        ArrayList<sms> newKnownList = new ArrayList<>();
-        ArrayList<sms> newUnknownList = new ArrayList<>();
-
-        newKnownList.addAll(getKnownSms());
-        newUnknownList.addAll(getUnknownSms());
-
-        knownInstance.smsList.clear();
-        knownInstance.smsList.addAll(newKnownList);
-        knownAdapter.notifyDataSetChanged();
-
-        unknownInstance.smsList.clear();
-        unknownInstance.smsList.addAll(newUnknownList);
-        unknownAdapter.notifyDataSetChanged();
-
-        knownInstance.knownList.setVisibility(View.VISIBLE);
-        unknownInstance.unknownList.setVisibility(View.VISIBLE);
-        pb.setVisibility(View.GONE);
-
-        refreshInbox = false;
-
-    }
-
     public void setKnownInstance(Tab1Fragment knownInstance) {
         this.knownInstance = knownInstance;
     }
@@ -422,146 +710,185 @@ public class MainActivity extends AppCompatActivity{
         startActivity(intent);
     }
 
-    class refreshInboxOnNewThread extends AsyncTask<Void, Void, Void> {
 
-        @Override
-        protected void onPreExecute() {
-            super.onPreExecute();
-
-            if(knownInstance!=null){
-                knownInstance.knownList.setVisibility(View.GONE);
-                unknownInstance.unknownList.setVisibility(View.GONE);
-                pb.setVisibility(View.VISIBLE);
-            }
-
-
-        }
-
-        @Override
-        protected Void doInBackground(Void... params) {
-
-            knownSms.clear();
-            smsList.clear();
-            unknownSms.clear();
-
-
-            Cursor cursor = getContentResolver().query(Uri
-                    .parse("content://sms"), null, null, null, null);
-
-
-            int indexBody = cursor.getColumnIndex("body");
-            int indexAddress = cursor.getColumnIndex("address");
-
-
-            cursor.moveToFirst();
-
-
-            String type = Integer.toString(cursor.getColumnIndex("type"));
-
-
-            do {
-
-                isContact = false;
-
-                if (cursor.getString(Integer.parseInt(type)).equalsIgnoreCase("1")) {
-
-                    //received messages
-
-                    boolean found = false;
-
-                    for (int i = 0; i < smsList.size(); i++) {
-
-                        if (smsList.get(i).threadId.equals(cursor.getString(cursor.getColumnIndex("thread_id")))) {
-                            String date = cursor.getString(cursor
-                                    .getColumnIndex("date"));
-                            smsList.get(i).addNewSenderMessage(cursor.getString(indexBody), date);
-                            found = true;
-                        }
-
-                    }
-                    if (found == false) {
-
-                        String date = cursor.getString(cursor
-                                .getColumnIndex("date"));
-
-                        sms newSms = new sms(cursor.getString(indexAddress), cursor.getString(cursor.getColumnIndex("thread_id")));
-                        newSms.addNewSenderMessage(cursor.getString(indexBody), date);
-                        smsList.add(newSms);
-
-                        String contactName;
-                        contactName = getContactName(inst, newSms.sender);
-
-                        if(isContact == true){
-
-                            newSms.senderName = contactName;
-                            knownSms.add(newSms);
-                        }
-                        else {
-
-                            unknownSms.add(newSms);
-                        }
-
-                    }
-
-                }
-
-                else if (cursor.getString(Integer.parseInt(type)).equalsIgnoreCase("2")) {
-
-                    ///sent messages
-
-                    boolean found = false;
-
-                    for (int i = 0; i < smsList.size(); i++) {
-
-                        if (smsList.get(i).threadId.equals(cursor.getString(cursor.getColumnIndex("thread_id")))) {
-
-                            String date = cursor.getString(cursor.getColumnIndex("date"));
-
-                            smsList.get(i).addNewUserMessage(cursor.getString(indexBody), date);
-                            found = true;
-                        }
-                    }
-
-                    if (found == false) {
-                        String date = cursor.getString(cursor
-                                .getColumnIndex("date"));
-
-                        sms newSms = new sms(cursor.getString(indexAddress),cursor.getString(cursor.getColumnIndex("thread_id")));
-
-                        newSms.addNewUserMessage(cursor.getString(indexBody), date);
-
-                        smsList.add(newSms);
-
-                        String contactName;
-                        contactName = getContactName(inst, newSms.sender);
-
-                        if(isContact == true){
-
-                            newSms.senderName = contactName;
-                            knownSms.add(newSms);
-                        }
-                        else {
-
-                            unknownSms.add(newSms);
-                        }
-
-                    }
-
-                }
-
-            } while (cursor.moveToNext());
-
-            return null;
-
-        }
-
-        @Override
-        protected void onPostExecute(Void aVoid) {
-            super.onPostExecute(aVoid);
-
-            refreshFragments();
-
-        }
+    public static MainActivity getInstance(){
+        return inst;
     }
+
+    void setFilteredDeletionMode(final Tab1Fragment passedInstance){
+
+        cancelButtonFiltered = tb.getMenu().findItem(R.id.cancelButton);
+        final MenuItem deleteButton = tb.getMenu().findItem(R.id.deleteButton);
+
+        tb.setTitle("Deletion Mode");
+        cancelButtonFiltered.setVisible(true);
+        deleteButton.setVisible(true);
+
+        tb.findViewById(R.id.cancelButton).setOnClickListener(new View.OnClickListener() {
+            @Override
+            public void onClick(View v) {
+
+                passedInstance.deletionMode = false;
+
+                Arrays.fill(passedInstance.selectedViews, Boolean.FALSE);
+                Arrays.fill(passedInstance.threadsToDelete, null);
+
+                passedInstance.setDefaultListener();
+                passedInstance.knownAdapter.notifyDataSetChanged();
+
+                cancelButtonFiltered.setVisible(false);
+                deleteButton.setVisible(false);
+                tb.setTitle("Filtered Messaging");
+
+            }
+        });
+
+        tb.findViewById(R.id.deleteButton).setOnClickListener(new View.OnClickListener() {
+            @Override
+            public void onClick(View v) {
+
+                String defaultSmsApp = Telephony.Sms.getDefaultSmsPackage(MainActivity.this);
+
+                if (defaultSmsApp.equals("mhd3v.filteredsms")){
+
+                    final ArrayList<String> threadIds = new ArrayList<String>();
+
+                    filteredDatabase = openOrCreateDatabase("filteredDatabase", MODE_PRIVATE, null);
+
+                    for(int i=0; i< passedInstance.threadsToDelete.length; i++){
+
+                        if(passedInstance.threadsToDelete[i] != null)
+                            threadIds.add(passedInstance.threadsToDelete[i]);
+                    }
+
+                    new AlertDialog.Builder(MainActivity.this)
+                            .setTitle("Deleting Conversations")
+                            .setMessage("Are you sure you want to delete "+ threadIds.size() + " conversation(s)?")
+                            .setPositiveButton("Yes", new DialogInterface.OnClickListener() {
+                                @Override
+                                public void onClick(DialogInterface dialog, int which) {
+
+                                    for(int i =0; i<threadIds.size(); i++ ){
+                                        getContentResolver().delete(Uri.parse("content://sms/conversations/" + threadIds.get(i)),null,null);
+                                        filteredDatabase.execSQL("delete from messageTable where thread_id = " + threadIds.get(i)+ ";");
+                                    }
+                                    filteredDatabase.close();
+                                    cancelDeletionMode(passedInstance, deleteButton);
+                                    refreshOnExtraThread();
+                                }
+                            }).setNegativeButton("No", null).show();
+                }
+
+                else
+                    Toast.makeText(MainActivity.this, "Set as default app to delete messages!", Toast.LENGTH_SHORT).show();
+
+            }
+        });
+    }
+
+    void setUnfilteredDeletionMode(final Tab2Fragment passedInstance){
+
+        cancelButtonUnfiltered = tb.getMenu().findItem(R.id.cancelButton);
+        final MenuItem deleteButton = tb.getMenu().findItem(R.id.deleteButton);
+
+        tb.setTitle("Deletion Mode");
+        cancelButtonUnfiltered.setVisible(true);
+        deleteButton.setVisible(true);
+
+        tb.findViewById(R.id.cancelButton).setOnClickListener(new View.OnClickListener() {
+            @Override
+            public void onClick(View v) {
+
+                passedInstance.deletionMode = false;
+
+                Arrays.fill(passedInstance.selectedViews, Boolean.FALSE);
+                Arrays.fill(passedInstance.threadsToDelete, null);
+
+                passedInstance.setDefaultListener();
+                passedInstance.unknownAdapter.notifyDataSetChanged();
+
+                cancelButtonUnfiltered.setVisible(false);
+                deleteButton.setVisible(false);
+                cancelButtonUnfiltered.setVisible(false);
+                tb.setTitle("Filtered Messaging");
+
+            }
+        });
+
+        tb.findViewById(R.id.deleteButton).setOnClickListener(new View.OnClickListener() {
+            @Override
+            public void onClick(View v) {
+
+                String defaultSmsApp = Telephony.Sms.getDefaultSmsPackage(MainActivity.this);
+
+                if (defaultSmsApp.equals("mhd3v.filteredsms")){
+
+                    final ArrayList<String> threadIds = new ArrayList<String>();
+
+                    filteredDatabase = openOrCreateDatabase("filteredDatabase", MODE_PRIVATE, null);
+
+                    for(int i=0; i< passedInstance.threadsToDelete.length; i++){
+
+                        if(passedInstance.threadsToDelete[i] != null)
+                            threadIds.add(passedInstance.threadsToDelete[i]);
+                    }
+
+                    new AlertDialog.Builder(MainActivity.this)
+                            .setTitle("Deleting Conversations")
+                            .setMessage("Are you sure you want to delete "+ threadIds.size() + " conversation(s)?")
+                            .setPositiveButton("Yes", new DialogInterface.OnClickListener() {
+                                @Override
+                                public void onClick(DialogInterface dialog, int which) {
+
+                                    for(int i =0; i<threadIds.size(); i++ ){
+                                        getContentResolver().delete(Uri.parse("content://sms/conversations/" + threadIds.get(i)),null,null);
+                                        filteredDatabase.execSQL("delete from messageTable where thread_id = " + threadIds.get(i)+ ";");
+                                    }
+                                    filteredDatabase.close();
+                                    cancelDeletionMode(passedInstance, deleteButton);
+                                    refreshOnExtraThread();
+                                }
+                            }).setNegativeButton("No", null).show();
+                }
+
+                else
+                    Toast.makeText(MainActivity.this, "Set as default app to delete messages!", Toast.LENGTH_SHORT).show();
+
+            }
+        });
+    }
+
+    void cancelDeletionMode(Tab2Fragment passedInstance, MenuItem deleteButton ){
+
+        passedInstance.deletionMode = false;
+
+        Arrays.fill(passedInstance.selectedViews, Boolean.FALSE);
+        Arrays.fill(passedInstance.threadsToDelete, null);
+
+        passedInstance.setDefaultListener();
+        passedInstance.unknownAdapter.notifyDataSetChanged();
+
+        tb.setTitle("Filtered Messaging");
+        cancelButtonUnfiltered.setVisible(false);
+        deleteButton.setVisible(false);
+
+    }
+
+    void cancelDeletionMode(Tab1Fragment passedInstance, MenuItem deleteButton ){
+
+        passedInstance.deletionMode = false;
+
+        Arrays.fill(passedInstance.selectedViews, Boolean.FALSE);
+        Arrays.fill(passedInstance.threadsToDelete, null);
+
+        passedInstance.setDefaultListener();
+        passedInstance.knownAdapter.notifyDataSetChanged();
+
+        tb.setTitle("Filtered Messaging");
+        cancelButtonFiltered.setVisible(false);
+        deleteButton.setVisible(false);
+
+    }
+
 
 }
