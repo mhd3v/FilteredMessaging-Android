@@ -67,6 +67,10 @@ public class MainActivity extends AppCompatActivity{
 
     MenuItem cancelButtonFiltered;
     MenuItem cancelButtonUnfiltered;
+    MenuItem cancelButton;
+    MenuItem deleteButton;
+
+    boolean deletionMode = false;
 
     @Override
     protected void onCreate(Bundle savedInstanceState) {
@@ -715,28 +719,39 @@ public class MainActivity extends AppCompatActivity{
         return inst;
     }
 
-    void setFilteredDeletionMode(final Tab1Fragment passedInstance){
+    void setDeletionMode(){
 
-        cancelButtonFiltered = tb.getMenu().findItem(R.id.cancelButton);
-        final MenuItem deleteButton = tb.getMenu().findItem(R.id.deleteButton);
+        cancelButton = tb.getMenu().findItem(R.id.cancelButton);
+        deleteButton = tb.getMenu().findItem(R.id.deleteButton);
+
+        deletionMode = true;
+
+        unknownInstance.setDeletionModeClickListener();
+        knownInstance.setDeletionModeClickListener();
 
         tb.setTitle("Deletion Mode");
-        cancelButtonFiltered.setVisible(true);
+        cancelButton.setVisible(true);
         deleteButton.setVisible(true);
 
         tb.findViewById(R.id.cancelButton).setOnClickListener(new View.OnClickListener() {
             @Override
             public void onClick(View v) {
 
-                passedInstance.deletionMode = false;
+                deletionMode = false;
 
-                Arrays.fill(passedInstance.selectedViews, Boolean.FALSE);
-                Arrays.fill(passedInstance.threadsToDelete, null);
+                Arrays.fill(knownInstance.selectedViews, Boolean.FALSE);
+                Arrays.fill(unknownInstance.selectedViews, Boolean.FALSE);
+                Arrays.fill(knownInstance.threadsToDelete, null);
+                Arrays.fill(unknownInstance.threadsToDelete, null);
 
-                passedInstance.setDefaultListener();
-                passedInstance.knownAdapter.notifyDataSetChanged();
+                knownInstance.setDefaultListener();
+                unknownInstance.setDefaultListener();
 
-                cancelButtonFiltered.setVisible(false);
+                knownInstance.knownAdapter.notifyDataSetChanged();
+                unknownInstance.unknownAdapter.notifyDataSetChanged();
+
+
+                cancelButton.setVisible(false);
                 deleteButton.setVisible(false);
                 tb.setTitle("Filtered Messaging");
 
@@ -755,10 +770,14 @@ public class MainActivity extends AppCompatActivity{
 
                     filteredDatabase = openOrCreateDatabase("filteredDatabase", MODE_PRIVATE, null);
 
-                    for(int i=0; i< passedInstance.threadsToDelete.length; i++){
+                    for(int i=0; i< knownInstance.threadsToDelete.length; i++){
+                        if(knownInstance.threadsToDelete[i] != null)
+                            threadIds.add(knownInstance.threadsToDelete[i]);
+                    }
 
-                        if(passedInstance.threadsToDelete[i] != null)
-                            threadIds.add(passedInstance.threadsToDelete[i]);
+                    for(int i=0; i< unknownInstance.threadsToDelete.length; i++){
+                        if(unknownInstance.threadsToDelete[i] != null)
+                            threadIds.add(unknownInstance.threadsToDelete[i]);
                     }
 
                     new AlertDialog.Builder(MainActivity.this)
@@ -773,7 +792,7 @@ public class MainActivity extends AppCompatActivity{
                                         filteredDatabase.execSQL("delete from messageTable where thread_id = " + threadIds.get(i)+ ";");
                                     }
                                     filteredDatabase.close();
-                                    cancelDeletionMode(passedInstance, deleteButton);
+                                    cancelDeletionMode();
                                     refreshOnExtraThread();
                                 }
                             }).setNegativeButton("No", null).show();
@@ -784,111 +803,35 @@ public class MainActivity extends AppCompatActivity{
 
             }
         });
+
     }
 
-    void setUnfilteredDeletionMode(final Tab2Fragment passedInstance){
 
-        cancelButtonUnfiltered = tb.getMenu().findItem(R.id.cancelButton);
-        final MenuItem deleteButton = tb.getMenu().findItem(R.id.deleteButton);
+    void cancelDeletionMode( ){
 
-        tb.setTitle("Deletion Mode");
-        cancelButtonUnfiltered.setVisible(true);
-        deleteButton.setVisible(true);
+        deletionMode = false;
 
-        tb.findViewById(R.id.cancelButton).setOnClickListener(new View.OnClickListener() {
-            @Override
-            public void onClick(View v) {
+        Arrays.fill(knownInstance.selectedViews, Boolean.FALSE);
+        Arrays.fill(unknownInstance.selectedViews, Boolean.FALSE);
 
-                passedInstance.deletionMode = false;
+        Arrays.fill(knownInstance.threadsToDelete, null);
+        Arrays.fill(unknownInstance.threadsToDelete, null);
 
-                Arrays.fill(passedInstance.selectedViews, Boolean.FALSE);
-                Arrays.fill(passedInstance.threadsToDelete, null);
+        knownInstance.setDefaultListener();
+        unknownInstance.setDefaultListener();
 
-                passedInstance.setDefaultListener();
-                passedInstance.unknownAdapter.notifyDataSetChanged();
+        knownInstance.knownAdapter.notifyDataSetChanged();
+        unknownInstance.unknownAdapter.notifyDataSetChanged();
 
-                cancelButtonUnfiltered.setVisible(false);
-                deleteButton.setVisible(false);
-                cancelButtonUnfiltered.setVisible(false);
-                tb.setTitle("Filtered Messaging");
 
-            }
-        });
-
-        tb.findViewById(R.id.deleteButton).setOnClickListener(new View.OnClickListener() {
-            @Override
-            public void onClick(View v) {
-
-                String defaultSmsApp = Telephony.Sms.getDefaultSmsPackage(MainActivity.this);
-
-                if (defaultSmsApp.equals("mhd3v.filteredsms")){
-
-                    final ArrayList<String> threadIds = new ArrayList<String>();
-
-                    filteredDatabase = openOrCreateDatabase("filteredDatabase", MODE_PRIVATE, null);
-
-                    for(int i=0; i< passedInstance.threadsToDelete.length; i++){
-
-                        if(passedInstance.threadsToDelete[i] != null)
-                            threadIds.add(passedInstance.threadsToDelete[i]);
-                    }
-
-                    new AlertDialog.Builder(MainActivity.this)
-                            .setTitle("Deleting Conversations")
-                            .setMessage("Are you sure you want to delete "+ threadIds.size() + " conversation(s)?")
-                            .setPositiveButton("Yes", new DialogInterface.OnClickListener() {
-                                @Override
-                                public void onClick(DialogInterface dialog, int which) {
-
-                                    for(int i =0; i<threadIds.size(); i++ ){
-                                        getContentResolver().delete(Uri.parse("content://sms/conversations/" + threadIds.get(i)),null,null);
-                                        filteredDatabase.execSQL("delete from messageTable where thread_id = " + threadIds.get(i)+ ";");
-                                    }
-                                    filteredDatabase.close();
-                                    cancelDeletionMode(passedInstance, deleteButton);
-                                    refreshOnExtraThread();
-                                }
-                            }).setNegativeButton("No", null).show();
-                }
-
-                else
-                    Toast.makeText(MainActivity.this, "Set as default app to delete messages!", Toast.LENGTH_SHORT).show();
-
-            }
-        });
-    }
-
-    void cancelDeletionMode(Tab2Fragment passedInstance, MenuItem deleteButton ){
-
-        passedInstance.deletionMode = false;
-
-        Arrays.fill(passedInstance.selectedViews, Boolean.FALSE);
-        Arrays.fill(passedInstance.threadsToDelete, null);
-
-        passedInstance.setDefaultListener();
-        passedInstance.unknownAdapter.notifyDataSetChanged();
-
-        tb.setTitle("Filtered Messaging");
-        cancelButtonUnfiltered.setVisible(false);
+        cancelButton.setVisible(false);
         deleteButton.setVisible(false);
-
-    }
-
-    void cancelDeletionMode(Tab1Fragment passedInstance, MenuItem deleteButton ){
-
-        passedInstance.deletionMode = false;
-
-        Arrays.fill(passedInstance.selectedViews, Boolean.FALSE);
-        Arrays.fill(passedInstance.threadsToDelete, null);
-
-        passedInstance.setDefaultListener();
-        passedInstance.knownAdapter.notifyDataSetChanged();
-
         tb.setTitle("Filtered Messaging");
-        cancelButtonFiltered.setVisible(false);
-        deleteButton.setVisible(false);
+
 
     }
+
+
 
 
 }
