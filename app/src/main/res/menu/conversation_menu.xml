@@ -3,14 +3,24 @@
     xmlns:android="http://schemas.android.com/apk/res/android">
 
     <item
+
         android:id="@+id/callButton"
         android:checkable="false"
         android:icon="@drawable/phone"
         android:title="Call"
         android:visible="true"
         app:showAsAction="always"
-        android:onClick="callPhone"
-        />
+        android:onClick="callPhone" />
+
+    <item
+        android:id="@+id/addToContacts"
+        android:checkable="false"
+        android:enabled="true"
+        android:onClick="addToContacts"
+        android:title="Add to contacts"
+
+        android:visible="false"
+        app:showAsAction="never" />
 
     <item
         android:id="@+id/blacklistbutton"

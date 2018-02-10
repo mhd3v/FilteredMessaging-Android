@@ -1,6 +1,5 @@
 package mhd3v.filteredsms;
 
-import android.Manifest;
 import android.app.Activity;
 import android.app.NotificationManager;
 import android.app.PendingIntent;
@@ -10,16 +9,13 @@ import android.content.Context;
 import android.content.Intent;
 import android.content.IntentFilter;
 import android.content.SharedPreferences;
-import android.content.pm.PackageManager;
 import android.database.Cursor;
 import android.database.sqlite.SQLiteDatabase;
 import android.net.Uri;
-import android.os.Build;
 import android.os.Bundle;
 import android.preference.PreferenceManager;
+import android.provider.ContactsContract;
 import android.provider.Telephony;
-import android.support.v4.app.ActivityCompat;
-import android.support.v4.content.ContextCompat;
 import android.support.v7.app.AppCompatActivity;
 import android.support.v7.widget.Toolbar;
 import android.telephony.SmsManager;
@@ -39,19 +35,13 @@ import android.widget.TextView;
 import android.widget.Toast;
 
 import java.util.ArrayList;
-import java.util.Calendar;
 import java.util.Collections;
-import java.util.Date;
-import java.util.List;
 
-import static android.content.Intent.ACTION_VIEW;
 
 public class CoversationActivity extends AppCompatActivity {
 
     ArrayList<messages> messageList;
     EditText input;
-
-    SmsManager smsManager;
 
     Toolbar toolbar;
 
@@ -72,6 +62,7 @@ public class CoversationActivity extends AppCompatActivity {
 
     MenuItem blacklistbutton;
     MenuItem whitelistbutton;
+    MenuItem addToContactsButton;
 
     SQLiteDatabase filteredDatabase;
 
@@ -172,30 +163,27 @@ public class CoversationActivity extends AppCompatActivity {
 
     @Override
     public boolean onCreateOptionsMenu(Menu menu) {
-        // Inflate the menu; this adds items to the action bar if it is present.
+
         getMenuInflater().inflate(R.menu.conversation_menu, menu);
 
 
         blacklistbutton = toolbar.getMenu().findItem(R.id.blacklistbutton);
         whitelistbutton = toolbar.getMenu().findItem(R.id.whitelistbutton);
+        addToContactsButton = toolbar.getMenu().findItem(R.id.addToContacts);
 
         if (blacklisted == 0)
             blacklistbutton.setVisible(true);
         else
             whitelistbutton.setVisible(true);
 
+        if (senderName.equals(""))
+            addToContactsButton.setVisible(true);
+
         return true;
     }
 
     @Override
     public boolean onOptionsItemSelected(MenuItem item) {
-
-        int id = item.getItemId();
-
-        //noinspection SimplifiableIfStatement
-//        if (id == R.id.action_settings) {
-//            return true;
-//        }
 
         return super.onOptionsItemSelected(item);
     }
@@ -222,7 +210,6 @@ public class CoversationActivity extends AppCompatActivity {
 
         whitelistbutton.setVisible(false);
         blacklistbutton.setVisible(true);
-
 
         refreshMain();
 
@@ -255,6 +242,16 @@ public class CoversationActivity extends AppCompatActivity {
         callIntent.setData(Uri.parse("tel:" + sender));
 
         startActivity(callIntent);
+
+    }
+
+
+    public void addToContacts(MenuItem item) {
+
+        Intent intent = new Intent(ContactsContract.Intents.Insert.ACTION);
+        intent.setType(ContactsContract.RawContacts.CONTENT_TYPE);
+        intent.putExtra(ContactsContract.Intents.Insert.PHONE, sender);
+        startActivity(intent);
 
     }
 
