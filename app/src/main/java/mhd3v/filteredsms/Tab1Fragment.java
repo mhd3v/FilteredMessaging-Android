@@ -123,6 +123,7 @@ public class Tab1Fragment extends Fragment {
                 intent.putExtra("sender", smsList.get(position).sender);
                 intent.putExtra("senderName", smsList.get(position).senderName);
                 intent.putExtra("threadId", smsList.get(position).threadId);
+                intent.putExtra("blacklisted", smsList.get(position).blacklisted);
 
                 intent.setAction("frag1");
 
@@ -158,7 +159,10 @@ public class Tab1Fragment extends Fragment {
 
             TextView sender= view.findViewById(R.id.sender);
 
-            sender.setText(smsList.get(i).senderName);
+            if(!(smsList.get(i).senderName.equals("")))
+                sender.setText(smsList.get(i).senderName);
+            else
+                sender.setText(smsList.get(i).sender);
 
             TextView time= view.findViewById(R.id.time);
             String lastSenderMessageTime = smsList.get(i).messages.get(0).time;

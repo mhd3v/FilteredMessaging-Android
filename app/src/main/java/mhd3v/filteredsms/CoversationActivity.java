@@ -18,6 +18,7 @@ import android.os.Build;
 import android.os.Bundle;
 import android.preference.PreferenceManager;
 import android.provider.Telephony;
+import android.support.v4.app.ActivityCompat;
 import android.support.v4.content.ContextCompat;
 import android.support.v7.app.AppCompatActivity;
 import android.support.v7.widget.Toolbar;
@@ -26,6 +27,7 @@ import android.telephony.TelephonyManager;
 import android.text.format.DateFormat;
 import android.util.Log;
 import android.view.Menu;
+import android.view.MenuItem;
 import android.view.View;
 import android.view.ViewGroup;
 import android.view.inputmethod.InputMethodManager;
@@ -51,10 +53,15 @@ public class CoversationActivity extends AppCompatActivity {
 
     SmsManager smsManager;
 
+    Toolbar toolbar;
+
+    boolean active;
 
     String sender;
     String senderName;
     String threadId;
+
+    int blacklisted;
 
     boolean cameFromNotification = false;
 
@@ -62,6 +69,11 @@ public class CoversationActivity extends AppCompatActivity {
     static Intent intent;
 
     private String SimState = "";
+
+    MenuItem blacklistbutton;
+    MenuItem whitelistbutton;
+
+    SQLiteDatabase filteredDatabase;
 
 
     static CoversationActivity conversationInstance;
@@ -72,6 +84,8 @@ public class CoversationActivity extends AppCompatActivity {
         super.onCreate(savedInstanceState);
         setContentView(R.layout.activity_coversation);
 
+        active = true;
+
         messageList = new ArrayList<>();
 
         intent = getIntent();
@@ -79,6 +93,8 @@ public class CoversationActivity extends AppCompatActivity {
         sender = intent.getStringExtra("sender");
         senderName = intent.getStringExtra("senderName");
         threadId = intent.getStringExtra("threadId");
+        blacklisted = intent.getIntExtra("blacklisted", 0);
+
 
         SharedPreferences sp = PreferenceManager.getDefaultSharedPreferences(this);
         SharedPreferences.Editor editor = sp.edit();
@@ -88,11 +104,11 @@ public class CoversationActivity extends AppCompatActivity {
         NotificationManager notificationManager = (NotificationManager) this.getSystemService(Context.NOTIFICATION_SERVICE);
         notificationManager.cancelAll();
 
-        if(intent.getAction().equals("android.intent.action.NotificationClicked")){
+        if (intent.getAction().equals("android.intent.action.NotificationClicked")) {
 
             cameFromNotification = true;
 
-            Cursor cursor = getContentResolver().query(Uri.parse("content://sms/"), null,  "thread_id=" + threadId, null, null);
+            Cursor cursor = getContentResolver().query(Uri.parse("content://sms/"), null, "thread_id=" + threadId, null, null);
 
             try {
                 Thread.sleep(1000);
@@ -102,28 +118,24 @@ public class CoversationActivity extends AppCompatActivity {
 
             cursor.moveToFirst();
 
-                int indexBody = cursor.getColumnIndex("body");
-                String type = Integer.toString(cursor.getColumnIndex("type"));
+            int indexBody = cursor.getColumnIndex("body");
+            String type = Integer.toString(cursor.getColumnIndex("type"));
 
-                do{
+            do {
 
-                    if (cursor.getString(Integer.parseInt(type)).equalsIgnoreCase("1")) {
-                        //received messages
-                        messages newMessage = new messages(cursor.getString(indexBody) ,cursor.getString(cursor.getColumnIndex("date")));
-                        messageList.add(newMessage);
-                    }
-
-                    else if (cursor.getString(Integer.parseInt(type)).equalsIgnoreCase("2")) {
-                        messages newMessage = new messages(cursor.getString(indexBody) ,cursor.getString(cursor.getColumnIndex("date")));
-                        newMessage.isUserMessage = true;
-                        messageList.add(newMessage);
-                    }
+                if (cursor.getString(Integer.parseInt(type)).equalsIgnoreCase("1")) {
+                    //received messages
+                    messages newMessage = new messages(cursor.getString(indexBody), cursor.getString(cursor.getColumnIndex("date")));
+                    messageList.add(newMessage);
+                } else if (cursor.getString(Integer.parseInt(type)).equalsIgnoreCase("2")) {
+                    messages newMessage = new messages(cursor.getString(indexBody), cursor.getString(cursor.getColumnIndex("date")));
+                    newMessage.isUserMessage = true;
+                    messageList.add(newMessage);
                 }
-                while (cursor.moveToNext());
+            }
+            while (cursor.moveToNext());
 
-        }
-
-        else {
+        } else {
             Bundle args = intent.getBundleExtra("BUNDLE");
             messageList = (ArrayList<messages>) args.getSerializable("messageList");
         }
@@ -135,34 +147,116 @@ public class CoversationActivity extends AppCompatActivity {
 
         conversation.setAdapter(adapter);
 
-        Toolbar toolbar = (Toolbar) findViewById(R.id.toolbar);
-        if(toolbar != null) {
+        toolbar = (Toolbar) findViewById(R.id.toolbar);
+
+        if (toolbar != null) {
             setSupportActionBar(toolbar);
 
-            if(senderName.equals(""))
+            if (senderName.equals(""))
                 getSupportActionBar().setTitle(sender);
             else
-            getSupportActionBar().setTitle(senderName);
+                getSupportActionBar().setTitle(senderName);
             getSupportActionBar().setHomeButtonEnabled(true);
             getSupportActionBar().setDisplayHomeAsUpEnabled(true);
         }
 
-        toolbar.setNavigationOnClickListener(new View.OnClickListener(){
+        toolbar.setNavigationOnClickListener(new View.OnClickListener() {
             @Override
-            public void onClick(View view){
+            public void onClick(View view) {
                 finish();
             }
         });
 
+
     }
 
+    @Override
+    public boolean onCreateOptionsMenu(Menu menu) {
+        // Inflate the menu; this adds items to the action bar if it is present.
+        getMenuInflater().inflate(R.menu.conversation_menu, menu);
+
+
+        blacklistbutton = toolbar.getMenu().findItem(R.id.blacklistbutton);
+        whitelistbutton = toolbar.getMenu().findItem(R.id.whitelistbutton);
+
+        if (blacklisted == 0)
+            blacklistbutton.setVisible(true);
+        else
+            whitelistbutton.setVisible(true);
+
+        return true;
+    }
+
+    @Override
+    public boolean onOptionsItemSelected(MenuItem item) {
+
+        int id = item.getItemId();
+
+        //noinspection SimplifiableIfStatement
+//        if (id == R.id.action_settings) {
+//            return true;
+//        }
+
+        return super.onOptionsItemSelected(item);
+    }
 
 
     public static void refreshMain() {
-        MainActivity mainInstance  = MainActivity.getInstance();
+        MainActivity mainInstance = MainActivity.getInstance();
         mainInstance.refreshInbox = true;
     }
 
+    public void addToWhiteList(MenuItem item) {
+
+        filteredDatabase = openOrCreateDatabase("filteredDatabase", MODE_PRIVATE, null);
+
+        ContentValues cv = new ContentValues();
+
+        cv.put("blacklisted", 0);
+
+        filteredDatabase.update("filteredThreads", cv, "thread_id =" + threadId, null);
+
+        Toast.makeText(this, "Added to whitelist", Toast.LENGTH_SHORT).show();
+
+        filteredDatabase.close();
+
+        whitelistbutton.setVisible(false);
+        blacklistbutton.setVisible(true);
+
+
+        refreshMain();
+
+    }
+
+    public void addToBlackList(MenuItem item) {
+
+        filteredDatabase = openOrCreateDatabase("filteredDatabase", MODE_PRIVATE, null);
+
+        ContentValues cv = new ContentValues();
+
+        cv.put("blacklisted", 1);
+
+        filteredDatabase.update("filteredThreads", cv, "thread_id =" + threadId, null);
+
+        Toast.makeText(this, "Added to blacklist", Toast.LENGTH_SHORT).show();
+
+        filteredDatabase.close();
+
+        whitelistbutton.setVisible(true);
+        blacklistbutton.setVisible(false);
+
+        refreshMain();
+
+    }
+
+    public void callPhone(MenuItem item) {
+
+        Intent callIntent = new Intent(Intent.ACTION_CALL);
+        callIntent.setData(Uri.parse("tel:" + sender));
+
+        startActivity(callIntent);
+
+    }
 
 
     class customAdapter extends BaseAdapter {
@@ -287,18 +381,12 @@ public class CoversationActivity extends AppCompatActivity {
         conversationInstance = this;
     }
 
-//    @Override
-//    public void onStop() {
-//        super.onStop();
-//        conversationInstance = null;
-//
-//        if(cameFromNotification){
-//            Intent intent = new Intent(this, MainActivity.class);
-//            intent.setFlags(Intent.FLAG_ACTIVITY_CLEAR_TOP);
-//            startActivity(intent);
-//        }
-//
-//    }
+    @Override
+    protected void onStop() {
+        super.onStop();
+        active = false;
+    }
+
 
     void updateViewsAndDB(String address, String message, String time, messages newSms, boolean status){
 

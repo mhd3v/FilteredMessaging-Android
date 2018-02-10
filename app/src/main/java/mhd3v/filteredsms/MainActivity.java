@@ -60,13 +60,12 @@ public class MainActivity extends AppCompatActivity{
 
     private static final int READ_SMS_PERMISSIONS_REQUEST = 1;
     private static final int READ_CONTACTS_PERMISSIONS_REQUEST = 2;
+    private static final int CALL_PHONE_PERMISSIONS_REQUEST = 3;
 
     SQLiteDatabase filteredDatabase;
 
     Toolbar tb;
 
-    MenuItem cancelButtonFiltered;
-    MenuItem cancelButtonUnfiltered;
     MenuItem cancelButton;
     MenuItem deleteButton;
 
@@ -87,10 +86,14 @@ public class MainActivity extends AppCompatActivity{
                 != PackageManager.PERMISSION_GRANTED)
             getPermissionToReadContacts();
 
+        else if (ContextCompat.checkSelfPermission(this, Manifest.permission.CALL_PHONE)
+                != PackageManager.PERMISSION_GRANTED)
+            getPermissionToCallPhone();
 
 
         else {
-            this.deleteDatabase("filteredDatabase");
+
+            //this.deleteDatabase("filteredDatabase");
 
             createOrOpenDb();
 
@@ -99,7 +102,7 @@ public class MainActivity extends AppCompatActivity{
 
             if(threadCursor.moveToFirst()){
 
-                threadCursor = filteredDatabase.rawQuery("select DISTINCT thread_id, filtered_status from (select thread_id, filtered_status, date_string " +
+                threadCursor = filteredDatabase.rawQuery("select DISTINCT thread_id, filtered_status, blacklisted from (select thread_id, filtered_status, date_string, blacklisted " +
                         "from filteredThreads ORDER BY date_string DESC) " +
                         "ORDER BY date_string DESC;", null);
 
@@ -182,8 +185,13 @@ public class MainActivity extends AppCompatActivity{
                     }
                     while(c.moveToNext());
 
-                    knownSms.add(newSms);
+                    if((cursor.getInt(cursor.getColumnIndex("blacklisted")) == 0))
+                        knownSms.add(newSms);
 
+                    else{
+                        newSms.blacklisted = 1;
+                        unknownSms.add(newSms);
+                    }
 
                 }
 
@@ -207,7 +215,15 @@ public class MainActivity extends AppCompatActivity{
                     while(c.moveToNext());
 
 
-                    unknownSms.add(newSms);
+                    if((cursor.getInt(cursor.getColumnIndex("blacklisted")) == 0))
+                        knownSms.add(newSms);
+
+                    else{
+                        newSms.blacklisted = 1;
+                        unknownSms.add(newSms);
+                    }
+
+                    //unknownSms.add(newSms);
 
                 }
             }
@@ -229,6 +245,9 @@ public class MainActivity extends AppCompatActivity{
         if (indexBody < 0 || !cursor.moveToFirst()) return;
 
         String type = Integer.toString(cursor.getColumnIndex("type"));
+
+        filteredDatabase.execSQL("CREATE TABLE IF NOT EXISTS filteredThreads " +
+                "(thread_id VARCHAR, filtered_status VARCHAR, date_string VARCHAR, blacklisted INTEGER DEFAULT 0);");
 
         do {
 
@@ -298,8 +317,6 @@ public class MainActivity extends AppCompatActivity{
 
                     //SQLiteDatabase filteredDatabase = openOrCreateDatabase("filteredDatabase", MODE_PRIVATE, null);
 
-                    filteredDatabase.execSQL("CREATE TABLE IF NOT EXISTS filteredThreads " +
-                            "(thread_id VARCHAR, filtered_status VARCHAR, date_string VARCHAR);");
 
                     ContentValues filteredThreadsCv = new ContentValues();
 
@@ -308,6 +325,7 @@ public class MainActivity extends AppCompatActivity{
                         filteredThreadsCv.put("thread_id",threadId);
                         filteredThreadsCv.put("filtered_status","filtered");
                         filteredThreadsCv.put("date_string", date);
+                        filteredThreadsCv.put("blacklisted", 0);
                         filteredDatabase.insert("filteredThreads", null, filteredThreadsCv);
 
                         newSms.senderName = contactName;
@@ -325,10 +343,13 @@ public class MainActivity extends AppCompatActivity{
                         filteredThreadsCv.put("thread_id",threadId);
                         filteredThreadsCv.put("filtered_status","unfiltered");
                         filteredThreadsCv.put("date_string", date);
+                        filteredThreadsCv.put("blacklisted", 1);
                         filteredDatabase.insert("filteredThreads", null, filteredThreadsCv);
 
+                        newSms.senderName = "";
                         unknownSms.add(newSms);
 
+                        newSms.blacklisted = 1;
                         cv.put("sender", "unknown");
                         cv.put("sender_name","");
 
@@ -402,9 +423,6 @@ public class MainActivity extends AppCompatActivity{
                     String contactName;
                     contactName = getContactName(this, newSms.sender);
 
-                    filteredDatabase.execSQL("CREATE TABLE IF NOT EXISTS filteredThreads " +
-                            "(thread_id VARCHAR, filtered_status VARCHAR, date_string VARCHAR);");
-
                     ContentValues filteredThreadsCv = new ContentValues();
 
                     if(isContact){
@@ -412,6 +430,7 @@ public class MainActivity extends AppCompatActivity{
                         filteredThreadsCv.put("thread_id",threadId);
                         filteredThreadsCv.put("filtered_status","filtered");
                         filteredThreadsCv.put("date_string", date);
+                        filteredThreadsCv.put("blacklisted", 0);
                         filteredDatabase.insert("filteredThreads", null, filteredThreadsCv);
 
                         cv.put("sender", "known");
@@ -427,12 +446,15 @@ public class MainActivity extends AppCompatActivity{
                         filteredThreadsCv.put("thread_id",threadId);
                         filteredThreadsCv.put("filtered_status","unfiltered");
                         filteredThreadsCv.put("date_string", date);
+                        filteredThreadsCv.put("blacklisted", 1);
                         filteredDatabase.insert("filteredThreads", null, filteredThreadsCv);
 
                         cv.put("sender", "unknown");
                         cv.put("sender_name","");
                         filteredDatabase.insertOrThrow("messageTable", null, cv);
 
+                        newSms.blacklisted = 1;
+                        newSms.senderName = "";
                         unknownSms.add(newSms);
                     }
 
@@ -441,6 +463,8 @@ public class MainActivity extends AppCompatActivity{
             }
 
         } while (cursor.moveToNext());
+
+        Log.d("result", "done");
 
         cursor.close();
 
@@ -502,7 +526,7 @@ public class MainActivity extends AppCompatActivity{
 
             filteredDatabase = openOrCreateDatabase("filteredDatabase", MODE_PRIVATE, null);
 
-            Cursor threadCursor = filteredDatabase.rawQuery("select DISTINCT thread_id, filtered_status from (select thread_id, filtered_status, date_string " +
+            Cursor threadCursor = filteredDatabase.rawQuery("select DISTINCT thread_id, filtered_status, blacklisted from (select thread_id, filtered_status, blacklisted, date_string " +
                     "from filteredThreads ORDER BY date_string DESC) " +
                     "ORDER BY date_string DESC;", null);
 
@@ -574,6 +598,22 @@ public class MainActivity extends AppCompatActivity{
         }
     }
 
+    public void getPermissionToCallPhone() {
+        if (ContextCompat.checkSelfPermission(this, Manifest.permission.CALL_PHONE)
+                != PackageManager.PERMISSION_GRANTED) {
+            if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.M) {
+                if (shouldShowRequestPermissionRationale(
+                        Manifest.permission.CALL_PHONE)) {
+                    Toast.makeText(this, "Please allow permission!", Toast.LENGTH_SHORT).show();
+                }
+            }
+            if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.M) {
+                requestPermissions(new String[]{Manifest.permission.CALL_PHONE},
+                        CALL_PHONE_PERMISSIONS_REQUEST);
+            }
+        }
+    }
+
 
     @Override
     public void onRequestPermissionsResult(int requestCode,
@@ -587,13 +627,16 @@ public class MainActivity extends AppCompatActivity{
                 if(ContextCompat.checkSelfPermission(this, Manifest.permission.READ_CONTACTS)
                         != PackageManager.PERMISSION_GRANTED)
                     getPermissionToReadContacts();
+
+                else if(ContextCompat.checkSelfPermission(this, Manifest.permission.CALL_PHONE)
+                        != PackageManager.PERMISSION_GRANTED)
+                    getPermissionToCallPhone();
                 else{
                     createOrOpenDb();
                     refreshSmsInbox();
                     loadLayout();
 
                 }
-
 
             }
 
@@ -610,6 +653,9 @@ public class MainActivity extends AppCompatActivity{
                 if(ContextCompat.checkSelfPermission(this, Manifest.permission.READ_SMS)
                         != PackageManager.PERMISSION_GRANTED)
                     getPermissionToReadSMS();
+                else if(ContextCompat.checkSelfPermission(this, Manifest.permission.CALL_PHONE)
+                        != PackageManager.PERMISSION_GRANTED)
+                    getPermissionToCallPhone();
                 else{
                     createOrOpenDb();
                     refreshSmsInbox();
@@ -620,6 +666,30 @@ public class MainActivity extends AppCompatActivity{
 
             else {
                 Toast.makeText(this, "Read Contacts permission denied", Toast.LENGTH_SHORT).show();
+            }
+
+        }
+
+        if (requestCode == CALL_PHONE_PERMISSIONS_REQUEST ) {
+            if (grantResults.length > 0 &&
+                    grantResults[0] == PackageManager.PERMISSION_GRANTED ) {
+
+                if(ContextCompat.checkSelfPermission(this, Manifest.permission.READ_SMS)
+                        != PackageManager.PERMISSION_GRANTED)
+                    getPermissionToReadSMS();
+                else if(ContextCompat.checkSelfPermission(this, Manifest.permission.READ_CONTACTS)
+                        != PackageManager.PERMISSION_GRANTED)
+                    getPermissionToReadContacts();
+                else{
+                    createOrOpenDb();
+                    refreshSmsInbox();
+                    loadLayout();
+                }
+
+            }
+
+            else {
+                Toast.makeText(this, "Call Phone permission denied", Toast.LENGTH_SHORT).show();
             }
 
         }

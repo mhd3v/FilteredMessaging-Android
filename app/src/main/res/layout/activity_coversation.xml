@@ -32,6 +32,8 @@
                     android:titleTextColor="@android:color/white"
                     android:visibility="visible">
 
+
+
                 </android.support.v7.widget.Toolbar>
 
         </android.support.design.widget.AppBarLayout>
