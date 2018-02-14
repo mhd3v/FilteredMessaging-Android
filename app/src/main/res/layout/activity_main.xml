@@ -18,7 +18,7 @@
         android:layout_marginRight="@dimen/fab_margin"
         android:clickable="true"
         android:onClick="fabClicked"
-        app:backgroundTint="@color/colorPrimary"
+        app:backgroundTint="@color/colorAccent"
         app:fabSize="normal"
         app:borderWidth="0dp"
         app:layout_anchor="@+id/container"

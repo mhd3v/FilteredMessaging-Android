@@ -20,6 +20,9 @@ import android.provider.ContactsContract;
 import android.provider.Telephony;
 import android.support.annotation.NonNull;
 import android.support.design.widget.TabLayout;
+import android.support.v4.app.Fragment;
+import android.support.v4.app.FragmentManager;
+import android.support.v4.app.FragmentTransaction;
 import android.support.v4.content.ContextCompat;
 import android.support.v4.view.ViewPager;
 import android.support.v7.app.AlertDialog;
@@ -60,13 +63,16 @@ public class MainActivity extends AppCompatActivity{
 
     private static final int READ_SMS_PERMISSIONS_REQUEST = 1;
     private static final int READ_CONTACTS_PERMISSIONS_REQUEST = 2;
+    private static final int CALL_PHONE_PERMISSIONS_REQUEST = 3;
 
     SQLiteDatabase filteredDatabase;
 
     Toolbar tb;
 
-    MenuItem cancelButtonFiltered;
-    MenuItem cancelButtonUnfiltered;
+    MenuItem cancelButton;
+    MenuItem deleteButton;
+
+    boolean deletionMode = false;
 
     @Override
     protected void onCreate(Bundle savedInstanceState) {
@@ -83,10 +89,14 @@ public class MainActivity extends AppCompatActivity{
                 != PackageManager.PERMISSION_GRANTED)
             getPermissionToReadContacts();
 
+        else if (ContextCompat.checkSelfPermission(this, Manifest.permission.CALL_PHONE)
+                != PackageManager.PERMISSION_GRANTED)
+            getPermissionToCallPhone();
 
 
         else {
-            this.deleteDatabase("filteredDatabase");
+
+            //this.deleteDatabase("filteredDatabase");
 
             createOrOpenDb();
 
@@ -95,7 +105,7 @@ public class MainActivity extends AppCompatActivity{
 
             if(threadCursor.moveToFirst()){
 
-                threadCursor = filteredDatabase.rawQuery("select DISTINCT thread_id, filtered_status from (select thread_id, filtered_status, date_string " +
+                threadCursor = filteredDatabase.rawQuery("select DISTINCT thread_id, filtered_status, blacklisted from (select thread_id, filtered_status, date_string, blacklisted " +
                         "from filteredThreads ORDER BY date_string DESC) " +
                         "ORDER BY date_string DESC;", null);
 
@@ -178,8 +188,13 @@ public class MainActivity extends AppCompatActivity{
                     }
                     while(c.moveToNext());
 
-                    knownSms.add(newSms);
+                    if((cursor.getInt(cursor.getColumnIndex("blacklisted")) == 0))
+                        knownSms.add(newSms);
 
+                    else{
+                        newSms.blacklisted = 1;
+                        unknownSms.add(newSms);
+                    }
 
                 }
 
@@ -203,7 +218,15 @@ public class MainActivity extends AppCompatActivity{
                     while(c.moveToNext());
 
 
-                    unknownSms.add(newSms);
+                    if((cursor.getInt(cursor.getColumnIndex("blacklisted")) == 0))
+                        knownSms.add(newSms);
+
+                    else{
+                        newSms.blacklisted = 1;
+                        unknownSms.add(newSms);
+                    }
+
+                    //unknownSms.add(newSms);
 
                 }
             }
@@ -225,6 +248,9 @@ public class MainActivity extends AppCompatActivity{
         if (indexBody < 0 || !cursor.moveToFirst()) return;
 
         String type = Integer.toString(cursor.getColumnIndex("type"));
+
+        filteredDatabase.execSQL("CREATE TABLE IF NOT EXISTS filteredThreads " +
+                "(thread_id VARCHAR, filtered_status VARCHAR, date_string VARCHAR, blacklisted INTEGER DEFAULT 0);");
 
         do {
 
@@ -294,8 +320,6 @@ public class MainActivity extends AppCompatActivity{
 
                     //SQLiteDatabase filteredDatabase = openOrCreateDatabase("filteredDatabase", MODE_PRIVATE, null);
 
-                    filteredDatabase.execSQL("CREATE TABLE IF NOT EXISTS filteredThreads " +
-                            "(thread_id VARCHAR, filtered_status VARCHAR, date_string VARCHAR);");
 
                     ContentValues filteredThreadsCv = new ContentValues();
 
@@ -304,6 +328,7 @@ public class MainActivity extends AppCompatActivity{
                         filteredThreadsCv.put("thread_id",threadId);
                         filteredThreadsCv.put("filtered_status","filtered");
                         filteredThreadsCv.put("date_string", date);
+                        filteredThreadsCv.put("blacklisted", 0);
                         filteredDatabase.insert("filteredThreads", null, filteredThreadsCv);
 
                         newSms.senderName = contactName;
@@ -321,10 +346,13 @@ public class MainActivity extends AppCompatActivity{
                         filteredThreadsCv.put("thread_id",threadId);
                         filteredThreadsCv.put("filtered_status","unfiltered");
                         filteredThreadsCv.put("date_string", date);
+                        filteredThreadsCv.put("blacklisted", 1);
                         filteredDatabase.insert("filteredThreads", null, filteredThreadsCv);
 
+                        newSms.senderName = "";
                         unknownSms.add(newSms);
 
+                        newSms.blacklisted = 1;
                         cv.put("sender", "unknown");
                         cv.put("sender_name","");
 
@@ -398,9 +426,6 @@ public class MainActivity extends AppCompatActivity{
                     String contactName;
                     contactName = getContactName(this, newSms.sender);
 
-                    filteredDatabase.execSQL("CREATE TABLE IF NOT EXISTS filteredThreads " +
-                            "(thread_id VARCHAR, filtered_status VARCHAR, date_string VARCHAR);");
-
                     ContentValues filteredThreadsCv = new ContentValues();
 
                     if(isContact){
@@ -408,6 +433,7 @@ public class MainActivity extends AppCompatActivity{
                         filteredThreadsCv.put("thread_id",threadId);
                         filteredThreadsCv.put("filtered_status","filtered");
                         filteredThreadsCv.put("date_string", date);
+                        filteredThreadsCv.put("blacklisted", 0);
                         filteredDatabase.insert("filteredThreads", null, filteredThreadsCv);
 
                         cv.put("sender", "known");
@@ -423,12 +449,15 @@ public class MainActivity extends AppCompatActivity{
                         filteredThreadsCv.put("thread_id",threadId);
                         filteredThreadsCv.put("filtered_status","unfiltered");
                         filteredThreadsCv.put("date_string", date);
+                        filteredThreadsCv.put("blacklisted", 1);
                         filteredDatabase.insert("filteredThreads", null, filteredThreadsCv);
 
                         cv.put("sender", "unknown");
                         cv.put("sender_name","");
                         filteredDatabase.insertOrThrow("messageTable", null, cv);
 
+                        newSms.blacklisted = 1;
+                        newSms.senderName = "";
                         unknownSms.add(newSms);
                     }
 
@@ -437,6 +466,8 @@ public class MainActivity extends AppCompatActivity{
             }
 
         } while (cursor.moveToNext());
+
+        Log.d("result", "done");
 
         cursor.close();
 
@@ -498,7 +529,7 @@ public class MainActivity extends AppCompatActivity{
 
             filteredDatabase = openOrCreateDatabase("filteredDatabase", MODE_PRIVATE, null);
 
-            Cursor threadCursor = filteredDatabase.rawQuery("select DISTINCT thread_id, filtered_status from (select thread_id, filtered_status, date_string " +
+            Cursor threadCursor = filteredDatabase.rawQuery("select DISTINCT thread_id, filtered_status, blacklisted from (select thread_id, filtered_status, blacklisted, date_string " +
                     "from filteredThreads ORDER BY date_string DESC) " +
                     "ORDER BY date_string DESC;", null);
 
@@ -570,6 +601,22 @@ public class MainActivity extends AppCompatActivity{
         }
     }
 
+    public void getPermissionToCallPhone() {
+        if (ContextCompat.checkSelfPermission(this, Manifest.permission.CALL_PHONE)
+                != PackageManager.PERMISSION_GRANTED) {
+            if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.M) {
+                if (shouldShowRequestPermissionRationale(
+                        Manifest.permission.CALL_PHONE)) {
+                    Toast.makeText(this, "Please allow permission!", Toast.LENGTH_SHORT).show();
+                }
+            }
+            if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.M) {
+                requestPermissions(new String[]{Manifest.permission.CALL_PHONE},
+                        CALL_PHONE_PERMISSIONS_REQUEST);
+            }
+        }
+    }
+
 
     @Override
     public void onRequestPermissionsResult(int requestCode,
@@ -583,13 +630,16 @@ public class MainActivity extends AppCompatActivity{
                 if(ContextCompat.checkSelfPermission(this, Manifest.permission.READ_CONTACTS)
                         != PackageManager.PERMISSION_GRANTED)
                     getPermissionToReadContacts();
+
+                else if(ContextCompat.checkSelfPermission(this, Manifest.permission.CALL_PHONE)
+                        != PackageManager.PERMISSION_GRANTED)
+                    getPermissionToCallPhone();
                 else{
                     createOrOpenDb();
                     refreshSmsInbox();
                     loadLayout();
 
                 }
-
 
             }
 
@@ -606,6 +656,9 @@ public class MainActivity extends AppCompatActivity{
                 if(ContextCompat.checkSelfPermission(this, Manifest.permission.READ_SMS)
                         != PackageManager.PERMISSION_GRANTED)
                     getPermissionToReadSMS();
+                else if(ContextCompat.checkSelfPermission(this, Manifest.permission.CALL_PHONE)
+                        != PackageManager.PERMISSION_GRANTED)
+                    getPermissionToCallPhone();
                 else{
                     createOrOpenDb();
                     refreshSmsInbox();
@@ -616,6 +669,30 @@ public class MainActivity extends AppCompatActivity{
 
             else {
                 Toast.makeText(this, "Read Contacts permission denied", Toast.LENGTH_SHORT).show();
+            }
+
+        }
+
+        if (requestCode == CALL_PHONE_PERMISSIONS_REQUEST ) {
+            if (grantResults.length > 0 &&
+                    grantResults[0] == PackageManager.PERMISSION_GRANTED ) {
+
+                if(ContextCompat.checkSelfPermission(this, Manifest.permission.READ_SMS)
+                        != PackageManager.PERMISSION_GRANTED)
+                    getPermissionToReadSMS();
+                else if(ContextCompat.checkSelfPermission(this, Manifest.permission.READ_CONTACTS)
+                        != PackageManager.PERMISSION_GRANTED)
+                    getPermissionToReadContacts();
+                else{
+                    createOrOpenDb();
+                    refreshSmsInbox();
+                    loadLayout();
+                }
+
+            }
+
+            else {
+                Toast.makeText(this, "Call Phone permission denied", Toast.LENGTH_SHORT).show();
             }
 
         }
@@ -715,28 +792,39 @@ public class MainActivity extends AppCompatActivity{
         return inst;
     }
 
-    void setFilteredDeletionMode(final Tab1Fragment passedInstance){
+    void setDeletionMode(){
 
-        cancelButtonFiltered = tb.getMenu().findItem(R.id.cancelButton);
-        final MenuItem deleteButton = tb.getMenu().findItem(R.id.deleteButton);
+        cancelButton = tb.getMenu().findItem(R.id.cancelButton);
+        deleteButton = tb.getMenu().findItem(R.id.deleteButton);
+
+        deletionMode = true;
+
+        unknownInstance.setDeletionModeClickListener();
+        knownInstance.setDeletionModeClickListener();
 
         tb.setTitle("Deletion Mode");
-        cancelButtonFiltered.setVisible(true);
+        cancelButton.setVisible(true);
         deleteButton.setVisible(true);
 
         tb.findViewById(R.id.cancelButton).setOnClickListener(new View.OnClickListener() {
             @Override
             public void onClick(View v) {
 
-                passedInstance.deletionMode = false;
+                deletionMode = false;
 
-                Arrays.fill(passedInstance.selectedViews, Boolean.FALSE);
-                Arrays.fill(passedInstance.threadsToDelete, null);
+                Arrays.fill(knownInstance.selectedViews, Boolean.FALSE);
+                Arrays.fill(unknownInstance.selectedViews, Boolean.FALSE);
+                Arrays.fill(knownInstance.threadsToDelete, null);
+                Arrays.fill(unknownInstance.threadsToDelete, null);
 
-                passedInstance.setDefaultListener();
-                passedInstance.knownAdapter.notifyDataSetChanged();
+                knownInstance.setDefaultListener();
+                unknownInstance.setDefaultListener();
 
-                cancelButtonFiltered.setVisible(false);
+                knownInstance.knownAdapter.notifyDataSetChanged();
+                unknownInstance.unknownAdapter.notifyDataSetChanged();
+
+
+                cancelButton.setVisible(false);
                 deleteButton.setVisible(false);
                 tb.setTitle("Filtered Messaging");
 
@@ -755,10 +843,14 @@ public class MainActivity extends AppCompatActivity{
 
                     filteredDatabase = openOrCreateDatabase("filteredDatabase", MODE_PRIVATE, null);
 
-                    for(int i=0; i< passedInstance.threadsToDelete.length; i++){
+                    for(int i=0; i< knownInstance.threadsToDelete.length; i++){
+                        if(knownInstance.threadsToDelete[i] != null)
+                            threadIds.add(knownInstance.threadsToDelete[i]);
+                    }
 
-                        if(passedInstance.threadsToDelete[i] != null)
-                            threadIds.add(passedInstance.threadsToDelete[i]);
+                    for(int i=0; i< unknownInstance.threadsToDelete.length; i++){
+                        if(unknownInstance.threadsToDelete[i] != null)
+                            threadIds.add(unknownInstance.threadsToDelete[i]);
                     }
 
                     new AlertDialog.Builder(MainActivity.this)
@@ -773,7 +865,7 @@ public class MainActivity extends AppCompatActivity{
                                         filteredDatabase.execSQL("delete from messageTable where thread_id = " + threadIds.get(i)+ ";");
                                     }
                                     filteredDatabase.close();
-                                    cancelDeletionMode(passedInstance, deleteButton);
+                                    cancelDeletionMode();
                                     refreshOnExtraThread();
                                 }
                             }).setNegativeButton("No", null).show();
@@ -784,111 +876,45 @@ public class MainActivity extends AppCompatActivity{
 
             }
         });
+
     }
 
-    void setUnfilteredDeletionMode(final Tab2Fragment passedInstance){
 
-        cancelButtonUnfiltered = tb.getMenu().findItem(R.id.cancelButton);
-        final MenuItem deleteButton = tb.getMenu().findItem(R.id.deleteButton);
+    void cancelDeletionMode( ){
 
-        tb.setTitle("Deletion Mode");
-        cancelButtonUnfiltered.setVisible(true);
-        deleteButton.setVisible(true);
+        deletionMode = false;
 
-        tb.findViewById(R.id.cancelButton).setOnClickListener(new View.OnClickListener() {
-            @Override
-            public void onClick(View v) {
+        Arrays.fill(knownInstance.selectedViews, Boolean.FALSE);
+        Arrays.fill(unknownInstance.selectedViews, Boolean.FALSE);
 
-                passedInstance.deletionMode = false;
+        Arrays.fill(knownInstance.threadsToDelete, null);
+        Arrays.fill(unknownInstance.threadsToDelete, null);
 
-                Arrays.fill(passedInstance.selectedViews, Boolean.FALSE);
-                Arrays.fill(passedInstance.threadsToDelete, null);
+        knownInstance.setDefaultListener();
+        unknownInstance.setDefaultListener();
 
-                passedInstance.setDefaultListener();
-                passedInstance.unknownAdapter.notifyDataSetChanged();
+        knownInstance.knownAdapter.notifyDataSetChanged();
+        unknownInstance.unknownAdapter.notifyDataSetChanged();
 
-                cancelButtonUnfiltered.setVisible(false);
-                deleteButton.setVisible(false);
-                cancelButtonUnfiltered.setVisible(false);
-                tb.setTitle("Filtered Messaging");
 
-            }
-        });
-
-        tb.findViewById(R.id.deleteButton).setOnClickListener(new View.OnClickListener() {
-            @Override
-            public void onClick(View v) {
-
-                String defaultSmsApp = Telephony.Sms.getDefaultSmsPackage(MainActivity.this);
-
-                if (defaultSmsApp.equals("mhd3v.filteredsms")){
-
-                    final ArrayList<String> threadIds = new ArrayList<String>();
-
-                    filteredDatabase = openOrCreateDatabase("filteredDatabase", MODE_PRIVATE, null);
-
-                    for(int i=0; i< passedInstance.threadsToDelete.length; i++){
-
-                        if(passedInstance.threadsToDelete[i] != null)
-                            threadIds.add(passedInstance.threadsToDelete[i]);
-                    }
-
-                    new AlertDialog.Builder(MainActivity.this)
-                            .setTitle("Deleting Conversations")
-                            .setMessage("Are you sure you want to delete "+ threadIds.size() + " conversation(s)?")
-                            .setPositiveButton("Yes", new DialogInterface.OnClickListener() {
-                                @Override
-                                public void onClick(DialogInterface dialog, int which) {
-
-                                    for(int i =0; i<threadIds.size(); i++ ){
-                                        getContentResolver().delete(Uri.parse("content://sms/conversations/" + threadIds.get(i)),null,null);
-                                        filteredDatabase.execSQL("delete from messageTable where thread_id = " + threadIds.get(i)+ ";");
-                                    }
-                                    filteredDatabase.close();
-                                    cancelDeletionMode(passedInstance, deleteButton);
-                                    refreshOnExtraThread();
-                                }
-                            }).setNegativeButton("No", null).show();
-                }
-
-                else
-                    Toast.makeText(MainActivity.this, "Set as default app to delete messages!", Toast.LENGTH_SHORT).show();
-
-            }
-        });
-    }
-
-    void cancelDeletionMode(Tab2Fragment passedInstance, MenuItem deleteButton ){
-
-        passedInstance.deletionMode = false;
-
-        Arrays.fill(passedInstance.selectedViews, Boolean.FALSE);
-        Arrays.fill(passedInstance.threadsToDelete, null);
-
-        passedInstance.setDefaultListener();
-        passedInstance.unknownAdapter.notifyDataSetChanged();
-
-        tb.setTitle("Filtered Messaging");
-        cancelButtonUnfiltered.setVisible(false);
+        cancelButton.setVisible(false);
         deleteButton.setVisible(false);
-
-    }
-
-    void cancelDeletionMode(Tab1Fragment passedInstance, MenuItem deleteButton ){
-
-        passedInstance.deletionMode = false;
-
-        Arrays.fill(passedInstance.selectedViews, Boolean.FALSE);
-        Arrays.fill(passedInstance.threadsToDelete, null);
-
-        passedInstance.setDefaultListener();
-        passedInstance.knownAdapter.notifyDataSetChanged();
-
         tb.setTitle("Filtered Messaging");
-        cancelButtonFiltered.setVisible(false);
-        deleteButton.setVisible(false);
+
 
     }
+
+    @Override
+    public void onBackPressed() {
+
+        if(!deletionMode)
+            super.onBackPressed();
+        else
+            cancelDeletionMode();
+
+
+    }
+
 
 
 }

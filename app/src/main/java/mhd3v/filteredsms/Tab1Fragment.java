@@ -40,7 +40,6 @@ public class Tab1Fragment extends Fragment {
 
     boolean[] selectedViews;
     String[] threadsToDelete;
-    static boolean deletionMode = false;
 
     @Nullable
     @Override
@@ -69,55 +68,45 @@ public class Tab1Fragment extends Fragment {
 
         setDefaultListener();
 
-
         knownList.setOnItemLongClickListener(new AdapterView.OnItemLongClickListener() {
             @Override
             public boolean onItemLongClick(AdapterView<?> adapterView, View view, int position, long id) {
 
-                deletionMode = true;
-
                 MainActivity main = (MainActivity) getActivity();
 
-                if(main.unknownInstance.deletionMode){  //if tab2 is in deletion mode
-                    main.cancelDeletionMode(main.unknownInstance, main.cancelButtonUnfiltered);
-                }
-
-
-                main.setFilteredDeletionMode(thisInstance);
-
-
-                if(deletionMode){
-
-                    knownList.setOnItemClickListener(new AdapterView.OnItemClickListener() {
-                        @Override
-                        public void onItemClick(AdapterView<?> parent, View view, int position, long id) {
-
-                            ImageView contactPicture = view.findViewById(R.id.contactPicture);
-
-                            if(!selectedViews[position]) {
-                                contactPicture.setImageResource(R.drawable.knownsenderselected);
-                                selectedViews[position] = true;
-                                threadsToDelete[position] = smsList.get(position).threadId;
-                            }
-
-                            else{
-                                contactPicture.setImageResource(R.drawable.knownsender);
-                                selectedViews[position] = false;
-                                threadsToDelete[position] = null;
-                            }
-
-                        }
-                    });
+                if(!main.deletionMode){
+                    main.setDeletionMode();
                 }
 
                 return false;
             }
         });
 
-
-
-
         return view;
+    }
+
+    void setDeletionModeClickListener(){
+
+        knownList.setOnItemClickListener(new AdapterView.OnItemClickListener() {
+            @Override
+            public void onItemClick(AdapterView<?> parent, View view, int position, long id) {
+
+                ImageView contactPicture = view.findViewById(R.id.contactPicture);
+
+                if(!selectedViews[position]) {
+                    contactPicture.setImageResource(R.drawable.knownsenderselected);
+                    selectedViews[position] = true;
+                    threadsToDelete[position] = smsList.get(position).threadId;
+                }
+
+                else{
+                    contactPicture.setImageResource(R.drawable.knownsender);
+                    selectedViews[position] = false;
+                    threadsToDelete[position] = null;
+                }
+
+            }
+        });
     }
 
     public void setDefaultListener() {
@@ -134,6 +123,7 @@ public class Tab1Fragment extends Fragment {
                 intent.putExtra("sender", smsList.get(position).sender);
                 intent.putExtra("senderName", smsList.get(position).senderName);
                 intent.putExtra("threadId", smsList.get(position).threadId);
+                intent.putExtra("blacklisted", smsList.get(position).blacklisted);
 
                 intent.setAction("frag1");
 
@@ -169,7 +159,10 @@ public class Tab1Fragment extends Fragment {
 
             TextView sender= view.findViewById(R.id.sender);
 
-            sender.setText(smsList.get(i).senderName);
+            if(!(smsList.get(i).senderName.equals("")))
+                sender.setText(smsList.get(i).senderName);
+            else
+                sender.setText(smsList.get(i).sender);
 
             TextView time= view.findViewById(R.id.time);
             String lastSenderMessageTime = smsList.get(i).messages.get(0).time;

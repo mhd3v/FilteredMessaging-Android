@@ -39,6 +39,9 @@ public class SmsBroadcastReceiver extends BroadcastReceiver {
     NotificationCompat.InboxStyle inboxStyle;
     SQLiteDatabase filteredDatabase;
 
+    boolean messageFromNewSender;
+    int blackListStatus;
+
     private static final String ACTION_SMS_NEW = "android.provider.Telephony.SMS_RECEIVED";
 
 
@@ -99,19 +102,53 @@ public class SmsBroadcastReceiver extends BroadcastReceiver {
                     filteredDatabase.execSQL("CREATE TABLE IF NOT EXISTS filteredThreads " +
                             "(thread_id VARCHAR, filtered_status VARCHAR, date_string VARCHAR);");
 
+                    Cursor blackListCheckCursor = filteredDatabase.rawQuery("select blacklisted from filteredThreads where thread_id = " + cursor.getString(cursor.getColumnIndex("thread_id")) +";",null);
+
+                    messageFromNewSender = false;
+
+                    if(!(blackListCheckCursor.moveToFirst())){
+                        messageFromNewSender = true;
+                    }
+
+
                     if (isContact){
                         filteredThreadsCv.put("thread_id",cursor.getString(cursor.getColumnIndex("thread_id")));
                         filteredThreadsCv.put("filtered_status","filtered");
                         filteredThreadsCv.put("date_string", date);
+
+                        if(messageFromNewSender){ //if message from new sender and in contact list
+                            filteredThreadsCv.put("blacklisted", 0);
+                            blackListStatus = 0;
+                        }
+
+                        else{ //message from a contact whose thread already exists, don't update blacklisted column in this case
+                            int userSetStatus = blackListCheckCursor.getInt(blackListCheckCursor.getColumnIndex("blacklisted"));
+                            filteredThreadsCv.put("blacklisted", userSetStatus);
+                            Log.d("userSetStatus", Integer.toString(userSetStatus));
+                            blackListStatus = userSetStatus;
+                        }
+
                         filteredDatabase.insert("filteredThreads", null, filteredThreadsCv);
 
                         cv.put("sender_name", contactName);
                         cv.put("sender", "known");
                     }
-                    else{
+                    else {
                         filteredThreadsCv.put("thread_id",cursor.getString(cursor.getColumnIndex("thread_id")));
                         filteredThreadsCv.put("filtered_status","unfiltered");
                         filteredThreadsCv.put("date_string", date);
+
+                        if(messageFromNewSender){ //if message from new sender and not in contact list
+                            filteredThreadsCv.put("blacklisted", 1);
+                            blackListStatus = 1;
+                        }
+
+                        else{ //message from a sender whose thread already exists, don't update blacklisted column in this case
+                            int userSetStatus = blackListCheckCursor.getInt(blackListCheckCursor.getColumnIndex("blacklisted"));
+                            filteredThreadsCv.put("blacklisted", userSetStatus);
+                            blackListStatus = userSetStatus;
+                        }
+
                         filteredDatabase.insert("filteredThreads", null, filteredThreadsCv);
 
                         cv.put("sender_name", "");
@@ -120,6 +157,7 @@ public class SmsBroadcastReceiver extends BroadcastReceiver {
 
                     filteredDatabase.insertOrThrow("messageTable", null, cv);
 
+                    blackListCheckCursor.close();
                     cursor.close();
                     filteredDatabase.close();
 
@@ -135,20 +173,24 @@ public class SmsBroadcastReceiver extends BroadcastReceiver {
 
                         if (conversationInstance.threadId.equals(cursor.getString(cursor.getColumnIndex("thread_id")))) {
 
-                            messages newSms = new messages(smsBody, Long.toString(System.currentTimeMillis()));
+                                messages newSms = new messages(smsBody, Long.toString(System.currentTimeMillis()));
 
-                            ArrayList<messages> newMessageList = new ArrayList<>();
+                                ArrayList<messages> newMessageList = new ArrayList<>();
 
-                            newMessageList.addAll(conversationInstance.messageList);
-                            newMessageList.add(newSms);
+                                newMessageList.addAll(conversationInstance.messageList);
+                                newMessageList.add(newSms);
 
-                            conversationInstance.adapter.updateMessageList(newMessageList);
+                                conversationInstance.adapter.updateMessageList(newMessageList);
+                                CoversationActivity.refreshMain();
 
+                                if(!conversationInstance.active)
+                                    setNotfication(context);
+
+                        }
+
+                        else{
                             CoversationActivity.refreshMain();
-
-                        } else{
-                            CoversationActivity.refreshMain();
-                            setNotification(context);
+                            setNotfication(context);
                         }
 
                     }
@@ -161,13 +203,13 @@ public class SmsBroadcastReceiver extends BroadcastReceiver {
                         else {
 
                             mainActivityInstance.refreshInbox = true;
-                            setNotification(context);
+                            setNotfication(context);
                         }
                     }
 
                     else { //MainActivity not instantiated
 
-                        setNotification(context);
+                        setNotfication(context);
                     }
 
 
@@ -178,18 +220,22 @@ public class SmsBroadcastReceiver extends BroadcastReceiver {
 
     }
 
-    void setNotification(Context context){
 
-        isContact = false;
+    void setNotfication(Context context){
 
-        String contactName = getContactName(context, address);
+        if(blackListStatus == 0){
 
-        if (isContact == true) {
+            String contactName = getContactName(context, address);
 
             Intent conversationThreadIntent = new Intent(context, CoversationActivity.class);
             conversationThreadIntent.setAction("android.intent.action.NotificationClicked");
             conversationThreadIntent.putExtra("threadId", cursor.getString(cursor.getColumnIndex("thread_id")));
-            conversationThreadIntent.putExtra("senderName",contactName);
+
+            if(isContact)
+                conversationThreadIntent.putExtra("senderName",contactName);
+            else
+                conversationThreadIntent.putExtra("senderName","");
+
             conversationThreadIntent.putExtra("sender",address);
 
             PendingIntent conversationThreadPendingIntent =
@@ -241,6 +287,8 @@ public class SmsBroadcastReceiver extends BroadcastReceiver {
             mNotificationManager.notify(id, mBuilder.build());
 
         }
+
+
     }
 
     public String convertDate(String dateInMilliseconds,String dateFormat) {
