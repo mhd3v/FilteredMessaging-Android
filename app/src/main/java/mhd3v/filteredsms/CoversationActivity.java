@@ -101,11 +101,11 @@ public class CoversationActivity extends AppCompatActivity {
 
             Cursor cursor = getContentResolver().query(Uri.parse("content://sms/"), null, "thread_id=" + threadId, null, null);
 
-            try {
-                Thread.sleep(1000);
-            } catch (InterruptedException e) {
-                e.printStackTrace();
-            }
+//            try {
+//                Thread.sleep(1000);
+//            } catch (InterruptedException e) {
+//                e.printStackTrace();
+//            }
 
             cursor.moveToFirst();
 
