@@ -3,11 +3,13 @@ package mhd3v.filteredsms;
 import android.app.Activity;
 import android.app.PendingIntent;
 import android.content.BroadcastReceiver;
+import android.content.ContentResolver;
 import android.content.ContentValues;
 import android.content.Context;
 import android.content.Intent;
 import android.content.IntentFilter;
 import android.database.Cursor;
+import android.database.sqlite.SQLiteDatabase;
 import android.net.Uri;
 import android.provider.ContactsContract;
 import android.provider.Telephony;
@@ -32,6 +34,8 @@ public class NewMessage extends AppCompatActivity {
     EditText textPhone;
     EditText messageEt;
     String phone_number;
+
+    boolean isContact;
 
     @Override
     protected void onCreate(Bundle savedInstanceState) {
@@ -156,6 +160,47 @@ public class NewMessage extends AppCompatActivity {
             this.getContentResolver().insert(Uri.parse("content://sms/sent"), values);
         }
 
+
+        ContentValues cv = new ContentValues();
+
+        Cursor cursor = this.getContentResolver().query(Uri.parse("content://sms"), null, null, null, null);
+        cursor.moveToFirst();
+
+        cv.put("thread_id", cursor.getString(cursor.getColumnIndex("thread_id")));
+        cv.put("date_string", time);
+        cv.put("type", 2);
+        cv.put("address", cursor.getString(cursor.getColumnIndex("address")));
+        cv.put("body", cursor.getString(cursor.getColumnIndex("body")));
+
+        isContact = false;
+        String senderName = getContactName(this, address);
+
+        if(!isContact)
+            cv.put("sender_name", "");
+        else
+            cv.put("sender_name", senderName);
+
+        SQLiteDatabase filteredDatabase = openOrCreateDatabase("filteredDatabase", MODE_PRIVATE, null);
+
+        filteredDatabase.insert("messageTable", null, cv);
+
+        ContentValues filteredThreadCv = new ContentValues();
+
+        filteredThreadCv.put("date_string", time);
+
+        int nRowsEffected = filteredDatabase.update("filteredThreads", filteredThreadCv, "thread_id =" + cursor.getString(cursor.getColumnIndex("thread_id")), null); //update time for filtered_threads entry
+
+        if(nRowsEffected == 0){ //if no entry in filteredThreads table
+
+            filteredThreadCv.put("thread_id", cursor.getString(cursor.getColumnIndex("thread_id")));
+            filteredThreadCv.put("blacklisted", 0);
+            filteredThreadCv.put("filtered_status","filtered");
+            filteredDatabase.insert("filteredThreads", null, filteredThreadCv);
+
+        }
+
+        filteredDatabase.close();
+
         refreshMain();
 
         finish();
@@ -230,5 +275,26 @@ public class NewMessage extends AppCompatActivity {
             }
             return false;
         }
+    }
+
+    public String getContactName(Context context, String phoneNo) {
+        Log.d("phoneNo", phoneNo);
+        ContentResolver cr = context.getContentResolver();
+        Uri uri = Uri.withAppendedPath(ContactsContract.PhoneLookup.CONTENT_FILTER_URI, Uri.encode(phoneNo));
+        Cursor cursor = cr.query(uri, new String[]{ContactsContract.PhoneLookup.DISPLAY_NAME}, null, null, null);
+        if (cursor == null) {
+            return phoneNo;
+        }
+        String Name = phoneNo;
+        if (cursor.moveToFirst()) {
+            isContact = true;
+            Name = cursor.getString(cursor.getColumnIndex(ContactsContract.PhoneLookup.DISPLAY_NAME));
+        }
+
+        if (cursor != null && !cursor.isClosed()) {
+            cursor.close();
+        }
+
+        return Name;
     }
 }

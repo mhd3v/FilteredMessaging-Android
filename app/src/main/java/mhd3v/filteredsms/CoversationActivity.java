@@ -419,8 +419,23 @@ public class CoversationActivity extends AppCompatActivity {
             SQLiteDatabase filteredDatabase = openOrCreateDatabase("filteredDatabase", MODE_PRIVATE, null);
 
             filteredDatabase.insert("messageTable", null, cv);
-            filteredDatabase.close();
 
+            ContentValues filteredThreadCv = new ContentValues();
+
+            filteredThreadCv.put("date_string", time);
+
+            int nRowsEffected = filteredDatabase.update("filteredThreads", filteredThreadCv, "thread_id =" + threadId, null); //update time for filtered_threads entry
+
+            if(nRowsEffected == 0){ //if no entry in filteredThreads table
+
+                filteredThreadCv.put("thread_id", threadId);
+                filteredThreadCv.put("blacklisted", 0);
+                filteredThreadCv.put("filtered_status","filtered");
+                filteredDatabase.insert("filteredThreads", null, filteredThreadCv);
+
+            }
+
+            filteredDatabase.close();
 
             ArrayList<messages> newMessageList = new ArrayList<>();
             newMessageList.addAll(messageList);
