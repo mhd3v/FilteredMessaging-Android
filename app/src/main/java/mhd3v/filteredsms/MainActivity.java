@@ -114,6 +114,9 @@ public class MainActivity extends AppCompatActivity{
 
         if(threadCursor.moveToFirst()){
 
+//            Cursor c = filteredDatabase.rawQuery("SELECT thread_id FROM filteredThreads",null);
+//            Log.d("filtered_threads", Integer.toString(c.getCount()));
+
             threadCursor = filteredDatabase.rawQuery("select DISTINCT thread_id, filtered_status, blacklisted from (select thread_id, filtered_status, date_string, blacklisted " +
                     "from filteredThreads ORDER BY date_string DESC) " +
                     "ORDER BY date_string DESC;", null);
