@@ -204,7 +204,7 @@ public class CoversationActivity extends AppCompatActivity {
 
         filteredDatabase.update("filteredThreads", cv, "thread_id =" + threadId, null);
 
-        Toast.makeText(this, "Added to whitelist", Toast.LENGTH_SHORT).show();
+        Toast.makeText(this, "Added to filtered", Toast.LENGTH_SHORT).show();
 
         filteredDatabase.close();
 
@@ -225,7 +225,7 @@ public class CoversationActivity extends AppCompatActivity {
 
         filteredDatabase.update("filteredThreads", cv, "thread_id =" + threadId, null);
 
-        Toast.makeText(this, "Added to blacklist", Toast.LENGTH_SHORT).show();
+        Toast.makeText(this, "Added to unfiltered", Toast.LENGTH_SHORT).show();
 
         filteredDatabase.close();
 

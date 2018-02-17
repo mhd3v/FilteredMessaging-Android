@@ -21,9 +21,6 @@ import android.provider.Telephony;
 import android.support.annotation.NonNull;
 import android.support.design.widget.FloatingActionButton;
 import android.support.design.widget.TabLayout;
-import android.support.v4.app.Fragment;
-import android.support.v4.app.FragmentManager;
-import android.support.v4.app.FragmentTransaction;
 import android.support.v4.content.ContextCompat;
 import android.support.v4.view.ViewPager;
 import android.support.v7.app.AlertDialog;
@@ -76,6 +73,8 @@ public class MainActivity extends AppCompatActivity{
 
     boolean deletionMode = false;
     boolean firstRun = false;
+
+
     @Override
     protected void onCreate(Bundle savedInstanceState) {
 
@@ -114,12 +113,7 @@ public class MainActivity extends AppCompatActivity{
 
         if(threadCursor.moveToFirst()){
 
-//            Cursor c = filteredDatabase.rawQuery("SELECT thread_id FROM filteredThreads",null);
-//            Log.d("filtered_threads", Integer.toString(c.getCount()));
-
-            threadCursor = filteredDatabase.rawQuery("select DISTINCT thread_id, filtered_status, blacklisted from (select thread_id, filtered_status, date_string, blacklisted " +
-                    "from filteredThreads ORDER BY date_string DESC) " +
-                    "ORDER BY date_string DESC;", null);
+            threadCursor = filteredDatabase.rawQuery("select thread_id, filtered_status, blacklisted from filteredThreads ORDER BY date_string DESC;", null);
 
             threadCursor.moveToFirst();
             openExistingDatabase(threadCursor);
@@ -509,6 +503,10 @@ public class MainActivity extends AppCompatActivity{
 
                 filteredDatabase.close();
 
+                knownSms.clear();
+                unknownSms.clear();
+                smsList.clear();
+
                 loadDatabase();
                 loadLayout();
 
@@ -592,6 +590,18 @@ public class MainActivity extends AppCompatActivity{
         @Override
         protected void onPostExecute(Void aVoid) {
             super.onPostExecute(aVoid);
+
+            //----experimental-------
+            unknownInstance.selectedViews = new boolean[unknownSms.size()];
+            unknownInstance.threadsToDelete = new String[unknownSms.size()];
+            Arrays.fill(unknownInstance.selectedViews, Boolean.FALSE);
+            Arrays.fill(unknownInstance.threadsToDelete, null);
+
+            knownInstance.selectedViews = new boolean[knownSms.size()];
+            knownInstance.threadsToDelete = new String[knownSms.size()];
+            Arrays.fill(knownInstance.selectedViews, Boolean.FALSE);
+            Arrays.fill(knownInstance.threadsToDelete, null);
+            //-----------------------
 
             refreshFragments();
 

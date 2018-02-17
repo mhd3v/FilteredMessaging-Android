@@ -1,6 +1,7 @@
 package mhd3v.filteredsms;
 
 import android.app.Notification;
+import android.app.NotificationChannel;
 import android.app.NotificationManager;
 import android.app.PendingIntent;
 import android.content.BroadcastReceiver;
@@ -12,6 +13,7 @@ import android.content.SharedPreferences;
 import android.database.Cursor;
 import android.database.sqlite.SQLiteDatabase;
 import android.net.Uri;
+import android.os.Build;
 import android.os.Bundle;
 import android.preference.PreferenceManager;
 import android.provider.ContactsContract;
@@ -73,6 +75,8 @@ public class SmsBroadcastReceiver extends BroadcastReceiver {
                         cv.put("body", smsBody);
                         context.getContentResolver().insert(Uri.parse("content://sms/inbox"), cv);
                     }
+
+                    System.out.print("New message arrived");
 
                     ContentValues cv = new ContentValues();
 
@@ -223,7 +227,7 @@ public class SmsBroadcastReceiver extends BroadcastReceiver {
 
             Intent conversationThreadIntent = new Intent(context, CoversationActivity.class);
             conversationThreadIntent.setAction("android.intent.action.NotificationClicked");
-            conversationThreadIntent.putExtra("threadId", cursor.getString(cursor.getColumnIndex("thread_id")));
+            conversationThreadIntent.putExtra("threadId", threadId);
 
             if(isContact)
                 conversationThreadIntent.putExtra("senderName",contactName);
@@ -246,8 +250,6 @@ public class SmsBroadcastReceiver extends BroadcastReceiver {
 
             SharedPreferences.Editor editor = sp.edit();
 
-            String threadId = cursor.getString(cursor.getColumnIndex("thread_id"));
-
             editor.putString(threadId, sp.getString(threadId,"")+smsBody+"\n");
 
             editor.commit();
@@ -265,8 +267,13 @@ public class SmsBroadcastReceiver extends BroadcastReceiver {
 
             inboxStyle.setBigContentTitle(contactName);
 
+            String CHANNEL_ID = threadId;// The id of the channel.
+            CharSequence name = "New message";// The user-visible name of the channel.
+            int importance = NotificationManager.IMPORTANCE_HIGH;
+
+
             NotificationCompat.Builder mBuilder =
-                    new NotificationCompat.Builder(context)
+                    new NotificationCompat.Builder(context, threadId)
                             .setSmallIcon(R.drawable.main_icon_nobg)
                             .setNumber(result.length)
                             .setContentTitle(contactName)
@@ -275,9 +282,15 @@ public class SmsBroadcastReceiver extends BroadcastReceiver {
                             .setContentIntent(conversationThreadPendingIntent)
                             .setDefaults(Notification.DEFAULT_SOUND | Notification.DEFAULT_VIBRATE | Notification.DEFAULT_LIGHTS);
 
-            int id = Integer.parseInt(cursor.getString(cursor.getColumnIndex("thread_id"))); //assign ID on base of threadID
+            int id = Integer.parseInt(threadId); //assign ID on base of threadID
 
             mNotificationManager = (NotificationManager) context.getSystemService(Context.NOTIFICATION_SERVICE);
+
+            if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.O) {
+                NotificationChannel mChannel = new NotificationChannel(CHANNEL_ID, name, importance);
+                mNotificationManager.createNotificationChannel(mChannel);
+            }
+
             mNotificationManager.notify(id, mBuilder.build());
 
         }
