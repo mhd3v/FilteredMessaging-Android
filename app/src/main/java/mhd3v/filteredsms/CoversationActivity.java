@@ -101,11 +101,11 @@ public class CoversationActivity extends AppCompatActivity {
 
             Cursor cursor = getContentResolver().query(Uri.parse("content://sms/"), null, "thread_id=" + threadId, null, null);
 
-            try {
-                Thread.sleep(1000);
-            } catch (InterruptedException e) {
-                e.printStackTrace();
-            }
+//            try {
+//                Thread.sleep(1000);
+//            } catch (InterruptedException e) {
+//                e.printStackTrace();
+//            }
 
             cursor.moveToFirst();
 
@@ -204,7 +204,7 @@ public class CoversationActivity extends AppCompatActivity {
 
         filteredDatabase.update("filteredThreads", cv, "thread_id =" + threadId, null);
 
-        Toast.makeText(this, "Added to whitelist", Toast.LENGTH_SHORT).show();
+        Toast.makeText(this, "Added to filtered", Toast.LENGTH_SHORT).show();
 
         filteredDatabase.close();
 
@@ -225,7 +225,7 @@ public class CoversationActivity extends AppCompatActivity {
 
         filteredDatabase.update("filteredThreads", cv, "thread_id =" + threadId, null);
 
-        Toast.makeText(this, "Added to blacklist", Toast.LENGTH_SHORT).show();
+        Toast.makeText(this, "Added to unfiltered", Toast.LENGTH_SHORT).show();
 
         filteredDatabase.close();
 
@@ -419,8 +419,23 @@ public class CoversationActivity extends AppCompatActivity {
             SQLiteDatabase filteredDatabase = openOrCreateDatabase("filteredDatabase", MODE_PRIVATE, null);
 
             filteredDatabase.insert("messageTable", null, cv);
-            filteredDatabase.close();
 
+            ContentValues filteredThreadCv = new ContentValues();
+
+            filteredThreadCv.put("date_string", time);
+
+            int nRowsEffected = filteredDatabase.update("filteredThreads", filteredThreadCv, "thread_id =" + threadId, null); //update time for filtered_threads entry
+
+            if(nRowsEffected == 0){ //if no entry in filteredThreads table
+
+                filteredThreadCv.put("thread_id", threadId);
+                filteredThreadCv.put("blacklisted", 0);
+                filteredThreadCv.put("filtered_status","filtered");
+                filteredDatabase.insert("filteredThreads", null, filteredThreadCv);
+
+            }
+
+            filteredDatabase.close();
 
             ArrayList<messages> newMessageList = new ArrayList<>();
             newMessageList.addAll(messageList);
