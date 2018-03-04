@@ -1,2 +1,2 @@
-# FiletedSMS-Android
+# FilteredSMS-Android
 Final project for the Modern Programming Languages couse
