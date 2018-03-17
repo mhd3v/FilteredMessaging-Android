@@ -37,6 +37,8 @@
         app:layout_constraintTop_toTopOf="parent" />
 
     <TextView
+        android:textColorLink="@color/white"
+        android:autoLink="email|phone|web"
         android:id="@+id/senderText"
         android:layout_width="wrap_content"
         android:layout_height="wrap_content"
@@ -68,6 +70,8 @@
         tools:layout_constraintTop_creator="1" />
 
     <TextView
+        android:textColorLink="@color/white"
+        android:autoLink="email|phone|web"
         android:id="@+id/userText"
         android:layout_width="wrap_content"
         android:layout_height="wrap_content"

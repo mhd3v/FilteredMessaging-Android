@@ -85,16 +85,17 @@ public class Tab2Fragment extends Fragment {
             @Override
             public void onItemClick(AdapterView<?> parent, View view, int position, long id) {
 
-                ImageView contactPicture = view.findViewById(R.id.contactPicture);
+
+                ImageView unknownSenderSelected = view.findViewById(R.id.unknownSenderSelected);
 
                 if(!selectedViews[position]) {
-                    contactPicture.setImageResource(R.drawable.unknownsenderselected);
+                    unknownSenderSelected.setVisibility(View.VISIBLE);
                     selectedViews[position] = true;
                     threadsToDelete[position] = smsList.get(position).threadId;
                 }
 
                 else{
-                    contactPicture.setImageResource(R.drawable.unknownsender);
+                    unknownSenderSelected.setVisibility(View.GONE);
                     selectedViews[position] = false;
                     threadsToDelete[position] = null;
                 }
@@ -133,6 +134,13 @@ public class Tab2Fragment extends Fragment {
             }
         });
 
+    }
+
+    public String[] getAllThreadIds(){
+        String allThreads[] = new String[smsList.size()];
+        for(int i = 0; i < threadsToDelete.length; i++)
+            allThreads[i] = smsList.get(i).threadId;
+        return allThreads;
     }
 
 
@@ -180,12 +188,12 @@ public class Tab2Fragment extends Fragment {
 
             ImageView contactPicture = view.findViewById(R.id.contactPicture);
 
-            if(!selectedViews[i])
-                contactPicture.setImageResource(R.drawable.unknownsender);
-            else
-                contactPicture.setImageResource(R.drawable.unknownsenderselected);
+            ImageView unknownSelected = view.findViewById(R.id.unknownSenderSelected);
 
+            if(selectedViews[i])
+                unknownSelected.setVisibility(View.VISIBLE);
 
+            contactPicture.setImageResource(R.drawable.unknownsender);
 
             return view;
         }

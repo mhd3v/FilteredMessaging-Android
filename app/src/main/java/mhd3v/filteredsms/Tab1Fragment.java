@@ -92,15 +92,18 @@ public class Tab1Fragment extends Fragment {
             public void onItemClick(AdapterView<?> parent, View view, int position, long id) {
 
                 ImageView contactPicture = view.findViewById(R.id.contactPicture);
+                ImageView knownSenderSelected = view.findViewById(R.id.knownSenderSelected);
 
                 if(!selectedViews[position]) {
-                    contactPicture.setImageResource(R.drawable.knownsenderselected);
+//                    contactPicture.setImageResource(R.drawable.knownsenderselected);
+                    knownSenderSelected.setVisibility(View.VISIBLE);
                     selectedViews[position] = true;
                     threadsToDelete[position] = smsList.get(position).threadId;
                 }
 
                 else{
-                    contactPicture.setImageResource(R.drawable.knownsender);
+//                    contactPicture.setImageResource(R.drawable.knownsender);
+                    knownSenderSelected.setVisibility(View.GONE);
                     selectedViews[position] = false;
                     threadsToDelete[position] = null;
                 }
@@ -132,6 +135,13 @@ public class Tab1Fragment extends Fragment {
             }
         });
 
+    }
+
+    public String[] getAllThreadIds(){
+        String allThreads[] = new String[smsList.size()];
+        for(int i = 0; i < threadsToDelete.length; i++)
+            allThreads[i] = smsList.get(i).threadId;
+        return allThreads;
     }
 
 
@@ -177,10 +187,12 @@ public class Tab1Fragment extends Fragment {
 
             ImageView contactPicture = view.findViewById(R.id.contactPicture);
 
-            if(!selectedViews[i])
-                contactPicture.setImageResource(R.drawable.knownsender);
-            else
-                contactPicture.setImageResource(R.drawable.knownsenderselected);
+            ImageView knownSelected = view.findViewById(R.id.knownSenderSelected);
+
+            if(selectedViews[i])
+                knownSelected.setVisibility(View.VISIBLE);
+
+            contactPicture.setImageResource(R.drawable.knownsender);
 
             return view;
         }

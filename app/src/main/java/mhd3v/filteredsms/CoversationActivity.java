@@ -307,7 +307,7 @@ public class CoversationActivity extends AppCompatActivity {
             else{
 
                 TextView senderMessage= view.findViewById(R.id.senderText);
-                senderMessage.setText(messageList.get(i).messageBody);
+                senderMessage.setText((messageList.get(i).messageBody).trim());
                 senderMessage.setVisibility(View.VISIBLE);
 
                 TextView senderTimeText = view.findViewById(R.id.senderTime);
@@ -392,7 +392,7 @@ public class CoversationActivity extends AppCompatActivity {
             String defaultSmsApp = Telephony.Sms.getDefaultSmsPackage(this);
 
             if(defaultSmsApp.equals("mhd3v.filteredsms")){
-                Log.d("test", "coning");
+                Log.d("test", "coming in here");
                 ContentValues values = new ContentValues();
                 values.put("address", address);
                 values.put("body", message);

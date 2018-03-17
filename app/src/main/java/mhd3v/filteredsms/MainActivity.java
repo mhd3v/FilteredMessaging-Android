@@ -1,6 +1,7 @@
 package mhd3v.filteredsms;
 
 import android.Manifest;
+import android.annotation.SuppressLint;
 import android.app.NotificationManager;
 import android.content.ContentResolver;
 import android.content.ContentValues;
@@ -71,6 +72,9 @@ public class MainActivity extends AppCompatActivity{
     MenuItem cancelButton;
     MenuItem deleteButton;
 
+    MenuItem selectAllFiltered;
+    MenuItem selectAllUnfiltered;
+
     boolean deletionMode = false;
     boolean firstRun = false;
 
@@ -112,6 +116,9 @@ public class MainActivity extends AppCompatActivity{
         Cursor threadCursor = filteredDatabase.rawQuery("select * from messageTable;", null);
 
         if(threadCursor.moveToFirst()){
+
+//            Cursor c = filteredDatabase.rawQuery("SELECT distinct thread_id FROM filteredThreads",null);
+//            Log.d("filtered_threads", Integer.toString(c.getCount()));
 
             threadCursor = filteredDatabase.rawQuery("select thread_id, filtered_status, blacklisted from filteredThreads ORDER BY date_string DESC;", null);
 
@@ -236,9 +243,10 @@ public class MainActivity extends AppCompatActivity{
 
     }
 
+    @SuppressLint("StaticFieldLeak")
     public void refreshSmsInbox() {
 
-        new AsyncTask<Void, Void, Void> (){
+         new AsyncTask<Void, Void, Void>  (){
 
             TextView firstRunText;
             FloatingActionButton fab;
@@ -549,7 +557,6 @@ public class MainActivity extends AppCompatActivity{
 
     }
 
-
     class refreshInboxOnNewThread extends AsyncTask<Void, Void, Void> {
 
         @Override
@@ -846,6 +853,9 @@ public class MainActivity extends AppCompatActivity{
 
     void setDeletionMode(){
 
+        selectAllFiltered = tb.getMenu().findItem(R.id.selectAllFiltered);
+        selectAllUnfiltered = tb.getMenu().findItem(R.id.selectAllUnfiltered);
+
         cancelButton = tb.getMenu().findItem(R.id.cancelButton);
         deleteButton = tb.getMenu().findItem(R.id.deleteButton);
 
@@ -855,30 +865,17 @@ public class MainActivity extends AppCompatActivity{
         knownInstance.setDeletionModeClickListener();
 
         tb.setTitle("Deletion Mode");
+
         cancelButton.setVisible(true);
         deleteButton.setVisible(true);
+
+        selectAllFiltered.setVisible(true);
+        selectAllUnfiltered.setVisible(true);
 
         tb.findViewById(R.id.cancelButton).setOnClickListener(new View.OnClickListener() {
             @Override
             public void onClick(View v) {
-
-                deletionMode = false;
-
-                Arrays.fill(knownInstance.selectedViews, Boolean.FALSE);
-                Arrays.fill(unknownInstance.selectedViews, Boolean.FALSE);
-                Arrays.fill(knownInstance.threadsToDelete, null);
-                Arrays.fill(unknownInstance.threadsToDelete, null);
-
-                knownInstance.setDefaultListener();
-                unknownInstance.setDefaultListener();
-
-                knownInstance.knownAdapter.notifyDataSetChanged();
-                unknownInstance.unknownAdapter.notifyDataSetChanged();
-
-                cancelButton.setVisible(false);
-                deleteButton.setVisible(false);
-                tb.setTitle("Filtered Messaging");
-
+            cancelDeletionMode();
             }
         });
 
@@ -890,7 +887,7 @@ public class MainActivity extends AppCompatActivity{
 
                 if (defaultSmsApp.equals("mhd3v.filteredsms")){
 
-                    final ArrayList<String> threadIds = new ArrayList<String>();
+                    final ArrayList<String> threadIds = new ArrayList<>();
 
                     filteredDatabase = openOrCreateDatabase("filteredDatabase", MODE_PRIVATE, null);
 
@@ -949,8 +946,24 @@ public class MainActivity extends AppCompatActivity{
 
         cancelButton.setVisible(false);
         deleteButton.setVisible(false);
+
+        selectAllFiltered.setVisible(false);
+        selectAllUnfiltered.setVisible(false);
+
         tb.setTitle("Filtered Messaging");
 
+    }
+
+    public void selectAllFiltered(MenuItem item) {
+        Arrays.fill(knownInstance.selectedViews, Boolean.TRUE);
+        knownInstance.threadsToDelete = knownInstance.getAllThreadIds();
+        knownInstance.knownAdapter.notifyDataSetChanged();
+    }
+
+    public void selectAllUnfiltered(MenuItem item) {
+        Arrays.fill(unknownInstance.selectedViews, Boolean.TRUE);
+        unknownInstance.threadsToDelete = unknownInstance.getAllThreadIds();
+        unknownInstance.unknownAdapter.notifyDataSetChanged();
     }
 
     @Override
