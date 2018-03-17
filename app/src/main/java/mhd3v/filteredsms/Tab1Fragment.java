@@ -1,13 +1,10 @@
 package mhd3v.filteredsms;
 
 import android.content.Intent;
-import android.graphics.Color;
 import android.os.Bundle;
 import android.support.annotation.Nullable;
 import android.support.v4.app.Fragment;
-import android.support.v7.widget.Toolbar;
 import android.text.format.DateFormat;
-import android.view.KeyEvent;
 import android.view.LayoutInflater;
 import android.view.View;
 import android.view.ViewGroup;
@@ -17,13 +14,8 @@ import android.widget.ImageView;
 import android.widget.ListView;
 import android.widget.TextView;
 import android.text.TextUtils;
-import android.widget.Toast;
 
 import java.util.ArrayList;
-
-import static android.R.attr.activatedBackgroundIndicator;
-import static android.R.attr.color;
-import static android.R.attr.colorBackground;
 
 
 /**
@@ -118,7 +110,7 @@ public class Tab1Fragment extends Fragment {
             @Override
             public void onItemClick(AdapterView<?> parent, View view, int position, long id) {
 
-                Intent intent = new Intent(getActivity(), CoversationActivity.class);
+                Intent intent = new Intent(getActivity(), ConversationActivity.class);
                 Bundle args = new Bundle();
                 args.putSerializable("messageList", smsList.get(position).messages);
                 intent.putExtra("BUNDLE",args);

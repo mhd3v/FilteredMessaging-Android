@@ -45,9 +45,10 @@
 
         </activity>
 
-        <activity android:name=".CoversationActivity"
+        <activity android:name=".ConversationActivity"
             android:theme="@style/AppTheme.NoActionBar"
-            android:screenOrientation="portrait">
+            android:screenOrientation="portrait"
+            android:noHistory="true">
             <uses-permission android:name="android.permission.SEND_SMS" />
 
             <intent-filter>

@@ -38,7 +38,7 @@ import java.util.ArrayList;
 import java.util.Collections;
 
 
-public class CoversationActivity extends AppCompatActivity {
+public class ConversationActivity extends AppCompatActivity {
 
     ArrayList<messages> messageList;
     EditText input;
@@ -66,8 +66,7 @@ public class CoversationActivity extends AppCompatActivity {
 
     SQLiteDatabase filteredDatabase;
 
-
-    static CoversationActivity conversationInstance;
+    static ConversationActivity conversationInstance;
 
     @Override
     protected void onCreate(Bundle savedInstanceState) {
@@ -100,12 +99,6 @@ public class CoversationActivity extends AppCompatActivity {
             cameFromNotification = true;
 
             Cursor cursor = getContentResolver().query(Uri.parse("content://sms/"), null, "thread_id=" + threadId, null, null);
-
-//            try {
-//                Thread.sleep(1000);
-//            } catch (InterruptedException e) {
-//                e.printStackTrace();
-//            }
 
             cursor.moveToFirst();
 
@@ -369,7 +362,6 @@ public class CoversationActivity extends AppCompatActivity {
             }
 
 
-
     }
 
     @Override
@@ -384,6 +376,11 @@ public class CoversationActivity extends AppCompatActivity {
         active = false;
     }
 
+    @Override
+    public void onDestroy() {
+        super.onDestroy();
+        conversationInstance = null;
+    }
 
     void updateViewsAndDB(String address, String message, String time, messages newSms, boolean status){
 
