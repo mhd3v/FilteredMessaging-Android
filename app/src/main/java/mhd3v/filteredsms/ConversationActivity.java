@@ -487,7 +487,7 @@ public class ConversationActivity extends AppCompatActivity {
                         if(i == 1){
                             switch (resultCode) {
                                 case Activity.RESULT_OK:
-                                    Toast.makeText(getBaseContext(), "SMS sent", Toast.LENGTH_LONG).show();
+                                    //Toast.makeText(getBaseContext(), "SMS sent", Toast.LENGTH_LONG).show();
                                     updateViewsAndDB(address, message, Long.toString(System.currentTimeMillis()), newSms, true);
                                     i++;
                                     break;

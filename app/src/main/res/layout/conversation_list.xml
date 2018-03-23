@@ -89,7 +89,7 @@
     <TextView
         android:id="@+id/userTime"
         android:layout_width="wrap_content"
-        android:layout_height="12dp"
+        android:layout_height="wrap_content"
         android:layout_marginRight="8dp"
         android:layout_marginTop="1dp"
         android:text="11:40"
