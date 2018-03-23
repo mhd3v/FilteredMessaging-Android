@@ -42,11 +42,11 @@ public class MainActivity extends AppCompatActivity{
 
     private SectionsPageAdapter mSectionsPageAdapter;
 
-    Tab1Fragment knownInstance;
-    Tab2Fragment unknownInstance;
+    KnownFragment knownInstance;
+    UnknownFragment unknownInstance;
 
-    Tab1Fragment.customAdapter knownAdapter;
-    Tab2Fragment.customAdapter unknownAdapter;
+    KnownFragment.customAdapter knownAdapter;
+    UnknownFragment.customAdapter unknownAdapter;
 
     private ViewPager mViewPager;
 
@@ -625,8 +625,8 @@ public class MainActivity extends AppCompatActivity{
     void setupFragments(ViewPager viewPager) {
         SectionsPageAdapter adapter = new SectionsPageAdapter(getSupportFragmentManager());
 
-        adapter.addFragment(new Tab1Fragment(), "Filtered");
-        adapter.addFragment(new Tab2Fragment(), "Unfiltered");
+        adapter.addFragment(new KnownFragment(), "Filtered");
+        adapter.addFragment(new UnknownFragment(), "Unfiltered");
 
         viewPager.setAdapter(adapter);
     }
@@ -826,20 +826,20 @@ public class MainActivity extends AppCompatActivity{
         active = false;
     }
 
-    public void setKnownInstance(Tab1Fragment knownInstance) {
+    public void setKnownInstance(KnownFragment knownInstance) {
         this.knownInstance = knownInstance;
     }
 
-    public void setUnknownInstance(Tab2Fragment unknownInstance) {
+    public void setUnknownInstance(UnknownFragment unknownInstance) {
         this.unknownInstance = unknownInstance;
     }
 
-    public void setKnownAdapter(Tab1Fragment.customAdapter adapter) {
+    public void setKnownAdapter(KnownFragment.customAdapter adapter) {
 
         knownAdapter = adapter;
     }
 
-    public void setUnknownAdapter(Tab2Fragment.customAdapter adapter) {
+    public void setUnknownAdapter(UnknownFragment.customAdapter adapter) {
         unknownAdapter = adapter;
     }
 

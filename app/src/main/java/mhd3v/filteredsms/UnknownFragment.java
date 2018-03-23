@@ -23,13 +23,13 @@ import java.util.ArrayList;
  * Created by Mahad on 11/27/2017.
  */
 
-public class Tab2Fragment extends Fragment {
+public class UnknownFragment extends Fragment {
 
     ArrayList<sms> smsList;
 
-    Tab2Fragment.customAdapter unknownAdapter;
+    UnknownFragment.customAdapter unknownAdapter;
     ListView unknownList;
-    Tab2Fragment thisInstance;
+    UnknownFragment thisInstance;
 
     boolean[] selectedViews;
     String[] threadsToDelete;
@@ -39,7 +39,7 @@ public class Tab2Fragment extends Fragment {
     @Override
     public View onCreateView(LayoutInflater inflater, @Nullable ViewGroup container, @Nullable Bundle savedInstanceState) {
 
-        View view = inflater.inflate(R.layout.tab2_fragment, container, false);
+        View view = inflater.inflate(R.layout.fragment_unknown, container, false);
 
         MainActivity activity = (MainActivity) getActivity();
         activity.setUnknownInstance(this);
@@ -164,7 +164,7 @@ public class Tab2Fragment extends Fragment {
         @Override
         public View getView(int i, View view, ViewGroup viewGroup) {
 
-            view = getActivity().getLayoutInflater().inflate(R.layout.custom_list, null);
+            view = getActivity().getLayoutInflater().inflate(R.layout.fragments_list, null);
 
             TextView sender = view.findViewById(R.id.sender);
 

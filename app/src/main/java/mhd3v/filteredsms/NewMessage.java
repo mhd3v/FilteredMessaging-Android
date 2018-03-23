@@ -123,10 +123,16 @@ public class NewMessage extends AppCompatActivity {
         String sendernumber = phone_number;
         String messagebody = messageEt.getText().toString();
 
-        if(!(sendernumber.length() == 0 && messagebody.length() == 0)){
+        if(sendernumber.length() == 0 && messagebody.length() == 0)
+            Toast.makeText(this, "Please enter recipient's number and enter the message body", Toast.LENGTH_SHORT).show();
+        else if(sendernumber.length() == 0)
+            Toast.makeText(this, "Please enter a phone number or select one from contacts", Toast.LENGTH_SHORT).show();
+        else if(messagebody.length() == 0)
+            Toast.makeText(this, "Please enter a message body", Toast.LENGTH_SHORT).show();
+
+        else{
 
             Button send = (Button) findViewById(R.id.button_chatbox_send);
-            send.setClickable(false);
 
             sendSms(sendernumber, messagebody);
 
@@ -136,16 +142,8 @@ public class NewMessage extends AppCompatActivity {
             } catch (Exception e) {
 
             }
-
         }
 
-        else{
-            if(sendernumber.length() == 0)
-                Toast.makeText(this, "Please enter a phone number or select one from contacts", Toast.LENGTH_LONG).show();
-            if(messagebody.length() == 0)
-                Toast.makeText(this, "Please enter a message body", Toast.LENGTH_LONG).show();
-
-        }
 
     }
 
@@ -195,6 +193,7 @@ public class NewMessage extends AppCompatActivity {
             filteredThreadCv.put("thread_id", cursor.getString(cursor.getColumnIndex("thread_id")));
             filteredThreadCv.put("blacklisted", 0);
             filteredThreadCv.put("filtered_status","filtered");
+            filteredThreadCv.put("read",1);
             filteredDatabase.insert("filteredThreads", null, filteredThreadCv);
 
         }
