@@ -1,6 +1,7 @@
 package mhd3v.filteredsms;
 
 import android.content.Intent;
+import android.graphics.Typeface;
 import android.os.Bundle;
 import android.support.annotation.Nullable;
 import android.support.v4.app.Fragment;
@@ -119,6 +120,8 @@ public class Tab1Fragment extends Fragment {
                 intent.putExtra("senderName", smsList.get(position).senderName);
                 intent.putExtra("threadId", smsList.get(position).threadId);
                 intent.putExtra("blacklisted", smsList.get(position).blacklisted);
+                intent.putExtra("read", smsList.get(position).read);
+
 
                 intent.setAction("frag1");
 
@@ -165,6 +168,9 @@ public class Tab1Fragment extends Fragment {
                 sender.setText(smsList.get(i).senderName);
             else
                 sender.setText(smsList.get(i).sender);
+
+            if(smsList.get(i).read == 0)
+                sender.setTypeface(null, Typeface.BOLD);
 
             TextView time= view.findViewById(R.id.time);
             String lastSenderMessageTime = smsList.get(i).messages.get(0).time;

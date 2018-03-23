@@ -120,7 +120,7 @@ public class MainActivity extends AppCompatActivity{
 //            Cursor c = filteredDatabase.rawQuery("SELECT distinct thread_id FROM filteredThreads",null);
 //            Log.d("filtered_threads", Integer.toString(c.getCount()));
 
-            threadCursor = filteredDatabase.rawQuery("select thread_id, filtered_status, blacklisted from filteredThreads ORDER BY date_string DESC;", null);
+            threadCursor = filteredDatabase.rawQuery("select thread_id, filtered_status, blacklisted,read from filteredThreads ORDER BY date_string DESC;", null);
 
             threadCursor.moveToFirst();
             openExistingDatabase(threadCursor);
@@ -182,6 +182,8 @@ public class MainActivity extends AppCompatActivity{
 
                     newSms.senderName = c.getString(c.getColumnIndex("sender_name"));
 
+                    newSms.read = Integer.parseInt(cursor.getString(cursor.getColumnIndex("read")));
+
                     do{
                         messages message = new messages(c.getString(c.getColumnIndex("body")), c.getString(c.getColumnIndex("date_string")));
 
@@ -209,6 +211,8 @@ public class MainActivity extends AppCompatActivity{
 
                     sms newSms = new sms(c.getString(c.getColumnIndex("address")), thread_Id);
                     newSms.senderName = c.getString(c.getColumnIndex("sender_name"));
+
+                    newSms.read = Integer.parseInt(cursor.getString(cursor.getColumnIndex("read")));
 
                     do{
 
@@ -277,7 +281,7 @@ public class MainActivity extends AppCompatActivity{
                 String type = Integer.toString(cursor.getColumnIndex("type"));
 
                 filteredDatabase.execSQL("CREATE TABLE IF NOT EXISTS filteredThreads " +
-                        "(thread_id VARCHAR, filtered_status VARCHAR, date_string VARCHAR, blacklisted INTEGER DEFAULT 0);");
+                        "(thread_id VARCHAR, filtered_status VARCHAR, date_string VARCHAR, blacklisted INTEGER DEFAULT 0, read INTEGER);");
 
                 do {
 
@@ -352,6 +356,8 @@ public class MainActivity extends AppCompatActivity{
                                 filteredThreadsCv.put("filtered_status","filtered");
                                 filteredThreadsCv.put("date_string", date);
                                 filteredThreadsCv.put("blacklisted", 0);
+                                //System.out.println("readstatus" + cursor.getString(cursor.getColumnIndex("read")));
+                                filteredThreadsCv.put("read", cursor.getString(cursor.getColumnIndex("read")));
                                 filteredDatabase.insert("filteredThreads", null, filteredThreadsCv);
 
                                 newSms.senderName = contactName;
@@ -370,6 +376,7 @@ public class MainActivity extends AppCompatActivity{
                                 filteredThreadsCv.put("filtered_status","unfiltered");
                                 filteredThreadsCv.put("date_string", date);
                                 filteredThreadsCv.put("blacklisted", 1);
+                                filteredThreadsCv.put("read", cursor.getString(cursor.getColumnIndex("read")));
                                 filteredDatabase.insert("filteredThreads", null, filteredThreadsCv);
 
                                 newSms.senderName = "";
@@ -464,6 +471,7 @@ public class MainActivity extends AppCompatActivity{
                                 filteredThreadsCv.put("filtered_status","filtered");
                                 filteredThreadsCv.put("date_string", date);
                                 filteredThreadsCv.put("blacklisted", 0);
+                                filteredThreadsCv.put("read", cursor.getString(cursor.getColumnIndex("read")));
                                 filteredDatabase.insert("filteredThreads", null, filteredThreadsCv);
 
                                 cv.put("sender", "known");
@@ -480,6 +488,7 @@ public class MainActivity extends AppCompatActivity{
                                 filteredThreadsCv.put("filtered_status","filtered");
                                 filteredThreadsCv.put("date_string", date);
                                 filteredThreadsCv.put("blacklisted", 0);
+                                filteredThreadsCv.put("read", cursor.getString(cursor.getColumnIndex("read")));
                                 filteredDatabase.insert("filteredThreads", null, filteredThreadsCv);
 
                                 cv.put("sender", "unknown");
@@ -581,9 +590,7 @@ public class MainActivity extends AppCompatActivity{
 
             filteredDatabase = openOrCreateDatabase("filteredDatabase", MODE_PRIVATE, null);
 
-            Cursor threadCursor = filteredDatabase.rawQuery("select DISTINCT thread_id, filtered_status, blacklisted from (select thread_id, filtered_status, blacklisted, date_string " +
-                    "from filteredThreads ORDER BY date_string DESC) " +
-                    "ORDER BY date_string DESC;", null);
+            Cursor threadCursor = filteredDatabase.rawQuery("select thread_id, filtered_status, blacklisted, read from filteredThreads ORDER BY date_string DESC;", null);
 
             threadCursor.moveToFirst();
 

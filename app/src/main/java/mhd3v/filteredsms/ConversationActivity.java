@@ -52,6 +52,7 @@ public class ConversationActivity extends AppCompatActivity {
     String threadId;
 
     int blacklisted;
+    int read;
 
     boolean cameFromNotification = false;
 
@@ -84,7 +85,24 @@ public class ConversationActivity extends AppCompatActivity {
         senderName = intent.getStringExtra("senderName");
         threadId = intent.getStringExtra("threadId");
         blacklisted = intent.getIntExtra("blacklisted", 0);
+        read = intent.getIntExtra("read", 0);
 
+        //--- update read status
+        filteredDatabase = openOrCreateDatabase("filteredDatabase", MODE_PRIVATE, null);
+
+        if(read == 0){
+            ContentValues cv = new ContentValues();
+            cv.put("read", 1);
+            filteredDatabase.update("filteredThreads", cv, "thread_id =" + threadId, null);
+
+            //update Android's SMS db
+            getContentResolver().update(Uri.parse("content://sms"),cv, "thread_id="+threadId, null);
+
+            refreshMain();
+        }
+
+        filteredDatabase.close();
+        //-------
 
         SharedPreferences sp = PreferenceManager.getDefaultSharedPreferences(this);
         SharedPreferences.Editor editor = sp.edit();

@@ -12,6 +12,7 @@ public class sms{
     String threadId;
     boolean knownThread = false;
     int blacklisted = 0;
+    int read = 0;
 
     String sender;
     String senderName;
