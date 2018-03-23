@@ -24,4 +24,9 @@
 
     <style name="AppTheme.PopupOverlay" parent="ThemeOverlay.AppCompat.Light" />
 
+    <style name="ConversationActivityTheme" parent="AppTheme.NoActionBar">
+        <item name="android:windowBackground">@color/bgwhite</item>
+        <item name="android:colorBackground">@color/bgwhite</item>
+    </style>
+
 </resources>

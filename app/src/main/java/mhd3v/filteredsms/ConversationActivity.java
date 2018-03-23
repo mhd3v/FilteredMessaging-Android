@@ -98,7 +98,8 @@ public class ConversationActivity extends AppCompatActivity {
             //update Android's SMS db
             getContentResolver().update(Uri.parse("content://sms"),cv, "thread_id="+threadId, null);
 
-            refreshMain();
+            if(!cameFromNotification)
+                refreshMain();
         }
 
         filteredDatabase.close();
@@ -372,7 +373,8 @@ public class ConversationActivity extends AppCompatActivity {
                 }
 
                 input.setText("");
-                refreshMain();
+                if(!cameFromNotification)
+                    refreshMain();
             }
 
             else{
