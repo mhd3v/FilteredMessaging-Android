@@ -7,7 +7,6 @@
     xmlns:app="http://schemas.android.com/apk/res-auto"
 
     xmlns:tools="http://schemas.android.com/tools"
-
     android:layout_width="match_parent"
 
     android:paddingTop="8dp"
@@ -30,21 +29,22 @@
         android:layout_height="wrap_content"
         android:layout_marginLeft="8dp"
         android:layout_marginTop="-7dp"
-        android:text="John Doe"
         android:textSize="12sp"
         android:visibility="gone"
         app:layout_constraintLeft_toRightOf="@+id/image_message_profile"
         app:layout_constraintTop_toTopOf="parent" />
 
     <TextView
+        android:textColorLink="@android:color/white"
+        android:autoLink="email|phone|web"
         android:id="@+id/senderText"
+        android:textIsSelectable="true"
         android:layout_width="wrap_content"
         android:layout_height="wrap_content"
         android:layout_marginLeft="8dp"
-        android:background="@drawable/rounded_rectangle_orange"
+        android:background="@drawable/sender_bubble"
         android:maxWidth="240dp"
         android:padding="8dp"
-        android:text="hi man, how are you?"
         android:textColor="#ffffff"
         android:visibility="gone"
         app:layout_constraintBottom_toBottomOf="parent"
@@ -58,7 +58,6 @@
         android:layout_height="wrap_content"
         android:layout_marginLeft="8dp"
         android:layout_marginTop="1dp"
-        android:text="11:40"
         android:textSize="10sp"
         android:visibility="gone"
         app:layout_constraintLeft_toLeftOf="@+id/senderText"
@@ -68,16 +67,18 @@
         tools:layout_constraintTop_creator="1" />
 
     <TextView
+        android:textColorLink="#000000"
+        android:autoLink="email|phone|web"
         android:id="@+id/userText"
+        android:textIsSelectable="true"
         android:layout_width="wrap_content"
         android:layout_height="wrap_content"
         android:layout_marginBottom="25dp"
         android:layout_marginRight="16dp"
-        android:background="@drawable/rounded_rectangle_green"
+        android:background="@drawable/user_bubble"
         android:maxWidth="240dp"
         android:padding="8dp"
-        android:text="Fine. How are you?"
-        android:textColor="#ffffff"
+        android:textColor="#000000"
         android:visibility="gone"
         app:layout_constraintBottom_toBottomOf="parent"
         app:layout_constraintRight_toRightOf="parent" />
@@ -85,10 +86,9 @@
     <TextView
         android:id="@+id/userTime"
         android:layout_width="wrap_content"
-        android:layout_height="12dp"
+        android:layout_height="wrap_content"
         android:layout_marginRight="8dp"
         android:layout_marginTop="1dp"
-        android:text="11:40"
         android:textSize="10sp"
         android:visibility="gone"
         app:layout_constraintRight_toRightOf="@+id/userText"

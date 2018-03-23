@@ -1,6 +1,7 @@
 package mhd3v.filteredsms;
 
 import android.Manifest;
+import android.annotation.SuppressLint;
 import android.app.NotificationManager;
 import android.content.ContentResolver;
 import android.content.ContentValues;
@@ -41,11 +42,11 @@ public class MainActivity extends AppCompatActivity{
 
     private SectionsPageAdapter mSectionsPageAdapter;
 
-    Tab1Fragment knownInstance;
-    Tab2Fragment unknownInstance;
+    KnownFragment knownInstance;
+    UnknownFragment unknownInstance;
 
-    Tab1Fragment.customAdapter knownAdapter;
-    Tab2Fragment.customAdapter unknownAdapter;
+    KnownFragment.customAdapter knownAdapter;
+    UnknownFragment.customAdapter unknownAdapter;
 
     private ViewPager mViewPager;
 
@@ -70,6 +71,9 @@ public class MainActivity extends AppCompatActivity{
 
     MenuItem cancelButton;
     MenuItem deleteButton;
+
+    MenuItem selectAllFiltered;
+    MenuItem selectAllUnfiltered;
 
     boolean deletionMode = false;
     boolean firstRun = false;
@@ -113,7 +117,10 @@ public class MainActivity extends AppCompatActivity{
 
         if(threadCursor.moveToFirst()){
 
-            threadCursor = filteredDatabase.rawQuery("select thread_id, filtered_status, blacklisted from filteredThreads ORDER BY date_string DESC;", null);
+//            Cursor c = filteredDatabase.rawQuery("SELECT distinct thread_id FROM filteredThreads",null);
+//            Log.d("filtered_threads", Integer.toString(c.getCount()));
+
+            threadCursor = filteredDatabase.rawQuery("select thread_id, filtered_status, blacklisted,read from filteredThreads ORDER BY date_string DESC;", null);
 
             threadCursor.moveToFirst();
             openExistingDatabase(threadCursor);
@@ -175,6 +182,8 @@ public class MainActivity extends AppCompatActivity{
 
                     newSms.senderName = c.getString(c.getColumnIndex("sender_name"));
 
+                    newSms.read = Integer.parseInt(cursor.getString(cursor.getColumnIndex("read")));
+
                     do{
                         messages message = new messages(c.getString(c.getColumnIndex("body")), c.getString(c.getColumnIndex("date_string")));
 
@@ -202,6 +211,8 @@ public class MainActivity extends AppCompatActivity{
 
                     sms newSms = new sms(c.getString(c.getColumnIndex("address")), thread_Id);
                     newSms.senderName = c.getString(c.getColumnIndex("sender_name"));
+
+                    newSms.read = Integer.parseInt(cursor.getString(cursor.getColumnIndex("read")));
 
                     do{
 
@@ -236,9 +247,10 @@ public class MainActivity extends AppCompatActivity{
 
     }
 
+    @SuppressLint("StaticFieldLeak")
     public void refreshSmsInbox() {
 
-        new AsyncTask<Void, Void, Void> (){
+         new AsyncTask<Void, Void, Void>  (){
 
             TextView firstRunText;
             FloatingActionButton fab;
@@ -269,7 +281,7 @@ public class MainActivity extends AppCompatActivity{
                 String type = Integer.toString(cursor.getColumnIndex("type"));
 
                 filteredDatabase.execSQL("CREATE TABLE IF NOT EXISTS filteredThreads " +
-                        "(thread_id VARCHAR, filtered_status VARCHAR, date_string VARCHAR, blacklisted INTEGER DEFAULT 0);");
+                        "(thread_id VARCHAR, filtered_status VARCHAR, date_string VARCHAR, blacklisted INTEGER DEFAULT 0, read INTEGER);");
 
                 do {
 
@@ -344,6 +356,8 @@ public class MainActivity extends AppCompatActivity{
                                 filteredThreadsCv.put("filtered_status","filtered");
                                 filteredThreadsCv.put("date_string", date);
                                 filteredThreadsCv.put("blacklisted", 0);
+                                //System.out.println("readstatus" + cursor.getString(cursor.getColumnIndex("read")));
+                                filteredThreadsCv.put("read", cursor.getString(cursor.getColumnIndex("read")));
                                 filteredDatabase.insert("filteredThreads", null, filteredThreadsCv);
 
                                 newSms.senderName = contactName;
@@ -362,6 +376,7 @@ public class MainActivity extends AppCompatActivity{
                                 filteredThreadsCv.put("filtered_status","unfiltered");
                                 filteredThreadsCv.put("date_string", date);
                                 filteredThreadsCv.put("blacklisted", 1);
+                                filteredThreadsCv.put("read", cursor.getString(cursor.getColumnIndex("read")));
                                 filteredDatabase.insert("filteredThreads", null, filteredThreadsCv);
 
                                 newSms.senderName = "";
@@ -456,6 +471,7 @@ public class MainActivity extends AppCompatActivity{
                                 filteredThreadsCv.put("filtered_status","filtered");
                                 filteredThreadsCv.put("date_string", date);
                                 filteredThreadsCv.put("blacklisted", 0);
+                                filteredThreadsCv.put("read", cursor.getString(cursor.getColumnIndex("read")));
                                 filteredDatabase.insert("filteredThreads", null, filteredThreadsCv);
 
                                 cv.put("sender", "known");
@@ -472,6 +488,7 @@ public class MainActivity extends AppCompatActivity{
                                 filteredThreadsCv.put("filtered_status","filtered");
                                 filteredThreadsCv.put("date_string", date);
                                 filteredThreadsCv.put("blacklisted", 0);
+                                filteredThreadsCv.put("read", cursor.getString(cursor.getColumnIndex("read")));
                                 filteredDatabase.insert("filteredThreads", null, filteredThreadsCv);
 
                                 cv.put("sender", "unknown");
@@ -549,7 +566,6 @@ public class MainActivity extends AppCompatActivity{
 
     }
 
-
     class refreshInboxOnNewThread extends AsyncTask<Void, Void, Void> {
 
         @Override
@@ -574,9 +590,7 @@ public class MainActivity extends AppCompatActivity{
 
             filteredDatabase = openOrCreateDatabase("filteredDatabase", MODE_PRIVATE, null);
 
-            Cursor threadCursor = filteredDatabase.rawQuery("select DISTINCT thread_id, filtered_status, blacklisted from (select thread_id, filtered_status, blacklisted, date_string " +
-                    "from filteredThreads ORDER BY date_string DESC) " +
-                    "ORDER BY date_string DESC;", null);
+            Cursor threadCursor = filteredDatabase.rawQuery("select thread_id, filtered_status, blacklisted, read from filteredThreads ORDER BY date_string DESC;", null);
 
             threadCursor.moveToFirst();
 
@@ -611,8 +625,8 @@ public class MainActivity extends AppCompatActivity{
     void setupFragments(ViewPager viewPager) {
         SectionsPageAdapter adapter = new SectionsPageAdapter(getSupportFragmentManager());
 
-        adapter.addFragment(new Tab1Fragment(), "Filtered");
-        adapter.addFragment(new Tab2Fragment(), "Unfiltered");
+        adapter.addFragment(new KnownFragment(), "Filtered");
+        adapter.addFragment(new UnknownFragment(), "Unfiltered");
 
         viewPager.setAdapter(adapter);
     }
@@ -812,20 +826,20 @@ public class MainActivity extends AppCompatActivity{
         active = false;
     }
 
-    public void setKnownInstance(Tab1Fragment knownInstance) {
+    public void setKnownInstance(KnownFragment knownInstance) {
         this.knownInstance = knownInstance;
     }
 
-    public void setUnknownInstance(Tab2Fragment unknownInstance) {
+    public void setUnknownInstance(UnknownFragment unknownInstance) {
         this.unknownInstance = unknownInstance;
     }
 
-    public void setKnownAdapter(Tab1Fragment.customAdapter adapter) {
+    public void setKnownAdapter(KnownFragment.customAdapter adapter) {
 
         knownAdapter = adapter;
     }
 
-    public void setUnknownAdapter(Tab2Fragment.customAdapter adapter) {
+    public void setUnknownAdapter(UnknownFragment.customAdapter adapter) {
         unknownAdapter = adapter;
     }
 
@@ -846,6 +860,9 @@ public class MainActivity extends AppCompatActivity{
 
     void setDeletionMode(){
 
+        selectAllFiltered = tb.getMenu().findItem(R.id.selectAllFiltered);
+        selectAllUnfiltered = tb.getMenu().findItem(R.id.selectAllUnfiltered);
+
         cancelButton = tb.getMenu().findItem(R.id.cancelButton);
         deleteButton = tb.getMenu().findItem(R.id.deleteButton);
 
@@ -855,30 +872,17 @@ public class MainActivity extends AppCompatActivity{
         knownInstance.setDeletionModeClickListener();
 
         tb.setTitle("Deletion Mode");
+
         cancelButton.setVisible(true);
         deleteButton.setVisible(true);
+
+        selectAllFiltered.setVisible(true);
+        selectAllUnfiltered.setVisible(true);
 
         tb.findViewById(R.id.cancelButton).setOnClickListener(new View.OnClickListener() {
             @Override
             public void onClick(View v) {
-
-                deletionMode = false;
-
-                Arrays.fill(knownInstance.selectedViews, Boolean.FALSE);
-                Arrays.fill(unknownInstance.selectedViews, Boolean.FALSE);
-                Arrays.fill(knownInstance.threadsToDelete, null);
-                Arrays.fill(unknownInstance.threadsToDelete, null);
-
-                knownInstance.setDefaultListener();
-                unknownInstance.setDefaultListener();
-
-                knownInstance.knownAdapter.notifyDataSetChanged();
-                unknownInstance.unknownAdapter.notifyDataSetChanged();
-
-                cancelButton.setVisible(false);
-                deleteButton.setVisible(false);
-                tb.setTitle("Filtered Messaging");
-
+            cancelDeletionMode();
             }
         });
 
@@ -890,7 +894,7 @@ public class MainActivity extends AppCompatActivity{
 
                 if (defaultSmsApp.equals("mhd3v.filteredsms")){
 
-                    final ArrayList<String> threadIds = new ArrayList<String>();
+                    final ArrayList<String> threadIds = new ArrayList<>();
 
                     filteredDatabase = openOrCreateDatabase("filteredDatabase", MODE_PRIVATE, null);
 
@@ -949,8 +953,24 @@ public class MainActivity extends AppCompatActivity{
 
         cancelButton.setVisible(false);
         deleteButton.setVisible(false);
+
+        selectAllFiltered.setVisible(false);
+        selectAllUnfiltered.setVisible(false);
+
         tb.setTitle("Filtered Messaging");
 
+    }
+
+    public void selectAllFiltered(MenuItem item) {
+        Arrays.fill(knownInstance.selectedViews, Boolean.TRUE);
+        knownInstance.threadsToDelete = knownInstance.getAllThreadIds();
+        knownInstance.knownAdapter.notifyDataSetChanged();
+    }
+
+    public void selectAllUnfiltered(MenuItem item) {
+        Arrays.fill(unknownInstance.selectedViews, Boolean.TRUE);
+        unknownInstance.threadsToDelete = unknownInstance.getAllThreadIds();
+        unknownInstance.unknownAdapter.notifyDataSetChanged();
     }
 
     @Override

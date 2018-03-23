@@ -1,13 +1,12 @@
 package mhd3v.filteredsms;
 
-import android.app.FragmentTransaction;
 import android.content.Intent;
+import android.graphics.Typeface;
 import android.os.Bundle;
 import android.support.annotation.Nullable;
 import android.support.v4.app.Fragment;
 import android.text.TextUtils;
 import android.text.format.DateFormat;
-import android.util.Log;
 import android.view.LayoutInflater;
 import android.view.View;
 import android.view.ViewGroup;
@@ -24,13 +23,13 @@ import java.util.ArrayList;
  * Created by Mahad on 11/27/2017.
  */
 
-public class Tab2Fragment extends Fragment {
+public class UnknownFragment extends Fragment {
 
     ArrayList<sms> smsList;
 
-    Tab2Fragment.customAdapter unknownAdapter;
+    UnknownFragment.customAdapter unknownAdapter;
     ListView unknownList;
-    Tab2Fragment thisInstance;
+    UnknownFragment thisInstance;
 
     boolean[] selectedViews;
     String[] threadsToDelete;
@@ -40,7 +39,7 @@ public class Tab2Fragment extends Fragment {
     @Override
     public View onCreateView(LayoutInflater inflater, @Nullable ViewGroup container, @Nullable Bundle savedInstanceState) {
 
-        View view = inflater.inflate(R.layout.tab2_fragment, container, false);
+        View view = inflater.inflate(R.layout.fragment_unknown, container, false);
 
         MainActivity activity = (MainActivity) getActivity();
         activity.setUnknownInstance(this);
@@ -85,16 +84,17 @@ public class Tab2Fragment extends Fragment {
             @Override
             public void onItemClick(AdapterView<?> parent, View view, int position, long id) {
 
-                ImageView contactPicture = view.findViewById(R.id.contactPicture);
+
+                ImageView unknownSenderSelected = view.findViewById(R.id.unknownSenderSelected);
 
                 if(!selectedViews[position]) {
-                    contactPicture.setImageResource(R.drawable.unknownsenderselected);
+                    unknownSenderSelected.setVisibility(View.VISIBLE);
                     selectedViews[position] = true;
                     threadsToDelete[position] = smsList.get(position).threadId;
                 }
 
                 else{
-                    contactPicture.setImageResource(R.drawable.unknownsender);
+                    unknownSenderSelected.setVisibility(View.GONE);
                     selectedViews[position] = false;
                     threadsToDelete[position] = null;
                 }
@@ -111,7 +111,7 @@ public class Tab2Fragment extends Fragment {
             public void onItemClick(AdapterView<?> parent, View view, int position, long id) {
 
 
-                Intent intent = new Intent(getActivity(), CoversationActivity.class);
+                Intent intent = new Intent(getActivity(), ConversationActivity.class);
                 Bundle args = new Bundle();
                 args.putSerializable("messageList", (Serializable) smsList.get(position).messages);
                 intent.putExtra("sender", smsList.get(position).sender);
@@ -125,6 +125,7 @@ public class Tab2Fragment extends Fragment {
 
                 intent.putExtra("threadId", smsList.get(position).threadId);
                 intent.putExtra("blacklisted", smsList.get(position).blacklisted);
+                intent.putExtra("read", smsList.get(position).read);
 
                 intent.setAction("frag2");
 
@@ -133,6 +134,13 @@ public class Tab2Fragment extends Fragment {
             }
         });
 
+    }
+
+    public String[] getAllThreadIds(){
+        String allThreads[] = new String[smsList.size()];
+        for(int i = 0; i < threadsToDelete.length; i++)
+            allThreads[i] = smsList.get(i).threadId;
+        return allThreads;
     }
 
 
@@ -156,7 +164,7 @@ public class Tab2Fragment extends Fragment {
         @Override
         public View getView(int i, View view, ViewGroup viewGroup) {
 
-            view = getActivity().getLayoutInflater().inflate(R.layout.custom_list, null);
+            view = getActivity().getLayoutInflater().inflate(R.layout.fragments_list, null);
 
             TextView sender = view.findViewById(R.id.sender);
 
@@ -164,6 +172,11 @@ public class Tab2Fragment extends Fragment {
                 sender.setText(smsList.get(i).senderName);
             else
                 sender.setText(smsList.get(i).sender);
+
+            if(smsList.get(i).read == 0)
+                sender.setTypeface(null, Typeface.BOLD);
+            else
+                sender.setTypeface(null, Typeface.NORMAL);
 
             TextView time = view.findViewById(R.id.time);
             String lastSenderMessageTime = smsList.get(i).messages.get(0).time;
@@ -180,12 +193,12 @@ public class Tab2Fragment extends Fragment {
 
             ImageView contactPicture = view.findViewById(R.id.contactPicture);
 
-            if(!selectedViews[i])
-                contactPicture.setImageResource(R.drawable.unknownsender);
-            else
-                contactPicture.setImageResource(R.drawable.unknownsenderselected);
+            ImageView unknownSelected = view.findViewById(R.id.unknownSenderSelected);
 
+            if(selectedViews[i])
+                unknownSelected.setVisibility(View.VISIBLE);
 
+            contactPicture.setImageResource(R.drawable.unknownsender);
 
             return view;
         }

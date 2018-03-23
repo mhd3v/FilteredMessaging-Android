@@ -38,7 +38,7 @@ import java.util.ArrayList;
 import java.util.Collections;
 
 
-public class CoversationActivity extends AppCompatActivity {
+public class ConversationActivity extends AppCompatActivity {
 
     ArrayList<messages> messageList;
     EditText input;
@@ -52,6 +52,7 @@ public class CoversationActivity extends AppCompatActivity {
     String threadId;
 
     int blacklisted;
+    int read;
 
     boolean cameFromNotification = false;
 
@@ -66,8 +67,7 @@ public class CoversationActivity extends AppCompatActivity {
 
     SQLiteDatabase filteredDatabase;
 
-
-    static CoversationActivity conversationInstance;
+    static ConversationActivity conversationInstance;
 
     @Override
     protected void onCreate(Bundle savedInstanceState) {
@@ -85,7 +85,25 @@ public class CoversationActivity extends AppCompatActivity {
         senderName = intent.getStringExtra("senderName");
         threadId = intent.getStringExtra("threadId");
         blacklisted = intent.getIntExtra("blacklisted", 0);
+        read = intent.getIntExtra("read", 0);
 
+        //--- update read status
+        filteredDatabase = openOrCreateDatabase("filteredDatabase", MODE_PRIVATE, null);
+
+        if(read == 0){
+            ContentValues cv = new ContentValues();
+            cv.put("read", 1);
+            filteredDatabase.update("filteredThreads", cv, "thread_id =" + threadId, null);
+
+            //update Android's SMS db
+            getContentResolver().update(Uri.parse("content://sms"),cv, "thread_id="+threadId, null);
+
+            if(!cameFromNotification)
+                refreshMain();
+        }
+
+        filteredDatabase.close();
+        //-------
 
         SharedPreferences sp = PreferenceManager.getDefaultSharedPreferences(this);
         SharedPreferences.Editor editor = sp.edit();
@@ -100,12 +118,6 @@ public class CoversationActivity extends AppCompatActivity {
             cameFromNotification = true;
 
             Cursor cursor = getContentResolver().query(Uri.parse("content://sms/"), null, "thread_id=" + threadId, null, null);
-
-//            try {
-//                Thread.sleep(1000);
-//            } catch (InterruptedException e) {
-//                e.printStackTrace();
-//            }
 
             cursor.moveToFirst();
 
@@ -307,7 +319,7 @@ public class CoversationActivity extends AppCompatActivity {
             else{
 
                 TextView senderMessage= view.findViewById(R.id.senderText);
-                senderMessage.setText(messageList.get(i).messageBody);
+                senderMessage.setText((messageList.get(i).messageBody).trim());
                 senderMessage.setVisibility(View.VISIBLE);
 
                 TextView senderTimeText = view.findViewById(R.id.senderTime);
@@ -361,13 +373,13 @@ public class CoversationActivity extends AppCompatActivity {
                 }
 
                 input.setText("");
-                refreshMain();
+                if(!cameFromNotification)
+                    refreshMain();
             }
 
             else{
                 Toast.makeText(this, "Please enter a message body", Toast.LENGTH_LONG).show();
             }
-
 
 
     }
@@ -384,6 +396,11 @@ public class CoversationActivity extends AppCompatActivity {
         active = false;
     }
 
+    @Override
+    public void onDestroy() {
+        super.onDestroy();
+        conversationInstance = null;
+    }
 
     void updateViewsAndDB(String address, String message, String time, messages newSms, boolean status){
 
@@ -392,7 +409,7 @@ public class CoversationActivity extends AppCompatActivity {
             String defaultSmsApp = Telephony.Sms.getDefaultSmsPackage(this);
 
             if(defaultSmsApp.equals("mhd3v.filteredsms")){
-                Log.d("test", "coning");
+                Log.d("test", "coming in here");
                 ContentValues values = new ContentValues();
                 values.put("address", address);
                 values.put("body", message);
@@ -472,7 +489,7 @@ public class CoversationActivity extends AppCompatActivity {
                         if(i == 1){
                             switch (resultCode) {
                                 case Activity.RESULT_OK:
-                                    Toast.makeText(getBaseContext(), "SMS sent", Toast.LENGTH_LONG).show();
+                                    //Toast.makeText(getBaseContext(), "SMS sent", Toast.LENGTH_LONG).show();
                                     updateViewsAndDB(address, message, Long.toString(System.currentTimeMillis()), newSms, true);
                                     i++;
                                     break;

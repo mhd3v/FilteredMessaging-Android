@@ -4,7 +4,6 @@
     xmlns:tools="http://schemas.android.com/tools"
     android:layout_width="match_parent"
     android:layout_height="wrap_content"
-    android:paddingTop="8dp"
     tools:context="mhd3v.filteredsms.NewMessage">
 
     <!-- A horizontal line between the chatbox and RecyclerView -->
@@ -83,6 +82,7 @@
             android:layout_marginLeft="16dp"
             android:layout_marginRight="16dp"
             android:layout_weight="1"
+            android:inputType="textCapSentences"
             android:background="@android:color/transparent"
             android:hint="Enter message"
             android:maxLines="6" />

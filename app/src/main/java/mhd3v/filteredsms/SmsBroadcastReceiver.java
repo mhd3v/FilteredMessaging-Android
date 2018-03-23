@@ -21,7 +21,6 @@ import android.provider.Telephony;
 import android.support.v4.app.NotificationCompat;
 import android.telephony.SmsMessage;
 import android.text.format.DateFormat;
-import android.util.Log;
 
 import java.util.ArrayList;
 
@@ -169,7 +168,7 @@ public class SmsBroadcastReceiver extends BroadcastReceiver {
                     filteredDatabase.close();
 
                     MainActivity mainActivityInstance = MainActivity.inst;
-                    CoversationActivity conversationInstance = CoversationActivity.conversationInstance;
+                    ConversationActivity conversationInstance = ConversationActivity.conversationInstance;
 
                     if (conversationInstance != null) { //conversation thread is active
 
@@ -183,7 +182,7 @@ public class SmsBroadcastReceiver extends BroadcastReceiver {
                                 newMessageList.add(newSms);
 
                                 conversationInstance.adapter.updateMessageList(newMessageList);
-                                CoversationActivity.refreshMain();
+                                ConversationActivity.refreshMain();
 
                                 if(!conversationInstance.active)
                                     setNotfication(context);
@@ -191,7 +190,7 @@ public class SmsBroadcastReceiver extends BroadcastReceiver {
 
                         else{
                             setNotfication(context);
-                            CoversationActivity.refreshMain();
+                            ConversationActivity.refreshMain();
                         }
 
                     }
@@ -225,7 +224,7 @@ public class SmsBroadcastReceiver extends BroadcastReceiver {
 
             String contactName = getContactName(context, address);
 
-            Intent conversationThreadIntent = new Intent(context, CoversationActivity.class);
+            Intent conversationThreadIntent = new Intent(context, ConversationActivity.class);
             conversationThreadIntent.setAction("android.intent.action.NotificationClicked");
             conversationThreadIntent.putExtra("threadId", threadId);
 
