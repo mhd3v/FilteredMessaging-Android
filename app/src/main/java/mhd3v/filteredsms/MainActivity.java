@@ -38,6 +38,7 @@ import android.widget.Toast;
 import java.util.ArrayList;
 import java.util.Arrays;
 
+
 public class MainActivity extends AppCompatActivity{
 
     private SectionsPageAdapter mSectionsPageAdapter;
@@ -77,13 +78,31 @@ public class MainActivity extends AppCompatActivity{
 
     boolean deletionMode = false;
     boolean firstRun = false;
+    boolean rebuildDatabase = false;
 
+    private static final int DEF_SMS_REQ = 0;
 
     @Override
     protected void onCreate(Bundle savedInstanceState) {
 
         super.onCreate(savedInstanceState);
         setContentView(R.layout.activity_main);
+
+        loadActivity();
+    }
+
+    void loadActivity(){
+
+        //release any held notifications
+        SharedPreferences sp = PreferenceManager.getDefaultSharedPreferences(this);
+        SharedPreferences.Editor editor = sp.edit();
+        editor.clear();
+        editor.apply();
+        NotificationManager notificationManager = (NotificationManager) this.getSystemService(Context.NOTIFICATION_SERVICE);
+        notificationManager.cancelAll();
+
+
+        String defaultSmsApp = Telephony.Sms.getDefaultSmsPackage(this);
 
         pb = (ProgressBar) findViewById(R.id.progressBar2);
 
@@ -99,12 +118,59 @@ public class MainActivity extends AppCompatActivity{
                 != PackageManager.PERMISSION_GRANTED)
             getPermissionToCallPhone();
 
-        else
-            loadDatabase();
+        else{
+
+            if (!(defaultSmsApp.equals("mhd3v.filteredsms"))){
+
+                new AlertDialog.Builder(MainActivity.this)
+                        .setMessage("FilteredSMS will not work properly unless you set it as your default SMS app. Set now?")
+                        .setCancelable(false)
+                        .setTitle("Alert!")
+                        .setNegativeButton("No, continue anyway", new DialogInterface.OnClickListener() {
+
+                            @Override
+                            public void onClick(DialogInterface dialog, int which) {
+                                refreshOnExtraThread();
+                            }
+                        })
+                        .setPositiveButton("Yes", new DialogInterface.OnClickListener() {
+
+                            public void onClick(DialogInterface dialog, int id) {
+
+                                Intent intent = new Intent(Telephony.Sms.Intents.ACTION_CHANGE_DEFAULT);
+                                intent.putExtra(Telephony.Sms.Intents.EXTRA_PACKAGE_NAME, getPackageName());
+                                startActivityForResult(intent, DEF_SMS_REQ);
+
+                            }
+                        }).show();
+
+            }
+
+            else
+                loadDatabase();
+        }
 
         if(!firstRun)
             loadLayout();
+    }
 
+
+    @Override
+    protected void onActivityResult(int requestCode, int resultCode, Intent data)
+    {
+        switch (requestCode)
+        {
+            case DEF_SMS_REQ:
+                String currentDefault = Telephony.Sms.getDefaultSmsPackage(this);
+                if(currentDefault.equals("mhd3v.filteredsms"))
+                    refreshOnExtraThread();
+                else{
+                    Toast.makeText(MainActivity.this, "Not set as the default SMS app :(", Toast.LENGTH_SHORT).show();
+                    refreshOnExtraThread();
+                }
+
+
+        }
     }
 
     private void loadDatabase(){
@@ -116,9 +182,6 @@ public class MainActivity extends AppCompatActivity{
         Cursor threadCursor = filteredDatabase.rawQuery("select * from messageTable;", null);
 
         if(threadCursor.moveToFirst()){
-
-//            Cursor c = filteredDatabase.rawQuery("SELECT distinct thread_id FROM filteredThreads",null);
-//            Log.d("filtered_threads", Integer.toString(c.getCount()));
 
             threadCursor = filteredDatabase.rawQuery("select thread_id, filtered_status, blacklisted,read from filteredThreads ORDER BY date_string DESC;", null);
 
@@ -135,26 +198,23 @@ public class MainActivity extends AppCompatActivity{
     }
 
     private void loadLayout() {
-        //release any held notifications
-        SharedPreferences sp = PreferenceManager.getDefaultSharedPreferences(this);
-        SharedPreferences.Editor editor = sp.edit();
-        editor.clear();
-        editor.apply();
-        NotificationManager notificationManager = (NotificationManager) this.getSystemService(Context.NOTIFICATION_SERVICE);
-        notificationManager.cancelAll();
 
-        mSectionsPageAdapter = new SectionsPageAdapter(getSupportFragmentManager());
+        if(mSectionsPageAdapter == null){ //this check insures that menu isnt populated once again if rebuilddatabase was called
 
-        mViewPager = (ViewPager)findViewById(R.id.container);
-        setupFragments(mViewPager);
+            mSectionsPageAdapter = new SectionsPageAdapter(getSupportFragmentManager());
 
-        TabLayout tabLayout = (TabLayout) findViewById(R.id.tabs);
-        tabLayout.setupWithViewPager(mViewPager);
+            mViewPager = (ViewPager)findViewById(R.id.container);
+            setupFragments(mViewPager);
 
-        tb = (Toolbar) findViewById(R.id.toolbar);
-        tb.setTitle("Filtered Messaging");
+            TabLayout tabLayout = (TabLayout) findViewById(R.id.tabs);
+            tabLayout.setupWithViewPager(mViewPager);
 
-        tb.inflateMenu(R.menu.menu_main);
+            tb = (Toolbar) findViewById(R.id.toolbar);
+            tb.setTitle("Filtered Messaging");
+
+            tb.inflateMenu(R.menu.menu_main);
+        }
+
     }
 
     private void createOrOpenDb() {
@@ -516,8 +576,8 @@ public class MainActivity extends AppCompatActivity{
 
             @Override
             protected void onPostExecute(Void aVoid) {
-                super.onPostExecute(aVoid);
 
+                super.onPostExecute(aVoid);
                 filteredDatabase.close();
 
                 knownSms.clear();
@@ -530,6 +590,12 @@ public class MainActivity extends AppCompatActivity{
                 pb.setVisibility(View.GONE);
                 firstRunText.setVisibility(View.GONE);
                 fab.setVisibility(View.VISIBLE);
+
+                if(rebuildDatabase){
+                    rebuildDatabase = false;
+                    knownInstance.knownList.setVisibility(View.VISIBLE);
+                    unknownInstance.unknownList.setVisibility(View.VISIBLE);
+                }
 
             }
         }.execute();
@@ -565,6 +631,16 @@ public class MainActivity extends AppCompatActivity{
         startActivity(new Intent(MainActivity.this, SettingsActivity.class));
 
     }
+
+    public void rebuildDatabase(MenuItem item) {
+        rebuildDatabase = true;
+        this.deleteDatabase("filteredDatabase");
+        knownInstance.knownList.setVisibility(View.GONE);
+        unknownInstance.unknownList.setVisibility(View.GONE);
+        loadActivity();
+
+    }
+
 
     class refreshInboxOnNewThread extends AsyncTask<Void, Void, Void> {
 

@@ -36,6 +36,13 @@
         android:title="Settings"
         android:onClick="setSettingOnClick" />
 
+    <item
+        android:id="@+id/rebuildDatabase"
+        android:checkable="false"
+        android:enabled="true"
+        android:title="Rebuild Database"
+        android:onClick="rebuildDatabase" />
+
 
     <item
         android:id="@+id/selectAllFiltered"
