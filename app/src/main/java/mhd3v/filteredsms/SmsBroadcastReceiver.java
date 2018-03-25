@@ -196,6 +196,16 @@ public class SmsBroadcastReceiver extends BroadcastReceiver {
 
                             if(!conversationInstance.active)
                                 setNotfication(context);
+
+                            //if conversation instance is active and open, then each new message is marked as read
+                            filteredDatabase = context.openOrCreateDatabase("filteredDatabase", MODE_PRIVATE, null);
+                            ContentValues readCv = new ContentValues();
+                            readCv.put("read", 1);
+                            filteredDatabase.update("filteredThreads", readCv, "thread_id=" + threadId, null);
+                            filteredDatabase.close();
+                            //---
+
+
                     }
 
                     else{
