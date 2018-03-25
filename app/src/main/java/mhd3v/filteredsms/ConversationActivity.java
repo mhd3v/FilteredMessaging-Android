@@ -364,7 +364,7 @@ public class ConversationActivity extends AppCompatActivity {
 
                 }
 
-        }
+            }
             else{
 
                 TextView senderMessage= view.findViewById(R.id.senderText);
@@ -393,38 +393,38 @@ public class ConversationActivity extends AppCompatActivity {
 
     public void onSendClick(View view) {
 
-            input = (EditText) findViewById(R.id.edittext_chatbox);
+        input = (EditText) findViewById(R.id.edittext_chatbox);
 
 
-            if(!(input.getText().toString().trim().length() == 0)){
+        if(!(input.getText().toString().trim().length() == 0)){
 
-                messages newSms = new messages(input.getText().toString() ,Long.toString(System.currentTimeMillis()));
+            messages newSms = new messages(input.getText().toString() ,Long.toString(System.currentTimeMillis()));
 
-                newSms.sending = true;
+            newSms.sending = true;
 
-                newSms.isUserMessage = true;
+            newSms.isUserMessage = true;
 
-                messageList.add(newSms);
+            messageList.add(newSms);
 
-                adapter.notifyDataSetChanged();
+            adapter.notifyDataSetChanged();
 
-                sendSms(newSms);
+            sendSms(newSms);
 
-                try  { //close keyboard
-                    InputMethodManager imm = (InputMethodManager)getSystemService(INPUT_METHOD_SERVICE);
-                    imm.hideSoftInputFromWindow(getCurrentFocus().getWindowToken(), 0);
-                } catch (Exception e) {
+            try  { //close keyboard
+                InputMethodManager imm = (InputMethodManager)getSystemService(INPUT_METHOD_SERVICE);
+                imm.hideSoftInputFromWindow(getCurrentFocus().getWindowToken(), 0);
+            } catch (Exception e) {
 
-                }
-
-                input.setText("");
-                if(!cameFromNotification)
-                    refreshMain();
             }
 
-            else{
-                Toast.makeText(this, "Please enter a message body", Toast.LENGTH_LONG).show();
-            }
+            input.setText("");
+            if(!cameFromNotification)
+                refreshMain();
+        }
+
+        else{
+            Toast.makeText(this, "Please enter a message body", Toast.LENGTH_LONG).show();
+        }
 
 
     }
@@ -442,9 +442,16 @@ public class ConversationActivity extends AppCompatActivity {
     }
 
     @Override
-    public void onDestroy() {
-        super.onDestroy();
-        conversationInstance = null;
+    public void onBackPressed() {
+
+        if(cameFromNotification){
+            Intent mainIntent = new Intent(this, MainActivity.class);
+            mainIntent.putExtra("cameFromNotification", true);
+            startActivity(mainIntent);
+            this.finish();
+        }
+        else
+            super.onBackPressed();
     }
 
     void updateViewsAndDB(boolean status, messages newSms){

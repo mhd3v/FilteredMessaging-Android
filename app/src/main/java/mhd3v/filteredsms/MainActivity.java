@@ -79,8 +79,10 @@ public class MainActivity extends AppCompatActivity{
     boolean deletionMode = false;
     boolean firstRun = false;
     boolean rebuildDatabase = false;
+    boolean cameFromNotification = false;
 
     private static final int DEF_SMS_REQ = 0;
+
 
     @Override
     protected void onCreate(Bundle savedInstanceState) {
@@ -92,6 +94,8 @@ public class MainActivity extends AppCompatActivity{
     }
 
     void loadActivity(){
+
+        cameFromNotification = getIntent().getBooleanExtra("cameFromNotification", false);
 
         //release any held notifications
         SharedPreferences sp = PreferenceManager.getDefaultSharedPreferences(this);
@@ -150,7 +154,7 @@ public class MainActivity extends AppCompatActivity{
                 loadDatabase();
         }
 
-        if(!firstRun)
+        if(!firstRun && !cameFromNotification)
             loadLayout();
     }
 
@@ -692,16 +696,19 @@ public class MainActivity extends AppCompatActivity{
         protected void onPostExecute(Void aVoid) {
             super.onPostExecute(aVoid);
 
-            //----experimental-------
-            unknownInstance.selectedViews = new boolean[unknownSms.size()];
-            unknownInstance.threadsToDelete = new String[unknownSms.size()];
-            Arrays.fill(unknownInstance.selectedViews, Boolean.FALSE);
-            Arrays.fill(unknownInstance.threadsToDelete, null);
+            if(cameFromNotification)
+                loadLayout();
 
-            knownInstance.selectedViews = new boolean[knownSms.size()];
-            knownInstance.threadsToDelete = new String[knownSms.size()];
-            Arrays.fill(knownInstance.selectedViews, Boolean.FALSE);
-            Arrays.fill(knownInstance.threadsToDelete, null);
+            //----experimental-------
+//            unknownInstance.selectedViews = new boolean[unknownSms.size()];
+//            unknownInstance.threadsToDelete = new String[unknownSms.size()];
+//            Arrays.fill(unknownInstance.selectedViews, Boolean.FALSE);
+//            Arrays.fill(unknownInstance.threadsToDelete, null);
+//
+//            knownInstance.selectedViews = new boolean[knownSms.size()];
+//            knownInstance.threadsToDelete = new String[knownSms.size()];
+//            Arrays.fill(knownInstance.selectedViews, Boolean.FALSE);
+//            Arrays.fill(knownInstance.threadsToDelete, null);
             //-----------------------
 
             refreshFragments();
