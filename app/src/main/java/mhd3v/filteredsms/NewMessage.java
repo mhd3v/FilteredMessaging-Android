@@ -169,6 +169,7 @@ public class NewMessage extends AppCompatActivity {
         cv.put("type", 2);
         cv.put("address", cursor.getString(cursor.getColumnIndex("address")));
         cv.put("body", cursor.getString(cursor.getColumnIndex("body")));
+        cv.put("failed", 0);
 
         isContact = false;
         String senderName = getContactName(this, address);

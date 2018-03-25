@@ -103,6 +103,7 @@ public class SmsBroadcastReceiver extends BroadcastReceiver {
                 cv.put("type", 1);
                 cv.put("address", address);
                 cv.put("body", smsBody);
+                cv.put("failed", 0);
 
                 isContact = false;
                 String contactName = getContactName(context, address);
@@ -187,12 +188,10 @@ public class SmsBroadcastReceiver extends BroadcastReceiver {
 
                             messages newSms = new messages(smsBody, Long.toString(System.currentTimeMillis()));
 
-                            ArrayList<messages> newMessageList = new ArrayList<>();
+                            conversationInstance.messageList.add(newSms);
 
-                            newMessageList.addAll(conversationInstance.messageList);
-                            newMessageList.add(newSms);
+                            conversationInstance.adapter.notifyDataSetChanged();
 
-                            conversationInstance.adapter.updateMessageList(newMessageList);
                             ConversationActivity.refreshMain();
 
                             if(!conversationInstance.active)

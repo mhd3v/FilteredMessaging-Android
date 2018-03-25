@@ -223,7 +223,7 @@ public class MainActivity extends AppCompatActivity{
 
         filteredDatabase.execSQL("CREATE TABLE IF NOT EXISTS messageTable " +
                 "(thread_id VARCHAR, address VARCHAR, body VARCHAR, type INT" +
-                ", date VARCHAR, date_string VARCHAR, sender VARCHAR, sender_name VARCHAR );");
+                ", date VARCHAR, date_string VARCHAR, sender VARCHAR, sender_name VARCHAR, failed INTEGER );");
     }
 
     private void openExistingDatabase(Cursor cursor) {
@@ -244,12 +244,16 @@ public class MainActivity extends AppCompatActivity{
 
                     newSms.read = Integer.parseInt(cursor.getString(cursor.getColumnIndex("read")));
 
+
                     do{
                         messages message = new messages(c.getString(c.getColumnIndex("body")), c.getString(c.getColumnIndex("date_string")));
 
                         if(c.getString(c.getColumnIndex("type")).equals("2")){
                             message.isUserMessage = true;
                         }
+
+                        if(c.getString(c.getColumnIndex("failed")).equals("1"))
+                            message.failed = true;
 
                         newSms.messages.add(message);
                     }
@@ -282,6 +286,9 @@ public class MainActivity extends AppCompatActivity{
                             message.isUserMessage = true;
                         }
 
+                        if(c.getString(c.getColumnIndex("failed")).equals("1"))
+                            message.failed = true;
+
                         newSms.messages.add(message);
                     }
                     while(c.moveToNext());
@@ -310,7 +317,7 @@ public class MainActivity extends AppCompatActivity{
     @SuppressLint("StaticFieldLeak")
     public void refreshSmsInbox() {
 
-         new AsyncTask<Void, Void, Void>  (){
+        new AsyncTask<Void, Void, Void>  (){
 
             TextView firstRunText;
             FloatingActionButton fab;
@@ -377,6 +384,7 @@ public class MainActivity extends AppCompatActivity{
                                 cv.put("body", cursor.getString(indexBody));
                                 cv.put("thread_id", threadId);
                                 cv.put("type",1);
+                                cv.put("failed",0);
 
                                 filteredDatabase.insert("messageTable", null ,cv );
 
@@ -404,6 +412,7 @@ public class MainActivity extends AppCompatActivity{
                             cv.put("body", cursor.getString(indexBody));
                             cv.put("thread_id", threadId);
                             cv.put("type",1);
+                            cv.put("failed",0);
 
                             String contactName;
                             contactName = getContactName(MainActivity.this, newSms.sender);
@@ -483,6 +492,7 @@ public class MainActivity extends AppCompatActivity{
                                 cv.put("body", cursor.getString(indexBody));
                                 cv.put("thread_id", threadId);
                                 cv.put("type",2);
+                                cv.put("failed",0);
 
                                 filteredDatabase.insert("messageTable", null, cv );
 
@@ -518,6 +528,7 @@ public class MainActivity extends AppCompatActivity{
                             cv.put("body", cursor.getString(indexBody));
                             cv.put("thread_id", threadId);
                             cv.put("type",2);
+                            cv.put("failed",0);
 
 
                             String contactName;
@@ -958,7 +969,7 @@ public class MainActivity extends AppCompatActivity{
         tb.findViewById(R.id.cancelButton).setOnClickListener(new View.OnClickListener() {
             @Override
             public void onClick(View v) {
-            cancelDeletionMode();
+                cancelDeletionMode();
             }
         });
 
