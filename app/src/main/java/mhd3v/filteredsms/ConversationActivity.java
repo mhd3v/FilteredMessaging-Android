@@ -1,5 +1,6 @@
 package mhd3v.filteredsms;
 
+import android.Manifest;
 import android.app.Activity;
 import android.app.NotificationManager;
 import android.app.PendingIntent;
@@ -10,13 +11,17 @@ import android.content.DialogInterface;
 import android.content.Intent;
 import android.content.IntentFilter;
 import android.content.SharedPreferences;
+import android.content.pm.PackageManager;
 import android.database.Cursor;
 import android.database.sqlite.SQLiteDatabase;
 import android.net.Uri;
+import android.os.Build;
 import android.os.Bundle;
 import android.preference.PreferenceManager;
 import android.provider.ContactsContract;
 import android.provider.Telephony;
+import android.support.annotation.NonNull;
+import android.support.v4.content.ContextCompat;
 import android.support.v7.app.AlertDialog;
 import android.support.v7.app.AppCompatActivity;
 import android.support.v7.widget.Toolbar;
@@ -75,6 +80,8 @@ public class ConversationActivity extends AppCompatActivity {
     int pendingIntentCount;
 
     BroadcastReceiver broadcastReceiver;
+
+    private static final int CALL_PHONE_PERMISSIONS_REQUEST = 3;
 
     @Override
     protected void onCreate(Bundle savedInstanceState) {
@@ -293,15 +300,6 @@ public class ConversationActivity extends AppCompatActivity {
         blacklistbutton.setVisible(false);
 
         refreshMain();
-
-    }
-
-    public void callPhone(MenuItem item) {
-
-        Intent callIntent = new Intent(Intent.ACTION_CALL);
-        callIntent.setData(Uri.parse("tel:" + sender));
-
-        startActivity(callIntent);
 
     }
 
@@ -671,6 +669,61 @@ public class ConversationActivity extends AppCompatActivity {
             }
             return false;
         }
+    }
+
+    public void callPhone(MenuItem item) {
+
+        if (ContextCompat.checkSelfPermission(this, Manifest.permission.CALL_PHONE)
+                != PackageManager.PERMISSION_GRANTED)
+            getPermissionToCallPhone();
+
+        else{
+            Intent callIntent = new Intent(Intent.ACTION_CALL);
+            callIntent.setData(Uri.parse("tel:" + sender));
+
+            startActivity(callIntent);
+        }
+
+
+    }
+
+    public void getPermissionToCallPhone() {
+        if (ContextCompat.checkSelfPermission(this, Manifest.permission.CALL_PHONE)
+                != PackageManager.PERMISSION_GRANTED) {
+            if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.M) {
+                if (shouldShowRequestPermissionRationale(
+                        Manifest.permission.CALL_PHONE)) {
+                    Toast.makeText(this, "Please allow permission to make phone calls!", Toast.LENGTH_SHORT).show();
+                }
+            }
+            if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.M) {
+                requestPermissions(new String[]{Manifest.permission.CALL_PHONE},
+                        CALL_PHONE_PERMISSIONS_REQUEST);
+            }
+        }
+    }
+
+    @Override
+    public void onRequestPermissionsResult(int requestCode,
+                                           @NonNull String permissions[],
+                                           @NonNull int[] grantResults) {
+
+
+        if (requestCode == CALL_PHONE_PERMISSIONS_REQUEST ) {
+            if (grantResults.length > 0 && grantResults[0] == PackageManager.PERMISSION_GRANTED ) {
+
+                Intent callIntent = new Intent(Intent.ACTION_CALL);
+                callIntent.setData(Uri.parse("tel:" + sender));
+
+                startActivity(callIntent);
+            }
+
+            else {
+                Toast.makeText(this, "Call Phone permission denied", Toast.LENGTH_SHORT).show();
+            }
+
+        }
+
     }
 
 

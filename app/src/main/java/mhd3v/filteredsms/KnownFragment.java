@@ -84,18 +84,15 @@ public class KnownFragment extends Fragment {
             @Override
             public void onItemClick(AdapterView<?> parent, View view, int position, long id) {
 
-                ImageView contactPicture = view.findViewById(R.id.contactPicture);
                 ImageView knownSenderSelected = view.findViewById(R.id.knownSenderSelected);
 
                 if(!selectedViews[position]) {
-//                    contactPicture.setImageResource(R.drawable.knownsenderselected);
                     knownSenderSelected.setVisibility(View.VISIBLE);
                     selectedViews[position] = true;
                     threadsToDelete[position] = smsList.get(position).threadId;
                 }
 
                 else{
-//                    contactPicture.setImageResource(R.drawable.knownsender);
                     knownSenderSelected.setVisibility(View.GONE);
                     selectedViews[position] = false;
                     threadsToDelete[position] = null;

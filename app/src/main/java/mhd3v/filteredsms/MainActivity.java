@@ -64,7 +64,6 @@ public class MainActivity extends AppCompatActivity{
 
     private static final int READ_SMS_PERMISSIONS_REQUEST = 1;
     private static final int READ_CONTACTS_PERMISSIONS_REQUEST = 2;
-    private static final int CALL_PHONE_PERMISSIONS_REQUEST = 3;
 
     SQLiteDatabase filteredDatabase;
 
@@ -78,8 +77,8 @@ public class MainActivity extends AppCompatActivity{
 
     boolean deletionMode = false;
     boolean firstRun = false;
-    boolean rebuildDatabase = false;
     boolean cameFromNotification = false;
+    boolean askingForPermissions = false;
 
     private static final int DEF_SMS_REQ = 0;
 
@@ -105,57 +104,60 @@ public class MainActivity extends AppCompatActivity{
         NotificationManager notificationManager = (NotificationManager) this.getSystemService(Context.NOTIFICATION_SERVICE);
         notificationManager.cancelAll();
 
+        pb = findViewById(R.id.progressBar2);
 
         String defaultSmsApp = Telephony.Sms.getDefaultSmsPackage(this);
 
-        pb = (ProgressBar) findViewById(R.id.progressBar2);
+        if (!(defaultSmsApp.equals("mhd3v.filteredsms"))){
 
-        if (ContextCompat.checkSelfPermission(this, Manifest.permission.READ_SMS)
-                != PackageManager.PERMISSION_GRANTED)
-            getPermissionToReadSMS();
+            askingForPermissions = true;
 
-        else if (ContextCompat.checkSelfPermission(this, Manifest.permission.READ_CONTACTS)
-                != PackageManager.PERMISSION_GRANTED)
-            getPermissionToReadContacts();
+            new AlertDialog.Builder(MainActivity.this)
+                    .setMessage("FilteredSMS will not work properly unless you set it as your default SMS app. Set now?")
+                    .setCancelable(false)
+                    .setTitle("Alert!")
+                    .setNegativeButton("No, continue anyway", new DialogInterface.OnClickListener() {
 
-        else if (ContextCompat.checkSelfPermission(this, Manifest.permission.CALL_PHONE)
-                != PackageManager.PERMISSION_GRANTED)
-            getPermissionToCallPhone();
+                        @Override
+                        public void onClick(DialogInterface dialog, int which) {
 
-        else{
 
-            if (!(defaultSmsApp.equals("mhd3v.filteredsms"))){
+                            if (ContextCompat.checkSelfPermission(MainActivity.this, Manifest.permission.READ_SMS)
+                                    != PackageManager.PERMISSION_GRANTED)
+                                getPermissionToReadSMS();
 
-                new AlertDialog.Builder(MainActivity.this)
-                        .setMessage("FilteredSMS will not work properly unless you set it as your default SMS app. Set now?")
-                        .setCancelable(false)
-                        .setTitle("Alert!")
-                        .setNegativeButton("No, continue anyway", new DialogInterface.OnClickListener() {
+                            else if (ContextCompat.checkSelfPermission(MainActivity.this, Manifest.permission.READ_CONTACTS)
+                                    != PackageManager.PERMISSION_GRANTED)
+                                getPermissionToReadContacts();
 
-                            @Override
-                            public void onClick(DialogInterface dialog, int which) {
-                                refreshOnExtraThread();
+                            else{
+                                loadDatabase();
+                                loadLayout();
                             }
-                        })
-                        .setPositiveButton("Yes", new DialogInterface.OnClickListener() {
 
-                            public void onClick(DialogInterface dialog, int id) {
 
-                                Intent intent = new Intent(Telephony.Sms.Intents.ACTION_CHANGE_DEFAULT);
-                                intent.putExtra(Telephony.Sms.Intents.EXTRA_PACKAGE_NAME, getPackageName());
-                                startActivityForResult(intent, DEF_SMS_REQ);
+                        }
+                    })
+                    .setPositiveButton("Yes", new DialogInterface.OnClickListener() {
 
-                            }
-                        }).show();
+                        public void onClick(DialogInterface dialog, int id) {
 
-            }
+                            Intent intent = new Intent(Telephony.Sms.Intents.ACTION_CHANGE_DEFAULT);
+                            intent.putExtra(Telephony.Sms.Intents.EXTRA_PACKAGE_NAME, getPackageName());
+                            startActivityForResult(intent, DEF_SMS_REQ);
 
-            else
-                loadDatabase();
+                        }
+                    }).show();
+
         }
 
-        if(!firstRun && !cameFromNotification)
+        else
+            loadDatabase();
+
+        if(!firstRun && !cameFromNotification && !askingForPermissions)
             loadLayout();
+
+
     }
 
 
@@ -166,11 +168,30 @@ public class MainActivity extends AppCompatActivity{
         {
             case DEF_SMS_REQ:
                 String currentDefault = Telephony.Sms.getDefaultSmsPackage(this);
-                if(currentDefault.equals("mhd3v.filteredsms"))
-                    refreshOnExtraThread();
+
+                if(currentDefault.equals("mhd3v.filteredsms")){
+                    loadDatabase();
+
+                    if(!firstRun && !cameFromNotification)
+                        loadLayout();
+                }
+
                 else{
+
                     Toast.makeText(MainActivity.this, "Not set as the default SMS app :(", Toast.LENGTH_SHORT).show();
-                    refreshOnExtraThread();
+
+                    if (ContextCompat.checkSelfPermission(MainActivity.this, Manifest.permission.READ_SMS)
+                            != PackageManager.PERMISSION_GRANTED)
+                        getPermissionToReadSMS();
+
+                    else if (ContextCompat.checkSelfPermission(MainActivity.this, Manifest.permission.READ_CONTACTS)
+                            != PackageManager.PERMISSION_GRANTED)
+                        getPermissionToReadContacts();
+
+                    else{
+                        loadDatabase();
+                        loadLayout();
+                    }
                 }
 
 
@@ -203,17 +224,17 @@ public class MainActivity extends AppCompatActivity{
 
     private void loadLayout() {
 
-        if(mSectionsPageAdapter == null){ //this check insures that menu isnt populated once again if rebuilddatabase was called
+        if(mSectionsPageAdapter == null){ //this check insures that menu isnt populated once again if rebuildDatabase was called
 
             mSectionsPageAdapter = new SectionsPageAdapter(getSupportFragmentManager());
 
-            mViewPager = (ViewPager)findViewById(R.id.container);
+            mViewPager = findViewById(R.id.container);
             setupFragments(mViewPager);
 
             TabLayout tabLayout = (TabLayout) findViewById(R.id.tabs);
             tabLayout.setupWithViewPager(mViewPager);
 
-            tb = (Toolbar) findViewById(R.id.toolbar);
+            tb = findViewById(R.id.toolbar);
             tb.setTitle("Filtered Messaging");
 
             tb.inflateMenu(R.menu.menu_main);
@@ -429,7 +450,6 @@ public class MainActivity extends AppCompatActivity{
                                 filteredThreadsCv.put("filtered_status","filtered");
                                 filteredThreadsCv.put("date_string", date);
                                 filteredThreadsCv.put("blacklisted", 0);
-                                //System.out.println("readstatus" + cursor.getString(cursor.getColumnIndex("read")));
                                 filteredThreadsCv.put("read", cursor.getString(cursor.getColumnIndex("read")));
                                 filteredDatabase.insert("filteredThreads", null, filteredThreadsCv);
 
@@ -595,6 +615,10 @@ public class MainActivity extends AppCompatActivity{
                 super.onPostExecute(aVoid);
                 filteredDatabase.close();
 
+                pb.setVisibility(View.GONE);
+                firstRunText.setVisibility(View.GONE);
+                fab.setVisibility(View.VISIBLE);
+
                 knownSms.clear();
                 unknownSms.clear();
                 smsList.clear();
@@ -602,15 +626,8 @@ public class MainActivity extends AppCompatActivity{
                 loadDatabase();
                 loadLayout();
 
-                pb.setVisibility(View.GONE);
-                firstRunText.setVisibility(View.GONE);
-                fab.setVisibility(View.VISIBLE);
-
-                if(rebuildDatabase){
-                    rebuildDatabase = false;
-                    knownInstance.knownList.setVisibility(View.VISIBLE);
-                    unknownInstance.unknownList.setVisibility(View.VISIBLE);
-                }
+                knownInstance.knownList.setVisibility(View.VISIBLE);
+                unknownInstance.unknownList.setVisibility(View.VISIBLE);
 
             }
         }.execute();
@@ -648,7 +665,7 @@ public class MainActivity extends AppCompatActivity{
     }
 
     public void rebuildDatabase(MenuItem item) {
-        rebuildDatabase = true;
+
         this.deleteDatabase("filteredDatabase");
         knownInstance.knownList.setVisibility(View.GONE);
         unknownInstance.unknownList.setVisibility(View.GONE);
@@ -741,10 +758,6 @@ public class MainActivity extends AppCompatActivity{
             }
         }
 
-        else
-            getPermissionToReadContacts();
-
-
     }
 
     public void getPermissionToReadContacts() {
@@ -763,21 +776,6 @@ public class MainActivity extends AppCompatActivity{
         }
     }
 
-    public void getPermissionToCallPhone() {
-        if (ContextCompat.checkSelfPermission(this, Manifest.permission.CALL_PHONE)
-                != PackageManager.PERMISSION_GRANTED) {
-            if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.M) {
-                if (shouldShowRequestPermissionRationale(
-                        Manifest.permission.CALL_PHONE)) {
-                    Toast.makeText(this, "Please allow permission!", Toast.LENGTH_SHORT).show();
-                }
-            }
-            if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.M) {
-                requestPermissions(new String[]{Manifest.permission.CALL_PHONE},
-                        CALL_PHONE_PERMISSIONS_REQUEST);
-            }
-        }
-    }
 
 
     @Override
@@ -793,14 +791,9 @@ public class MainActivity extends AppCompatActivity{
                         != PackageManager.PERMISSION_GRANTED)
                     getPermissionToReadContacts();
 
-                else if(ContextCompat.checkSelfPermission(this, Manifest.permission.CALL_PHONE)
-                        != PackageManager.PERMISSION_GRANTED)
-                    getPermissionToCallPhone();
                 else{
                     createOrOpenDb();
                     refreshSmsInbox();
-                    loadLayout();
-
                 }
 
             }
@@ -818,43 +811,16 @@ public class MainActivity extends AppCompatActivity{
                 if(ContextCompat.checkSelfPermission(this, Manifest.permission.READ_SMS)
                         != PackageManager.PERMISSION_GRANTED)
                     getPermissionToReadSMS();
-                else if(ContextCompat.checkSelfPermission(this, Manifest.permission.CALL_PHONE)
-                        != PackageManager.PERMISSION_GRANTED)
-                    getPermissionToCallPhone();
+
                 else{
                     createOrOpenDb();
                     refreshSmsInbox();
-                    loadLayout();
                 }
 
             }
 
             else {
                 Toast.makeText(this, "Read Contacts permission denied", Toast.LENGTH_SHORT).show();
-            }
-
-        }
-
-        if (requestCode == CALL_PHONE_PERMISSIONS_REQUEST ) {
-            if (grantResults.length > 0 &&
-                    grantResults[0] == PackageManager.PERMISSION_GRANTED ) {
-
-                if(ContextCompat.checkSelfPermission(this, Manifest.permission.READ_SMS)
-                        != PackageManager.PERMISSION_GRANTED)
-                    getPermissionToReadSMS();
-                else if(ContextCompat.checkSelfPermission(this, Manifest.permission.READ_CONTACTS)
-                        != PackageManager.PERMISSION_GRANTED)
-                    getPermissionToReadContacts();
-                else{
-                    createOrOpenDb();
-                    refreshSmsInbox();
-                    loadLayout();
-                }
-
-            }
-
-            else {
-                Toast.makeText(this, "Call Phone permission denied", Toast.LENGTH_SHORT).show();
             }
 
         }
