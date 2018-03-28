@@ -124,7 +124,7 @@ public class NewMessage extends AppCompatActivity {
         String messagebody = messageEt.getText().toString();
 
         if(sendernumber.length() == 0 && messagebody.length() == 0)
-            Toast.makeText(this, "Please enter recipient's number and enter the message body", Toast.LENGTH_SHORT).show();
+            Toast.makeText(this, "Please enter recipient's number and a message body", Toast.LENGTH_SHORT).show();
         else if(sendernumber.length() == 0)
             Toast.makeText(this, "Please enter a phone number or select one from contacts", Toast.LENGTH_SHORT).show();
         else if(messagebody.length() == 0)
@@ -169,6 +169,7 @@ public class NewMessage extends AppCompatActivity {
         cv.put("type", 2);
         cv.put("address", cursor.getString(cursor.getColumnIndex("address")));
         cv.put("body", cursor.getString(cursor.getColumnIndex("body")));
+        cv.put("failed", 0);
 
         isContact = false;
         String senderName = getContactName(this, address);

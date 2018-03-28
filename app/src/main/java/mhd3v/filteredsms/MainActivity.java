@@ -38,6 +38,7 @@ import android.widget.Toast;
 import java.util.ArrayList;
 import java.util.Arrays;
 
+
 public class MainActivity extends AppCompatActivity{
 
     private SectionsPageAdapter mSectionsPageAdapter;
@@ -63,7 +64,6 @@ public class MainActivity extends AppCompatActivity{
 
     private static final int READ_SMS_PERMISSIONS_REQUEST = 1;
     private static final int READ_CONTACTS_PERMISSIONS_REQUEST = 2;
-    private static final int CALL_PHONE_PERMISSIONS_REQUEST = 3;
 
     SQLiteDatabase filteredDatabase;
 
@@ -77,6 +77,10 @@ public class MainActivity extends AppCompatActivity{
 
     boolean deletionMode = false;
     boolean firstRun = false;
+    boolean cameFromNotification = false;
+    boolean askingForPermissions = false;
+
+    private static final int DEF_SMS_REQ = 0;
 
 
     @Override
@@ -85,26 +89,113 @@ public class MainActivity extends AppCompatActivity{
         super.onCreate(savedInstanceState);
         setContentView(R.layout.activity_main);
 
-        pb = (ProgressBar) findViewById(R.id.progressBar2);
+        loadActivity();
+    }
 
-        if (ContextCompat.checkSelfPermission(this, Manifest.permission.READ_SMS)
-                != PackageManager.PERMISSION_GRANTED)
-            getPermissionToReadSMS();
+    void loadActivity(){
 
-        else if (ContextCompat.checkSelfPermission(this, Manifest.permission.READ_CONTACTS)
-                != PackageManager.PERMISSION_GRANTED)
-            getPermissionToReadContacts();
+        cameFromNotification = getIntent().getBooleanExtra("cameFromNotification", false);
 
-        else if (ContextCompat.checkSelfPermission(this, Manifest.permission.CALL_PHONE)
-                != PackageManager.PERMISSION_GRANTED)
-            getPermissionToCallPhone();
+        //release any held notifications
+        SharedPreferences sp = PreferenceManager.getDefaultSharedPreferences(this);
+        SharedPreferences.Editor editor = sp.edit();
+        editor.clear();
+        editor.apply();
+        NotificationManager notificationManager = (NotificationManager) this.getSystemService(Context.NOTIFICATION_SERVICE);
+        notificationManager.cancelAll();
+
+        pb = findViewById(R.id.progressBar2);
+
+        String defaultSmsApp = Telephony.Sms.getDefaultSmsPackage(this);
+
+        if (!(defaultSmsApp.equals("mhd3v.filteredsms"))){
+
+            askingForPermissions = true;
+
+            new AlertDialog.Builder(MainActivity.this)
+                    .setMessage("FilteredSMS will not work properly unless you set it as your default SMS app. Set now?")
+                    .setCancelable(false)
+                    .setTitle("Alert!")
+                    .setNegativeButton("No, continue anyway", new DialogInterface.OnClickListener() {
+
+                        @Override
+                        public void onClick(DialogInterface dialog, int which) {
+
+
+                            if (ContextCompat.checkSelfPermission(MainActivity.this, Manifest.permission.READ_SMS)
+                                    != PackageManager.PERMISSION_GRANTED)
+                                getPermissionToReadSMS();
+
+                            else if (ContextCompat.checkSelfPermission(MainActivity.this, Manifest.permission.READ_CONTACTS)
+                                    != PackageManager.PERMISSION_GRANTED)
+                                getPermissionToReadContacts();
+
+                            else{
+                                loadDatabase();
+                                loadLayout();
+                            }
+
+
+                        }
+                    })
+                    .setPositiveButton("Yes", new DialogInterface.OnClickListener() {
+
+                        public void onClick(DialogInterface dialog, int id) {
+
+                            Intent intent = new Intent(Telephony.Sms.Intents.ACTION_CHANGE_DEFAULT);
+                            intent.putExtra(Telephony.Sms.Intents.EXTRA_PACKAGE_NAME, getPackageName());
+                            startActivityForResult(intent, DEF_SMS_REQ);
+
+                        }
+                    }).show();
+
+        }
 
         else
             loadDatabase();
 
-        if(!firstRun)
+        if(!firstRun && !cameFromNotification && !askingForPermissions)
             loadLayout();
 
+
+    }
+
+
+    @Override
+    protected void onActivityResult(int requestCode, int resultCode, Intent data)
+    {
+        switch (requestCode)
+        {
+            case DEF_SMS_REQ:
+                String currentDefault = Telephony.Sms.getDefaultSmsPackage(this);
+
+                if(currentDefault.equals("mhd3v.filteredsms")){
+                    loadDatabase();
+
+                    if(!firstRun && !cameFromNotification)
+                        loadLayout();
+                }
+
+                else{
+
+                    Toast.makeText(MainActivity.this, "Not set as the default SMS app :(", Toast.LENGTH_SHORT).show();
+
+                    if (ContextCompat.checkSelfPermission(MainActivity.this, Manifest.permission.READ_SMS)
+                            != PackageManager.PERMISSION_GRANTED)
+                        getPermissionToReadSMS();
+
+                    else if (ContextCompat.checkSelfPermission(MainActivity.this, Manifest.permission.READ_CONTACTS)
+                            != PackageManager.PERMISSION_GRANTED)
+                        getPermissionToReadContacts();
+
+                    else{
+                        loadDatabase();
+                        loadLayout();
+                    }
+                }
+
+
+        }
     }
 
     private void loadDatabase(){
@@ -116,9 +207,6 @@ public class MainActivity extends AppCompatActivity{
         Cursor threadCursor = filteredDatabase.rawQuery("select * from messageTable;", null);
 
         if(threadCursor.moveToFirst()){
-
-//            Cursor c = filteredDatabase.rawQuery("SELECT distinct thread_id FROM filteredThreads",null);
-//            Log.d("filtered_threads", Integer.toString(c.getCount()));
 
             threadCursor = filteredDatabase.rawQuery("select thread_id, filtered_status, blacklisted,read from filteredThreads ORDER BY date_string DESC;", null);
 
@@ -135,26 +223,23 @@ public class MainActivity extends AppCompatActivity{
     }
 
     private void loadLayout() {
-        //release any held notifications
-        SharedPreferences sp = PreferenceManager.getDefaultSharedPreferences(this);
-        SharedPreferences.Editor editor = sp.edit();
-        editor.clear();
-        editor.apply();
-        NotificationManager notificationManager = (NotificationManager) this.getSystemService(Context.NOTIFICATION_SERVICE);
-        notificationManager.cancelAll();
 
-        mSectionsPageAdapter = new SectionsPageAdapter(getSupportFragmentManager());
+        if(mSectionsPageAdapter == null){ //this check insures that menu isnt populated once again if rebuildDatabase was called
 
-        mViewPager = (ViewPager)findViewById(R.id.container);
-        setupFragments(mViewPager);
+            mSectionsPageAdapter = new SectionsPageAdapter(getSupportFragmentManager());
 
-        TabLayout tabLayout = (TabLayout) findViewById(R.id.tabs);
-        tabLayout.setupWithViewPager(mViewPager);
+            mViewPager = findViewById(R.id.container);
+            setupFragments(mViewPager);
 
-        tb = (Toolbar) findViewById(R.id.toolbar);
-        tb.setTitle("Filtered Messaging");
+            TabLayout tabLayout = (TabLayout) findViewById(R.id.tabs);
+            tabLayout.setupWithViewPager(mViewPager);
 
-        tb.inflateMenu(R.menu.menu_main);
+            tb = findViewById(R.id.toolbar);
+            tb.setTitle("Filtered Messaging");
+
+            tb.inflateMenu(R.menu.menu_main);
+        }
+
     }
 
     private void createOrOpenDb() {
@@ -163,7 +248,7 @@ public class MainActivity extends AppCompatActivity{
 
         filteredDatabase.execSQL("CREATE TABLE IF NOT EXISTS messageTable " +
                 "(thread_id VARCHAR, address VARCHAR, body VARCHAR, type INT" +
-                ", date VARCHAR, date_string VARCHAR, sender VARCHAR, sender_name VARCHAR );");
+                ", date VARCHAR, date_string VARCHAR, sender VARCHAR, sender_name VARCHAR, failed INTEGER );");
     }
 
     private void openExistingDatabase(Cursor cursor) {
@@ -184,12 +269,16 @@ public class MainActivity extends AppCompatActivity{
 
                     newSms.read = Integer.parseInt(cursor.getString(cursor.getColumnIndex("read")));
 
+
                     do{
                         messages message = new messages(c.getString(c.getColumnIndex("body")), c.getString(c.getColumnIndex("date_string")));
 
                         if(c.getString(c.getColumnIndex("type")).equals("2")){
                             message.isUserMessage = true;
                         }
+
+                        if(c.getString(c.getColumnIndex("failed")).equals("1"))
+                            message.failed = true;
 
                         newSms.messages.add(message);
                     }
@@ -222,6 +311,9 @@ public class MainActivity extends AppCompatActivity{
                             message.isUserMessage = true;
                         }
 
+                        if(c.getString(c.getColumnIndex("failed")).equals("1"))
+                            message.failed = true;
+
                         newSms.messages.add(message);
                     }
                     while(c.moveToNext());
@@ -250,7 +342,7 @@ public class MainActivity extends AppCompatActivity{
     @SuppressLint("StaticFieldLeak")
     public void refreshSmsInbox() {
 
-         new AsyncTask<Void, Void, Void>  (){
+        new AsyncTask<Void, Void, Void>  (){
 
             TextView firstRunText;
             FloatingActionButton fab;
@@ -317,6 +409,7 @@ public class MainActivity extends AppCompatActivity{
                                 cv.put("body", cursor.getString(indexBody));
                                 cv.put("thread_id", threadId);
                                 cv.put("type",1);
+                                cv.put("failed",0);
 
                                 filteredDatabase.insert("messageTable", null ,cv );
 
@@ -344,6 +437,7 @@ public class MainActivity extends AppCompatActivity{
                             cv.put("body", cursor.getString(indexBody));
                             cv.put("thread_id", threadId);
                             cv.put("type",1);
+                            cv.put("failed",0);
 
                             String contactName;
                             contactName = getContactName(MainActivity.this, newSms.sender);
@@ -356,7 +450,6 @@ public class MainActivity extends AppCompatActivity{
                                 filteredThreadsCv.put("filtered_status","filtered");
                                 filteredThreadsCv.put("date_string", date);
                                 filteredThreadsCv.put("blacklisted", 0);
-                                //System.out.println("readstatus" + cursor.getString(cursor.getColumnIndex("read")));
                                 filteredThreadsCv.put("read", cursor.getString(cursor.getColumnIndex("read")));
                                 filteredDatabase.insert("filteredThreads", null, filteredThreadsCv);
 
@@ -423,6 +516,7 @@ public class MainActivity extends AppCompatActivity{
                                 cv.put("body", cursor.getString(indexBody));
                                 cv.put("thread_id", threadId);
                                 cv.put("type",2);
+                                cv.put("failed",0);
 
                                 filteredDatabase.insert("messageTable", null, cv );
 
@@ -458,6 +552,7 @@ public class MainActivity extends AppCompatActivity{
                             cv.put("body", cursor.getString(indexBody));
                             cv.put("thread_id", threadId);
                             cv.put("type",2);
+                            cv.put("failed",0);
 
 
                             String contactName;
@@ -516,9 +611,13 @@ public class MainActivity extends AppCompatActivity{
 
             @Override
             protected void onPostExecute(Void aVoid) {
-                super.onPostExecute(aVoid);
 
+                super.onPostExecute(aVoid);
                 filteredDatabase.close();
+
+                pb.setVisibility(View.GONE);
+                firstRunText.setVisibility(View.GONE);
+                fab.setVisibility(View.VISIBLE);
 
                 knownSms.clear();
                 unknownSms.clear();
@@ -527,9 +626,8 @@ public class MainActivity extends AppCompatActivity{
                 loadDatabase();
                 loadLayout();
 
-                pb.setVisibility(View.GONE);
-                firstRunText.setVisibility(View.GONE);
-                fab.setVisibility(View.VISIBLE);
+                knownInstance.knownList.setVisibility(View.VISIBLE);
+                unknownInstance.unknownList.setVisibility(View.VISIBLE);
 
             }
         }.execute();
@@ -565,6 +663,16 @@ public class MainActivity extends AppCompatActivity{
         startActivity(new Intent(MainActivity.this, SettingsActivity.class));
 
     }
+
+    public void rebuildDatabase(MenuItem item) {
+
+        this.deleteDatabase("filteredDatabase");
+        knownInstance.knownList.setVisibility(View.GONE);
+        unknownInstance.unknownList.setVisibility(View.GONE);
+        loadActivity();
+
+    }
+
 
     class refreshInboxOnNewThread extends AsyncTask<Void, Void, Void> {
 
@@ -605,16 +713,19 @@ public class MainActivity extends AppCompatActivity{
         protected void onPostExecute(Void aVoid) {
             super.onPostExecute(aVoid);
 
-            //----experimental-------
-            unknownInstance.selectedViews = new boolean[unknownSms.size()];
-            unknownInstance.threadsToDelete = new String[unknownSms.size()];
-            Arrays.fill(unknownInstance.selectedViews, Boolean.FALSE);
-            Arrays.fill(unknownInstance.threadsToDelete, null);
+            if(cameFromNotification)
+                loadLayout();
 
-            knownInstance.selectedViews = new boolean[knownSms.size()];
-            knownInstance.threadsToDelete = new String[knownSms.size()];
-            Arrays.fill(knownInstance.selectedViews, Boolean.FALSE);
-            Arrays.fill(knownInstance.threadsToDelete, null);
+            //----experimental-------
+//            unknownInstance.selectedViews = new boolean[unknownSms.size()];
+//            unknownInstance.threadsToDelete = new String[unknownSms.size()];
+//            Arrays.fill(unknownInstance.selectedViews, Boolean.FALSE);
+//            Arrays.fill(unknownInstance.threadsToDelete, null);
+//
+//            knownInstance.selectedViews = new boolean[knownSms.size()];
+//            knownInstance.threadsToDelete = new String[knownSms.size()];
+//            Arrays.fill(knownInstance.selectedViews, Boolean.FALSE);
+//            Arrays.fill(knownInstance.threadsToDelete, null);
             //-----------------------
 
             refreshFragments();
@@ -647,10 +758,6 @@ public class MainActivity extends AppCompatActivity{
             }
         }
 
-        else
-            getPermissionToReadContacts();
-
-
     }
 
     public void getPermissionToReadContacts() {
@@ -669,21 +776,6 @@ public class MainActivity extends AppCompatActivity{
         }
     }
 
-    public void getPermissionToCallPhone() {
-        if (ContextCompat.checkSelfPermission(this, Manifest.permission.CALL_PHONE)
-                != PackageManager.PERMISSION_GRANTED) {
-            if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.M) {
-                if (shouldShowRequestPermissionRationale(
-                        Manifest.permission.CALL_PHONE)) {
-                    Toast.makeText(this, "Please allow permission!", Toast.LENGTH_SHORT).show();
-                }
-            }
-            if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.M) {
-                requestPermissions(new String[]{Manifest.permission.CALL_PHONE},
-                        CALL_PHONE_PERMISSIONS_REQUEST);
-            }
-        }
-    }
 
 
     @Override
@@ -699,14 +791,9 @@ public class MainActivity extends AppCompatActivity{
                         != PackageManager.PERMISSION_GRANTED)
                     getPermissionToReadContacts();
 
-                else if(ContextCompat.checkSelfPermission(this, Manifest.permission.CALL_PHONE)
-                        != PackageManager.PERMISSION_GRANTED)
-                    getPermissionToCallPhone();
                 else{
                     createOrOpenDb();
                     refreshSmsInbox();
-                    loadLayout();
-
                 }
 
             }
@@ -724,43 +811,16 @@ public class MainActivity extends AppCompatActivity{
                 if(ContextCompat.checkSelfPermission(this, Manifest.permission.READ_SMS)
                         != PackageManager.PERMISSION_GRANTED)
                     getPermissionToReadSMS();
-                else if(ContextCompat.checkSelfPermission(this, Manifest.permission.CALL_PHONE)
-                        != PackageManager.PERMISSION_GRANTED)
-                    getPermissionToCallPhone();
+
                 else{
                     createOrOpenDb();
                     refreshSmsInbox();
-                    loadLayout();
                 }
 
             }
 
             else {
                 Toast.makeText(this, "Read Contacts permission denied", Toast.LENGTH_SHORT).show();
-            }
-
-        }
-
-        if (requestCode == CALL_PHONE_PERMISSIONS_REQUEST ) {
-            if (grantResults.length > 0 &&
-                    grantResults[0] == PackageManager.PERMISSION_GRANTED ) {
-
-                if(ContextCompat.checkSelfPermission(this, Manifest.permission.READ_SMS)
-                        != PackageManager.PERMISSION_GRANTED)
-                    getPermissionToReadSMS();
-                else if(ContextCompat.checkSelfPermission(this, Manifest.permission.READ_CONTACTS)
-                        != PackageManager.PERMISSION_GRANTED)
-                    getPermissionToReadContacts();
-                else{
-                    createOrOpenDb();
-                    refreshSmsInbox();
-                    loadLayout();
-                }
-
-            }
-
-            else {
-                Toast.makeText(this, "Call Phone permission denied", Toast.LENGTH_SHORT).show();
             }
 
         }
@@ -882,7 +942,7 @@ public class MainActivity extends AppCompatActivity{
         tb.findViewById(R.id.cancelButton).setOnClickListener(new View.OnClickListener() {
             @Override
             public void onClick(View v) {
-            cancelDeletionMode();
+                cancelDeletionMode();
             }
         });
 

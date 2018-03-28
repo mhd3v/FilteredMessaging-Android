@@ -56,166 +56,184 @@ public class SmsBroadcastReceiver extends BroadcastReceiver {
             Bundle intentExtras = intent.getExtras();
 
             if (intentExtras != null) {
-                Object[] sms = (Object[]) intentExtras.get(SMS_BUNDLE);
 
-                for (int i = 0; i < sms.length; ++i) {
-                    String format =  intentExtras.getString("format");
-                    SmsMessage smsMessage = SmsMessage.createFromPdu((byte[]) sms[i], format);
+                SmsMessage smsMessage;
 
-                    smsBody = smsMessage.getMessageBody().toString();
-                    address = smsMessage.getOriginatingAddress();
+                if (Build.VERSION.SDK_INT >= 19) { //KITKAT
+                    SmsMessage[] msgs = Telephony.Sms.Intents.getMessagesFromIntent(intent);
+                    smsMessage = msgs[0];
+                }
 
-                    String defaultSmsApp = Telephony.Sms.getDefaultSmsPackage(context);
+                else {
+                    Object pdus[] = (Object[]) intentExtras.get("pdus");
+                    smsMessage = SmsMessage.createFromPdu((byte[]) pdus[0]);
+                }
 
-                    if (defaultSmsApp.equals("mhd3v.filteredsms")) {
 
-                        ContentValues cv = new ContentValues();
-                        cv.put("address", address);
-                        cv.put("body", smsBody);
-                        context.getContentResolver().insert(Uri.parse("content://sms/inbox"), cv);
-                    }
+                smsBody = smsMessage.getMessageBody().toString();
+                address = smsMessage.getOriginatingAddress();
 
-                    System.out.print("New message arrived");
+                String defaultSmsApp = Telephony.Sms.getDefaultSmsPackage(context);
+
+                if (defaultSmsApp.equals("mhd3v.filteredsms")) {
 
                     ContentValues cv = new ContentValues();
-
-                    filteredDatabase = context.openOrCreateDatabase("filteredDatabase", MODE_PRIVATE, null);
-
-                    cursor = context.getContentResolver().query(Uri.parse("content://sms"), null, null, null, null);
-                    cursor.moveToFirst();
-
-                    String date = cursor.getString(cursor.getColumnIndex("date"));
-                    String dateTime = convertDate(date,"yyyy/MM/dd hh:mm:ss");
-
-                    threadId = cursor.getString(cursor.getColumnIndex("thread_id"));
-
-                    cv.put("thread_id", threadId);
-                    cv.put("date", dateTime);
-                    cv.put("date_string", date);
-                    cv.put("type", 1);
                     cv.put("address", address);
                     cv.put("body", smsBody);
+                    context.getContentResolver().insert(Uri.parse("content://sms/inbox"), cv);
+                }
 
-                    isContact = false;
-                    String contactName = getContactName(context, address);
+                System.out.print("New message arrived");
 
-                    ContentValues filteredThreadsCv = new ContentValues();
-                    ContentValues existingThreadCv = new ContentValues();
+                ContentValues cv = new ContentValues();
 
-                    Cursor blackListCheckCursor = filteredDatabase.rawQuery("select blacklisted from filteredThreads where thread_id = " + threadId +";",null);
+                filteredDatabase = context.openOrCreateDatabase("filteredDatabase", MODE_PRIVATE, null);
 
-                    boolean messageFromNewSender = false;
+                cursor = context.getContentResolver().query(Uri.parse("content://sms"), null, null, null, null);
+                cursor.moveToFirst();
 
-                    if(!(blackListCheckCursor.moveToFirst())){ //no entry in filtered_threads so a new message
-                        messageFromNewSender = true;
+                String date = cursor.getString(cursor.getColumnIndex("date"));
+                String dateTime = convertDate(date,"yyyy/MM/dd hh:mm:ss");
+
+                threadId = cursor.getString(cursor.getColumnIndex("thread_id"));
+
+                cv.put("thread_id", threadId);
+                cv.put("date", dateTime);
+                cv.put("date_string", date);
+                cv.put("type", 1);
+                cv.put("address", address);
+                cv.put("body", smsBody);
+                cv.put("failed", 0);
+
+                isContact = false;
+                String contactName = getContactName(context, address);
+
+                ContentValues filteredThreadsCv = new ContentValues();
+                ContentValues existingThreadCv = new ContentValues();
+
+                existingThreadCv.put("read",0); //need to update read status whether new thread or previous updated
+                filteredThreadsCv.put("read",0);
+
+                Cursor blackListCheckCursor = filteredDatabase.rawQuery("select blacklisted from filteredThreads where thread_id = " + threadId +";",null);
+
+                boolean messageFromNewSender = false;
+
+                if(!(blackListCheckCursor.moveToFirst())){ //no entry in filtered_threads so a new message
+                    messageFromNewSender = true;
+                }
+
+
+                if (isContact){
+                    filteredThreadsCv.put("thread_id", threadId);
+                    filteredThreadsCv.put("filtered_status","filtered");
+                    filteredThreadsCv.put("date_string", date);
+
+                    if(messageFromNewSender){ //if message from new sender and in contact list
+                        filteredThreadsCv.put("blacklisted", 0);
+                        blackListStatus = 0;
+                        filteredDatabase.insert("filteredThreads", null, filteredThreadsCv); //insert
                     }
 
+                    else{ //message from a contact whose thread already exists, don't update blacklisted column in this case
 
-                    if (isContact){
-                        filteredThreadsCv.put("thread_id", threadId);
-                        filteredThreadsCv.put("filtered_status","filtered");
-                        filteredThreadsCv.put("date_string", date);
+                        int userSetStatus = blackListCheckCursor.getInt(blackListCheckCursor.getColumnIndex("blacklisted"));
+                        blackListStatus = userSetStatus;
 
-                        if(messageFromNewSender){ //if message from new sender and in contact list
-                            filteredThreadsCv.put("blacklisted", 0);
-                            blackListStatus = 0;
-                            filteredDatabase.insert("filteredThreads", null, filteredThreadsCv); //insert
-                        }
+                        existingThreadCv.put("date_string", date);
+                        filteredDatabase.update("filteredThreads", existingThreadCv, "thread_id =" + threadId, null); //update
 
-                        else{ //message from a contact whose thread already exists, don't update blacklisted column in this case
-
-                            int userSetStatus = blackListCheckCursor.getInt(blackListCheckCursor.getColumnIndex("blacklisted"));
-                            blackListStatus = userSetStatus;
-
-                            existingThreadCv.put("date_string", date);
-                            filteredDatabase.update("filteredThreads", existingThreadCv, "thread_id =" + threadId, null); //update
-
-                        }
-
-                        cv.put("sender_name", contactName);
-                        cv.put("sender", "known");
                     }
+
+                    cv.put("sender_name", contactName);
+                    cv.put("sender", "known");
+                }
+
+                else {
+                    filteredThreadsCv.put("thread_id",threadId);
+                    filteredThreadsCv.put("filtered_status","unfiltered");
+                    filteredThreadsCv.put("date_string", date);
+
+                    if(messageFromNewSender){ //if message from new sender and not in contact list
+                        filteredThreadsCv.put("blacklisted", 1);
+                        blackListStatus = 1;
+                        filteredDatabase.insert("filteredThreads", null, filteredThreadsCv); //insert
+                    }
+
+                    else{ //message from a sender whose thread already exists, don't update blacklisted column in this case
+
+                        int userSetStatus = blackListCheckCursor.getInt(blackListCheckCursor.getColumnIndex("blacklisted"));
+                        blackListStatus = userSetStatus;
+
+                        existingThreadCv.put("date_string", date);
+                        filteredDatabase.update("filteredThreads", existingThreadCv, "thread_id =" + threadId, null); //update
+
+                    }
+
+                    cv.put("sender_name", "");
+                    cv.put("sender", "unknown");
+                }
+
+                filteredDatabase.insertOrThrow("messageTable", null, cv);
+
+                blackListCheckCursor.close();
+                cursor.close();
+                filteredDatabase.close();
+
+                MainActivity mainActivityInstance = MainActivity.inst;
+                ConversationActivity conversationInstance = ConversationActivity.conversationInstance;
+
+                if (conversationInstance != null) { //conversation thread is active
+
+                    if (conversationInstance.threadId.equals(threadId)) {
+
+                            messages newSms = new messages(smsBody, Long.toString(System.currentTimeMillis()));
+
+                            conversationInstance.messageList.add(newSms);
+
+                            conversationInstance.adapter.notifyDataSetChanged();
+
+                            ConversationActivity.refreshMain();
+
+                            if(!conversationInstance.active)
+                                setNotfication(context);
+
+                            //if conversation instance is active and open, then each new message is marked as read
+                            filteredDatabase = context.openOrCreateDatabase("filteredDatabase", MODE_PRIVATE, null);
+                            ContentValues readCv = new ContentValues();
+                            readCv.put("read", 1);
+                            filteredDatabase.update("filteredThreads", readCv, "thread_id=" + threadId, null);
+                            filteredDatabase.close();
+                            //---
+
+
+                    }
+
+                    else{
+                        setNotfication(context);
+                        ConversationActivity.refreshMain();
+                    }
+
+                }
+
+                else if (mainActivityInstance != null) {
+
+                    if (mainActivityInstance.active)
+                        mainActivityInstance.refreshOnExtraThread();
 
                     else {
-                        filteredThreadsCv.put("thread_id",threadId);
-                        filteredThreadsCv.put("filtered_status","unfiltered");
-                        filteredThreadsCv.put("date_string", date);
 
-                        if(messageFromNewSender){ //if message from new sender and not in contact list
-                            filteredThreadsCv.put("blacklisted", 1);
-                            blackListStatus = 1;
-                            filteredDatabase.insert("filteredThreads", null, filteredThreadsCv); //insert
-                        }
-
-                        else{ //message from a sender whose thread already exists, don't update blacklisted column in this case
-
-                            int userSetStatus = blackListCheckCursor.getInt(blackListCheckCursor.getColumnIndex("blacklisted"));
-                            blackListStatus = userSetStatus;
-
-                            existingThreadCv.put("date_string", date);
-                            filteredDatabase.update("filteredThreads", existingThreadCv, "thread_id =" + threadId, null); //update
-
-                        }
-
-                        cv.put("sender_name", "");
-                        cv.put("sender", "unknown");
-                    }
-
-                    filteredDatabase.insertOrThrow("messageTable", null, cv);
-
-                    blackListCheckCursor.close();
-                    cursor.close();
-                    filteredDatabase.close();
-
-                    MainActivity mainActivityInstance = MainActivity.inst;
-                    ConversationActivity conversationInstance = ConversationActivity.conversationInstance;
-
-                    if (conversationInstance != null) { //conversation thread is active
-
-                        if (conversationInstance.threadId.equals(threadId)) {
-
-                                messages newSms = new messages(smsBody, Long.toString(System.currentTimeMillis()));
-
-                                ArrayList<messages> newMessageList = new ArrayList<>();
-
-                                newMessageList.addAll(conversationInstance.messageList);
-                                newMessageList.add(newSms);
-
-                                conversationInstance.adapter.updateMessageList(newMessageList);
-                                ConversationActivity.refreshMain();
-
-                                if(!conversationInstance.active)
-                                    setNotfication(context);
-                        }
-
-                        else{
-                            setNotfication(context);
-                            ConversationActivity.refreshMain();
-                        }
-
-                    }
-
-                    else if (mainActivityInstance != null) {
-
-                        if (mainActivityInstance.active)
-                            mainActivityInstance.refreshOnExtraThread();
-
-                        else {
-
-                            mainActivityInstance.refreshInbox = true;
-                            setNotfication(context);
-                        }
-                    }
-
-                    else  //MainActivity not instantiated
+                        mainActivityInstance.refreshInbox = true;
                         setNotfication(context);
+                    }
+                }
+
+                else  //MainActivity not instantiated
+                    setNotfication(context);
 
                 }
             }
 
         }
-
-    }
 
 
     void setNotfication(Context context){

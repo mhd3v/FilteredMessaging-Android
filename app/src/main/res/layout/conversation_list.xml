@@ -35,22 +35,23 @@
         app:layout_constraintTop_toTopOf="parent" />
 
     <TextView
-        android:textColorLink="@android:color/white"
-        android:autoLink="email|phone|web"
         android:id="@+id/senderText"
-        android:textIsSelectable="true"
         android:layout_width="wrap_content"
         android:layout_height="wrap_content"
         android:layout_marginLeft="8dp"
+        android:autoLink="email|phone|web"
         android:background="@drawable/sender_bubble"
         android:maxWidth="240dp"
         android:padding="8dp"
         android:textColor="#ffffff"
+        android:textColorLink="@android:color/white"
+        android:textIsSelectable="true"
         android:visibility="gone"
         app:layout_constraintBottom_toBottomOf="parent"
         app:layout_constraintLeft_toRightOf="@+id/image_message_profile"
         app:layout_constraintTop_toBottomOf="@+id/senderName"
-        app:layout_constraintVertical_bias="0.0" />
+        app:layout_constraintVertical_bias="0.0"
+        android:onClick="resendSMS"/>
 
     <TextView
         android:id="@+id/senderTime"
@@ -67,18 +68,18 @@
         tools:layout_constraintTop_creator="1" />
 
     <TextView
-        android:textColorLink="#000000"
-        android:autoLink="email|phone|web"
         android:id="@+id/userText"
-        android:textIsSelectable="true"
         android:layout_width="wrap_content"
         android:layout_height="wrap_content"
         android:layout_marginBottom="25dp"
         android:layout_marginRight="16dp"
+        android:autoLink="email|phone|web"
         android:background="@drawable/user_bubble"
         android:maxWidth="240dp"
         android:padding="8dp"
         android:textColor="#000000"
+        android:textColorLink="#000000"
+        android:textIsSelectable="true"
         android:visibility="gone"
         app:layout_constraintBottom_toBottomOf="parent"
         app:layout_constraintRight_toRightOf="parent" />
@@ -89,6 +90,35 @@
         android:layout_height="wrap_content"
         android:layout_marginRight="8dp"
         android:layout_marginTop="1dp"
+        android:textSize="10sp"
+        android:visibility="gone"
+        app:layout_constraintRight_toRightOf="@+id/userText"
+        app:layout_constraintTop_toBottomOf="@+id/userText"
+        tools:layout_constraintBottom_creator="1"
+        tools:layout_constraintRight_creator="1" />
+
+    <TextView
+        android:id="@+id/failedText"
+        android:layout_width="wrap_content"
+        android:layout_height="wrap_content"
+        android:layout_marginRight="8dp"
+        android:layout_marginTop="1dp"
+        android:text="Failed. Retry?"
+        android:textColor="@android:color/holo_red_light"
+        android:textSize="10sp"
+        android:visibility="gone"
+        app:layout_constraintRight_toRightOf="@+id/userText"
+        app:layout_constraintTop_toBottomOf="@+id/userText"
+        tools:layout_constraintBottom_creator="1"
+        tools:layout_constraintRight_creator="1" />
+
+    <TextView
+        android:id="@+id/sendingText"
+        android:layout_width="wrap_content"
+        android:layout_height="wrap_content"
+        android:layout_marginRight="8dp"
+        android:layout_marginTop="1dp"
+        android:text="Sending..."
         android:textSize="10sp"
         android:visibility="gone"
         app:layout_constraintRight_toRightOf="@+id/userText"

@@ -45,6 +45,8 @@ class messages implements Serializable{
     boolean isUserMessage = false;
     String messageBody;
     String time;
+    boolean failed = false;
+    boolean sending = false;
 
     messages(String messageBody, String time){
         this.messageBody = messageBody;
