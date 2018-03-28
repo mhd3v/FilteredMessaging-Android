@@ -6,10 +6,10 @@
     <uses-permission android:name="android.permission.READ_SMS" />
     <uses-permission android:name="android.permission.SEND_SMS" />
     <uses-permission android:name="android.permission.RECEIVE_SMS" />
-    <uses-permission android:name="android.permission.RECEIVE_BOOT_COMPLETED"/>
+    <uses-permission android:name="android.permission.RECEIVE_BOOT_COMPLETED" />
     <uses-permission android:name="android.permission.READ_CONTACTS" />
     <uses-permission android:name="android.permission.CALL_PHONE" />
-    <uses-permission android:name="android.permission.VIBRATE"/>
+    <uses-permission android:name="android.permission.VIBRATE" />
 
     <application
         android:allowBackup="true"
@@ -18,21 +18,20 @@
         android:roundIcon="@drawable/main_icon"
         android:supportsRtl="true"
         android:theme="@style/AppTheme">
-
         <activity
-            android:screenOrientation="portrait"
             android:name=".MainActivity"
             android:label="@string/app_name"
+            android:screenOrientation="portrait"
             android:theme="@style/AppTheme.NoActionBar">
-
             <intent-filter>
-                <action android:name="android.intent.action.MAIN"/>
-                <category android:name="android.intent.category.LAUNCHER"/>
-            </intent-filter>
+                <action android:name="android.intent.action.MAIN" />
 
+                <category android:name="android.intent.category.LAUNCHER" />
+            </intent-filter>
             <intent-filter>
                 <action android:name="android.intent.action.SEND" />
                 <action android:name="android.intent.action.SENDTO" />
+
                 <category android:name="android.intent.category.DEFAULT" />
                 <category android:name="android.intent.category.BROWSABLE" />
 
@@ -40,25 +39,18 @@
                 <data android:scheme="smsto" />
                 <data android:scheme="mms" />
                 <data android:scheme="mmsto" />
-
             </intent-filter>
-
         </activity>
-
-        <activity android:name=".ConversationActivity"
-            android:theme="@style/ConversationActivityTheme"
-            android:screenOrientation="portrait">
+        <activity
+            android:name=".ConversationActivity"
+            android:screenOrientation="portrait"
+            android:theme="@style/ConversationActivityTheme">
             <uses-permission android:name="android.permission.SEND_SMS" />
 
             <intent-filter>
                 <action android:name="android.intent.action.NotificationClicked" />
             </intent-filter>
-
         </activity>
-
-
-
-
         <activity
             android:name=".SettingsActivity"
             android:label="@string/title_activity_settings"
@@ -68,35 +60,33 @@
                 android:value="mhd3v.filteredsms.MainActivity" />
         </activity>
 
-
         <receiver
-
             android:name=".SmsBroadcastReceiver"
             android:exported="true"
             android:permission="android.permission.BROADCAST_SMS">
 
-            <!--intent-filter android:priority="999">
+            <!--
+            intent-filter android:priority="999">
                 <action android:name="android.provider.Telephony.SMS_DELIVER" />
                 <action android:name="android.provider.Telephony.SMS_RECEIVED" />
                 <action android:name="android.provider.Telephony.SMS_DELIVER_ACTION" />
                 <action android:name="android.intent.action.BOOT_COMPLETED" />
-            </intent-filter-->
+            </intent-filter
+            -->
 
             <intent-filter>
                 <action android:name="android.provider.Telephony.SMS_DELIVER" />
                 <action android:name="android.provider.Telephony.SMS_RECEIVED" />
             </intent-filter>
-
         </receiver>
-
-        <receiver android:name=".MMSBroadcastReceiver"
+        <receiver
+            android:name=".MMSBroadcastReceiver"
             android:exported="true"
             android:permission="android.permission.BROADCAST_WAP_PUSH">
-            <intent-filter android:priority="999" >
-
+            <intent-filter android:priority="999">
                 <action android:name="android.provider.Telephony.WAP_PUSH_DELIVER" />
-                <data android:mimeType="application/vnd.wap.mms-message"></data>
 
+                <data android:mimeType="application/vnd.wap.mms-message" />
             </intent-filter>
         </receiver>
 
@@ -107,7 +97,9 @@
             android:permission="android.permission.SEND_RESPOND_VIA_MESSAGE">
             <intent-filter>
                 <category android:name="android.intent.category.DEFAULT" />
+
                 <action android:name="android.intent.action.RESPOND_VIA_MESSAGE" />
+
                 <data android:scheme="sms" />
                 <data android:scheme="smsto" />
                 <data android:scheme="mms" />
@@ -115,7 +107,15 @@
             </intent-filter>
         </service>
 
-        <activity android:name=".NewMessage"></activity>
+        <activity android:name=".NewMessage" />
+
+        <activity
+            android:name=".DefaultAppActivity"
+            android:theme="@style/LaunchActivitiesTheme" />
+
+        <activity
+            android:name=".PermissionsActivity"
+            android:theme="@style/LaunchActivitiesTheme"/>
 
     </application>
 
