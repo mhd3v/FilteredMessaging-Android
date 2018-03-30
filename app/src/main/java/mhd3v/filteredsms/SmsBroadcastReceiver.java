@@ -70,7 +70,7 @@ public class SmsBroadcastReceiver extends BroadcastReceiver {
                 }
 
 
-                smsBody = smsMessage.getMessageBody().toString();
+                smsBody = smsMessage.getMessageBody();
                 address = smsMessage.getOriginatingAddress();
 
                 String defaultSmsApp = Telephony.Sms.getDefaultSmsPackage(context);
@@ -136,8 +136,7 @@ public class SmsBroadcastReceiver extends BroadcastReceiver {
 
                     else{ //message from a contact whose thread already exists, don't update blacklisted column in this case
 
-                        int userSetStatus = blackListCheckCursor.getInt(blackListCheckCursor.getColumnIndex("blacklisted"));
-                        blackListStatus = userSetStatus;
+                        blackListStatus = blackListCheckCursor.getInt(blackListCheckCursor.getColumnIndex("blacklisted"));
 
                         existingThreadCv.put("date_string", date);
                         filteredDatabase.update("filteredThreads", existingThreadCv, "thread_id =" + threadId, null); //update
@@ -161,8 +160,7 @@ public class SmsBroadcastReceiver extends BroadcastReceiver {
 
                     else{ //message from a sender whose thread already exists, don't update blacklisted column in this case
 
-                        int userSetStatus = blackListCheckCursor.getInt(blackListCheckCursor.getColumnIndex("blacklisted"));
-                        blackListStatus = userSetStatus;
+                        blackListStatus = blackListCheckCursor.getInt(blackListCheckCursor.getColumnIndex("blacklisted"));
 
                         existingThreadCv.put("date_string", date);
                         filteredDatabase.update("filteredThreads", existingThreadCv, "thread_id =" + threadId, null); //update
@@ -217,12 +215,12 @@ public class SmsBroadcastReceiver extends BroadcastReceiver {
 
                 else if (mainActivityInstance != null) {
 
-                    if (mainActivityInstance.active)
+                    if (MainActivity.active)
                         mainActivityInstance.refreshOnExtraThread();
 
                     else {
 
-                        mainActivityInstance.refreshInbox = true;
+                        MainActivity.refreshInbox = true;
                         setNotfication(context);
                     }
                 }
@@ -269,7 +267,7 @@ public class SmsBroadcastReceiver extends BroadcastReceiver {
 
             editor.putString(threadId, sp.getString(threadId,"")+smsBody+"\n");
 
-            editor.commit();
+            editor.apply();
 
             String previousNotification = sp.getString(threadId,"");
 
@@ -286,7 +284,11 @@ public class SmsBroadcastReceiver extends BroadcastReceiver {
 
             String CHANNEL_ID = threadId;// The id of the channel.
             CharSequence name = "New message";// The user-visible name of the channel.
-            int importance = NotificationManager.IMPORTANCE_HIGH;
+            int importance = 0;
+
+            if (android.os.Build.VERSION.SDK_INT >= android.os.Build.VERSION_CODES.N) {
+                importance = NotificationManager.IMPORTANCE_HIGH;
+            }
 
 
             NotificationCompat.Builder mBuilder =
