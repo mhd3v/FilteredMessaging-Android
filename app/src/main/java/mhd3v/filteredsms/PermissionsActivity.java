@@ -6,11 +6,10 @@ import android.content.pm.PackageManager;
 import android.os.Build;
 import android.os.Bundle;
 import android.support.annotation.NonNull;
-import android.support.design.widget.Snackbar;
 import android.support.v4.content.ContextCompat;
 import android.support.v7.app.AppCompatActivity;
 import android.view.View;
-import android.widget.Toast;
+
 
 public class PermissionsActivity extends AppCompatActivity {
 
@@ -41,7 +40,7 @@ public class PermissionsActivity extends AppCompatActivity {
         if (ContextCompat.checkSelfPermission(this, Manifest.permission.READ_SMS)
                 != PackageManager.PERMISSION_GRANTED) {
             if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.M) {
-                if (shouldShowRequestPermissionRationale(Manifest.permission.READ_SMS));
+                shouldShowRequestPermissionRationale(Manifest.permission.READ_SMS);
 
             }
             if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.M) {

@@ -19,6 +19,7 @@ import android.preference.PreferenceManager;
 import android.provider.ContactsContract;
 import android.provider.Telephony;
 import android.support.design.widget.FloatingActionButton;
+import android.support.design.widget.Snackbar;
 import android.support.design.widget.TabLayout;
 import android.support.v4.content.ContextCompat;
 import android.support.v4.view.ViewPager;
@@ -46,8 +47,6 @@ public class MainActivity extends AppCompatActivity{
 
     KnownFragment.customAdapter knownAdapter;
     UnknownFragment.customAdapter unknownAdapter;
-
-    private ViewPager mViewPager;
 
     ArrayList<sms> knownSms = new ArrayList<>();
     ArrayList<sms> unknownSms = new ArrayList<>();
@@ -148,7 +147,7 @@ public class MainActivity extends AppCompatActivity{
 
             mSectionsPageAdapter = new SectionsPageAdapter(getSupportFragmentManager());
 
-            mViewPager = findViewById(R.id.container);
+            ViewPager mViewPager = findViewById(R.id.container);
             setupFragments(mViewPager);
 
             TabLayout tabLayout = (TabLayout) findViewById(R.id.tabs);
@@ -834,8 +833,21 @@ public class MainActivity extends AppCompatActivity{
                             }).setNegativeButton("No", null).show();
                 }
 
-                else
-                    Toast.makeText(MainActivity.this, "Set as default app to delete messages!", Toast.LENGTH_SHORT).show();
+                else{
+
+                    View parentLayout = findViewById(R.id.main_content);
+                    final int DEF_SMS_REQ = 0;
+
+                    Snackbar.make(parentLayout, "Set as default app to delete messages!", Snackbar.LENGTH_INDEFINITE)
+                            .setAction("Change", new View.OnClickListener() {
+                                @Override
+                                public void onClick(View v) {
+                                    Intent intent = new Intent(Telephony.Sms.Intents.ACTION_CHANGE_DEFAULT);
+                                    intent.putExtra(Telephony.Sms.Intents.EXTRA_PACKAGE_NAME, getPackageName());
+                                    startActivityForResult(intent, DEF_SMS_REQ);
+                                }
+                            }).show();
+                }
 
             }
         });

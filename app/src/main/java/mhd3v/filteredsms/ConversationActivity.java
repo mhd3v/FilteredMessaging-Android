@@ -65,6 +65,7 @@ public class ConversationActivity extends AppCompatActivity {
     boolean cameFromNotification = false;
 
     customAdapter adapter;
+
     static Intent intent;
 
     private String SimState = "";
@@ -257,8 +258,8 @@ public class ConversationActivity extends AppCompatActivity {
 
 
     public static void refreshMain() {
-        MainActivity mainInstance = MainActivity.getInstance();
-        mainInstance.refreshInbox = true;
+
+        MainActivity.refreshInbox = true;
     }
 
     public void addToWhiteList(MenuItem item) {
@@ -382,7 +383,7 @@ public class ConversationActivity extends AppCompatActivity {
             return view;
         }
 
-        public String convertDate(String dateInMilliseconds,String dateFormat) {
+        String convertDate(String dateInMilliseconds, String dateFormat) {
             return DateFormat.format(dateFormat, Long.parseLong(dateInMilliseconds)).toString();
         }
 

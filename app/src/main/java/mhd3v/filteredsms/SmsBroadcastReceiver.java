@@ -274,10 +274,10 @@ public class SmsBroadcastReceiver extends BroadcastReceiver {
             String[] result = previousNotification.split("\n");
 
 
-            for(int i=0; i < result.length; i++){
+            for (String aResult : result) {
 
-                if(!(result[i].equals(null)))
-                    inboxStyle.addLine(result[i]);
+                if (!(aResult.equals(null)))
+                    inboxStyle.addLine(aResult);
             }
 
             inboxStyle.setBigContentTitle(contactName);
