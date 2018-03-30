@@ -17,8 +17,6 @@ public class sms{
     String sender;
     String senderName;
 
-    messages lastMessage;
-
     ArrayList<messages> messages = new ArrayList<>();
 
     sms(String sender, String threadId){
@@ -33,7 +31,6 @@ public class sms{
 
     void addNewUserMessage(String message, String time){
         messages m = new messages(message, time);
-        lastMessage = m;
         m.isUserMessage = true;
         messages.add(m);
     }
