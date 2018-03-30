@@ -1,6 +1,5 @@
 package mhd3v.filteredsms;
 
-import android.Manifest;
 import android.annotation.SuppressLint;
 import android.app.NotificationManager;
 import android.content.ContentResolver;
@@ -9,7 +8,6 @@ import android.content.Context;
 import android.content.DialogInterface;
 import android.content.Intent;
 import android.content.SharedPreferences;
-import android.content.pm.PackageManager;
 import android.database.Cursor;
 import android.database.sqlite.SQLiteDatabase;
 import android.net.Uri;
@@ -21,7 +19,6 @@ import android.provider.Telephony;
 import android.support.design.widget.FloatingActionButton;
 import android.support.design.widget.Snackbar;
 import android.support.design.widget.TabLayout;
-import android.support.v4.content.ContextCompat;
 import android.support.v4.view.ViewPager;
 import android.support.v7.app.AlertDialog;
 import android.support.v7.app.AppCompatActivity;
@@ -32,10 +29,10 @@ import android.view.MenuItem;
 import android.view.View;
 import android.widget.ProgressBar;
 import android.widget.TextView;
-import android.widget.Toast;
 
 import java.util.ArrayList;
 import java.util.Arrays;
+
 
 
 public class MainActivity extends AppCompatActivity{
@@ -150,13 +147,14 @@ public class MainActivity extends AppCompatActivity{
             ViewPager mViewPager = findViewById(R.id.container);
             setupFragments(mViewPager);
 
-            TabLayout tabLayout = (TabLayout) findViewById(R.id.tabs);
+            TabLayout tabLayout = findViewById(R.id.tabs);
             tabLayout.setupWithViewPager(mViewPager);
 
             tb = findViewById(R.id.toolbar);
             tb.setTitle("Filtered Messaging");
 
             tb.inflateMenu(R.menu.menu_main);
+
         }
 
     }
@@ -648,20 +646,7 @@ public class MainActivity extends AppCompatActivity{
             if(cameFromNotification)
                 loadLayout();
 
-            //----experimental-------
-//            unknownInstance.selectedViews = new boolean[unknownSms.size()];
-//            unknownInstance.threadsToDelete = new String[unknownSms.size()];
-//            Arrays.fill(unknownInstance.selectedViews, Boolean.FALSE);
-//            Arrays.fill(unknownInstance.threadsToDelete, null);
-//
-//            knownInstance.selectedViews = new boolean[knownSms.size()];
-//            knownInstance.threadsToDelete = new String[knownSms.size()];
-//            Arrays.fill(knownInstance.selectedViews, Boolean.FALSE);
-//            Arrays.fill(knownInstance.threadsToDelete, null);
-            //-----------------------
-
             refreshFragments();
-
         }
     }
 
@@ -900,7 +885,6 @@ public class MainActivity extends AppCompatActivity{
             super.onBackPressed();
         else
             cancelDeletionMode();
-
 
     }
 

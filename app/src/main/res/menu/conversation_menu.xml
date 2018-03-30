@@ -42,4 +42,21 @@
         android:visible="false"
         app:showAsAction="never" />
 
+    <item
+        android:id="@+id/cancelButtonConversation"
+        android:checkable="false"
+        android:enabled="true"
+        android:icon="@drawable/cancel"
+        android:title="cancel"
+        android:visible="false"
+        app:showAsAction="always" />
+
+    <item
+        android:id="@+id/deleteButtonConversation"
+        android:checkable="false"
+        android:icon="@drawable/delete"
+        android:title="delete"
+        android:visible="false"
+        app:showAsAction="always" />
+
 </menu>

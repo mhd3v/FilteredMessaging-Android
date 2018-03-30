@@ -14,6 +14,8 @@ import android.content.SharedPreferences;
 import android.content.pm.PackageManager;
 import android.database.Cursor;
 import android.database.sqlite.SQLiteDatabase;
+import android.graphics.Color;
+import android.graphics.drawable.Drawable;
 import android.net.Uri;
 import android.os.Build;
 import android.os.Bundle;
@@ -21,7 +23,10 @@ import android.preference.PreferenceManager;
 import android.provider.ContactsContract;
 import android.provider.Telephony;
 import android.support.annotation.NonNull;
+import android.support.constraint.ConstraintLayout;
+import android.support.design.widget.Snackbar;
 import android.support.v4.content.ContextCompat;
+import android.support.v4.graphics.drawable.DrawableCompat;
 import android.support.v7.app.AlertDialog;
 import android.support.v7.app.AppCompatActivity;
 import android.support.v7.widget.Toolbar;
@@ -43,6 +48,7 @@ import android.widget.TextView;
 import android.widget.Toast;
 
 import java.util.ArrayList;
+import java.util.Arrays;
 import java.util.Collections;
 
 
@@ -63,6 +69,7 @@ public class ConversationActivity extends AppCompatActivity {
     int read;
 
     boolean cameFromNotification = false;
+    boolean newestMessageSelected = true;
 
     customAdapter adapter;
 
@@ -73,6 +80,9 @@ public class ConversationActivity extends AppCompatActivity {
     MenuItem blacklistbutton;
     MenuItem whitelistbutton;
     MenuItem addToContactsButton;
+    MenuItem callButton;
+    MenuItem deleteButton;
+    MenuItem cancelButton;
 
     SQLiteDatabase filteredDatabase;
 
@@ -80,9 +90,15 @@ public class ConversationActivity extends AppCompatActivity {
 
     int pendingIntentCount;
 
-    BroadcastReceiver broadcastReceiver;
-
     private static final int CALL_PHONE_PERMISSIONS_REQUEST = 3;
+
+    ListView conversation;
+
+    Boolean editMode = false;
+
+    boolean[] selectedViews;
+    String[] messagesToDelete;
+    int[] markedPositions;
 
     @Override
     protected void onCreate(Bundle savedInstanceState) {
@@ -160,61 +176,32 @@ public class ConversationActivity extends AppCompatActivity {
 
         Collections.reverse(messageList);
 
-        ListView conversation = (ListView) findViewById(R.id.conversationList);
+        selectedViews = new boolean[messageList.size()];
+        messagesToDelete = new String[messageList.size()];
+        markedPositions = new int[messageList.size()];
 
-        conversation.setOnItemClickListener(new AdapterView.OnItemClickListener() {
-            @Override
-            public void onItemClick(AdapterView<?> parent, View view, final int position, long id) {
+        Arrays.fill(selectedViews, Boolean.FALSE);
+        Arrays.fill(markedPositions, 0);
 
-                if(messageList.get(position).failed){
-                    new AlertDialog.Builder(ConversationActivity.this)
-                            .setMessage("Try again?")
-                            .setCancelable(false)
-                            .setNegativeButton("No", new DialogInterface.OnClickListener() {
-
-                                @Override
-                                public void onClick(DialogInterface dialog, int which) {
-                                    messageList.remove(position);
-                                    adapter.notifyDataSetChanged();
-                                    SQLiteDatabase filteredDatabase = openOrCreateDatabase("filteredDatabase", MODE_PRIVATE, null);
-                                    filteredDatabase.delete("messageTable","date_string=" + messageList.get(position).time, null);
-                                    filteredDatabase.close();
-
-
-                                }
-                            })
-                            .setPositiveButton("Yes", new DialogInterface.OnClickListener() {
-
-                                public void onClick(DialogInterface dialog, int id) {
-
-                                    messageList.remove(position);
-                                    adapter.notifyDataSetChanged();
-                                    SQLiteDatabase filteredDatabase = openOrCreateDatabase("filteredDatabase", MODE_PRIVATE, null);
-                                    filteredDatabase.delete("messageTable","date_string=" + messageList.get(position).time, null);
-                                    filteredDatabase.close();
-                                    sendSms(messageList.get(position));
-
-                                }
-                            }).show();
-
-                }
-
-            }
-        });
+        conversation = findViewById(R.id.conversationList);
 
         adapter = new customAdapter();
 
         conversation.setAdapter(adapter);
 
-        toolbar = (Toolbar) findViewById(R.id.toolbar);
+        toolbar = findViewById(R.id.toolbar);
 
         if (toolbar != null) {
             setSupportActionBar(toolbar);
 
             if (senderName.equals(""))
                 getSupportActionBar().setTitle(sender);
+
+
             else
                 getSupportActionBar().setTitle(senderName);
+
+
             getSupportActionBar().setHomeButtonEnabled(true);
             getSupportActionBar().setDisplayHomeAsUpEnabled(true);
         }
@@ -226,6 +213,15 @@ public class ConversationActivity extends AppCompatActivity {
             }
         });
 
+        conversation.setOnItemLongClickListener(new AdapterView.OnItemLongClickListener() {
+            @Override
+            public boolean onItemLongClick(AdapterView<?> adapterView, View view, int position, long id) {
+
+                setDeletionMode();
+
+                return false;
+            }
+        });
 
     }
 
@@ -238,6 +234,9 @@ public class ConversationActivity extends AppCompatActivity {
         blacklistbutton = toolbar.getMenu().findItem(R.id.blacklistbutton);
         whitelistbutton = toolbar.getMenu().findItem(R.id.whitelistbutton);
         addToContactsButton = toolbar.getMenu().findItem(R.id.addToContacts);
+        deleteButton = toolbar.getMenu().findItem(R.id.deleteButtonConversation);
+        cancelButton = toolbar.getMenu().findItem(R.id.cancelButtonConversation);
+        callButton = toolbar.getMenu().findItem(R.id.callButton);
 
         if (blacklisted == 0)
             blacklistbutton.setVisible(true);
@@ -304,7 +303,6 @@ public class ConversationActivity extends AppCompatActivity {
 
     }
 
-
     public void addToContacts(MenuItem item) {
 
         Intent intent = new Intent(ContactsContract.Intents.Insert.ACTION);
@@ -313,7 +311,6 @@ public class ConversationActivity extends AppCompatActivity {
         startActivity(intent);
 
     }
-
 
     class customAdapter extends BaseAdapter {
 
@@ -336,6 +333,7 @@ public class ConversationActivity extends AppCompatActivity {
         public View getView(int i, View view, ViewGroup viewGroup) {
 
             view = getLayoutInflater().inflate(R.layout.conversation_list,null);
+
 
             if(messageList.get(i).isUserMessage){
 
@@ -363,6 +361,18 @@ public class ConversationActivity extends AppCompatActivity {
 
                 }
 
+                if(selectedViews[i]){
+                    Drawable backgroundDrawable = userMessage.getBackground();
+                    DrawableCompat.setTint(backgroundDrawable, getResources().getColor(R.color.messageSelected));
+                }
+
+                else{
+                    Drawable backgroundDrawable = userMessage.getBackground();
+                    DrawableCompat.setTint(backgroundDrawable, Color.WHITE);
+
+                }
+
+
             }
             else{
 
@@ -378,6 +388,17 @@ public class ConversationActivity extends AppCompatActivity {
 
                 ImageView img = view.findViewById(R.id.image_message_profile);
                 img.setVisibility(View.VISIBLE);
+
+                if(selectedViews[i]){
+                    Drawable backgroundDrawable = senderMessage.getBackground();
+                    DrawableCompat.setTint(backgroundDrawable, getResources().getColor(R.color.messageSelected));
+                }
+
+                else{
+                    Drawable backgroundDrawable = senderMessage.getBackground();
+                    DrawableCompat.setTint(backgroundDrawable, getResources().getColor(R.color.colorPrimary));
+
+                }
             }
 
             return view;
@@ -388,7 +409,6 @@ public class ConversationActivity extends AppCompatActivity {
         }
 
     }
-
 
     public void onSendClick(View view) {
 
@@ -425,7 +445,6 @@ public class ConversationActivity extends AppCompatActivity {
             Toast.makeText(this, "Please enter a message body", Toast.LENGTH_LONG).show();
         }
 
-
     }
 
     @Override
@@ -443,7 +462,11 @@ public class ConversationActivity extends AppCompatActivity {
     @Override
     public void onBackPressed() {
 
-        if(cameFromNotification){
+        if(editMode){
+            cancelDeletionMode();
+        }
+
+        else if(cameFromNotification){
             Intent mainIntent = new Intent(this, MainActivity.class);
             mainIntent.putExtra("cameFromNotification", true);
             startActivity(mainIntent);
@@ -542,7 +565,6 @@ public class ConversationActivity extends AppCompatActivity {
         }
 
     }
-
 
     private void sendSms(final messages newSms) {
         if (simExists()) {
@@ -643,9 +665,6 @@ public class ConversationActivity extends AppCompatActivity {
         }
     }
 
-
-
-
     public boolean simExists()
     {
         TelephonyManager telephonyManager = (TelephonyManager) getSystemService(Context.TELEPHONY_SERVICE);
@@ -727,5 +746,215 @@ public class ConversationActivity extends AppCompatActivity {
 
     }
 
+    void setDeletionModeClickListener(){
+
+        conversation.setOnItemClickListener(new AdapterView.OnItemClickListener() {
+            @Override
+            public void onItemClick(AdapterView<?> parent, View view, int position, long id) {
+
+                ConstraintLayout cL = view.findViewById(R.id.messageBox);
+
+                if(!selectedViews[position]) {
+
+                    if(messageList.get(position).isUserMessage){
+                        //view.findViewById(R.id.userText).setBackgroundColor(Color.LTGRAY);
+                        Drawable backgroundDrawable = view.findViewById(R.id.userText).getBackground();
+                        DrawableCompat.setTint(backgroundDrawable, getResources().getColor(R.color.messageSelected));
+
+                    }
+
+                    else{
+                        Drawable backgroundDrawable = view.findViewById(R.id.senderText).getBackground();
+                        DrawableCompat.setTint(backgroundDrawable, getResources().getColor(R.color.messageSelected));
+                    }
+
+                    selectedViews[position] = true;
+                    messagesToDelete[position] = messageList.get(position).time;
+                    markedPositions[position] = position+1; //so that we can use 0 to mark a non selected item
+
+                    if(position == messageList.size()-1)  //if last index, then last message is being removed
+                        newestMessageSelected = true;
+
+                }
+
+                else{
+
+                    if(messageList.get(position).isUserMessage){
+                        Drawable backgroundDrawable = view.findViewById(R.id.userText).getBackground();
+                        DrawableCompat.setTint(backgroundDrawable, Color.WHITE);
+                    }
+                    else{
+                        Drawable backgroundDrawable = view.findViewById(R.id.senderText).getBackground();
+                        DrawableCompat.setTint(backgroundDrawable, getResources().getColor(R.color.colorPrimary));
+                    }
+
+                    selectedViews[position] = false;
+                    messagesToDelete[position] = null;
+                    markedPositions[position] = 0;
+
+                    if(position == messageList.size()-1)
+                        newestMessageSelected = false;
+                }
+
+            }
+        });
+    }
+
+    void setDeletionMode(){
+
+        editMode = true;
+
+        setDeletionModeClickListener();
+
+        getSupportActionBar().setTitle("Edit Mode");
+
+        callButton.setVisible(false);
+        deleteButton.setVisible(true);
+        cancelButton.setVisible(true);
+
+        setDeletionModeClickListener();
+
+        cancelButton.setOnMenuItemClickListener(new MenuItem.OnMenuItemClickListener() {
+            @Override
+            public boolean onMenuItemClick(MenuItem item) {
+
+                cancelDeletionMode();
+
+                return false;
+            }
+        });
+
+        deleteButton.setOnMenuItemClickListener(new MenuItem.OnMenuItemClickListener() {
+            @Override
+            public boolean onMenuItemClick(MenuItem item) {
+
+                deleteMessages();
+
+                return false;
+            }
+        });
+
+    }
+
+    void cancelDeletionMode() {
+
+        editMode = false;
+
+        callButton.setVisible(true);
+        deleteButton.setVisible(false);
+        cancelButton.setVisible(false);
+        editMode = false;
+
+        Arrays.fill(selectedViews, Boolean.FALSE);
+        Arrays.fill(messagesToDelete, null);
+        Arrays.fill(markedPositions, 0);
+
+        adapter.notifyDataSetChanged();
+
+        conversation.setOnItemClickListener(null);
+
+        if (senderName.equals(""))
+            getSupportActionBar().setTitle(sender);
+        else
+            getSupportActionBar().setTitle(senderName);
+
+
+    }
+
+    void deleteMessages(){
+
+        String defaultSmsApp = Telephony.Sms.getDefaultSmsPackage(ConversationActivity.this);
+
+        if (defaultSmsApp.equals("mhd3v.filteredsms")){
+
+            filteredDatabase = openOrCreateDatabase("filteredDatabase", MODE_PRIVATE, null);
+
+            final ArrayList<String> selectedMessagesList = new ArrayList<>();
+            final ArrayList<Integer> markedPositionsList = new ArrayList<>();
+
+            for(int i = 0; i < messagesToDelete.length; i++){
+                if(messagesToDelete[i] != null)
+                    selectedMessagesList.add(messagesToDelete[i]);
+            }
+
+            for(int i = 0; i < markedPositions.length; i++){
+                if(markedPositions[i] != 0){
+                    markedPositionsList.add(markedPositions[i]-1); //subtracting -1 since we added +1 earlier. This will make sure that even view at position 0 will be removed
+                }
+            }
+
+            new AlertDialog.Builder(ConversationActivity.this)
+                    .setTitle("Deleting Messages")
+                    .setMessage("Are you sure you want to delete "+ selectedMessagesList.size() + " messages(s)?")
+                    .setPositiveButton("Yes", new DialogInterface.OnClickListener() {
+
+                        @Override
+                        public void onClick(DialogInterface dialog, int which) {
+
+                            for(int i = 0; i < selectedMessagesList.size(); i++ ) {
+                                getContentResolver().delete(Uri.parse("content://sms"), "thread_id =" + threadId + " and date= " + selectedMessagesList.get(i), null); //android db
+
+                                filteredDatabase.execSQL("delete from messageTable where thread_id = " + threadId + " and date_string=" + selectedMessagesList.get(i) + ";"); //messageTable
+
+                                messageList.remove((int) markedPositionsList.get(i)); //current message list, typecasting for Integer -> int
+                            }
+
+                            if(newestMessageSelected){ //if the newest message is selected then we have to update attributes for new newest message
+
+                                Cursor c = filteredDatabase.rawQuery("select * from messageTable where thread_id = " + threadId + " order by date_string", null);
+
+                                if(c.moveToLast()){ //newest message will have the largest time string val
+
+                                    ContentValues filteredThreadsCv = new ContentValues();
+                                    ContentValues messageTableCv = new ContentValues();
+
+                                    //updating the sender_name table, since only it is used to setup the fragments
+                                    if(senderName.equals(""))
+                                        messageTableCv.put("sender_name", "");
+                                    else
+                                        messageTableCv.put("sender_name", senderName);
+
+                                    filteredThreadsCv.put("date_string", c.getString(c.getColumnIndex("date_string"))); //updating filteredThreads table entry
+
+                                    filteredDatabase.update("filteredThreads", filteredThreadsCv,  "thread_id =" + threadId, null);
+
+                                    filteredDatabase.update("messageTable", messageTableCv,  "thread_id =" + threadId + " and date_string ="
+                                            + c.getString(c.getColumnIndex("date_string")), null); //adding sender_name to new newest message
+                                }
+
+                                else{
+                                    filteredDatabase.delete("filteredThreads", "thread_id =" +threadId, null); //all messages delete. Remove thread entry from filtered threads
+                                    finish(); //all messages in the thread deleted
+                                }
+                            }
+
+                            filteredDatabase.close();
+
+                            cancelDeletionMode();
+
+                            refreshMain();
+                        }
+
+                    }).setNegativeButton("No", null).show();
+
+        }
+
+        else{
+
+            View parentLayout = findViewById(R.id.messageBox);
+            final int DEF_SMS_REQ = 0;
+
+            Snackbar.make(parentLayout, "Set as default app to delete messages!", Snackbar.LENGTH_INDEFINITE)
+                    .setAction("Change", new View.OnClickListener() {
+                        @Override
+                        public void onClick(View v) {
+                            Intent intent = new Intent(Telephony.Sms.Intents.ACTION_CHANGE_DEFAULT);
+                            intent.putExtra(Telephony.Sms.Intents.EXTRA_PACKAGE_NAME, getPackageName());
+                            startActivityForResult(intent, DEF_SMS_REQ);
+                        }
+                    }).show();
+        }
+
+    }
 
 }
