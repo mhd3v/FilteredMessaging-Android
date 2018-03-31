@@ -345,7 +345,7 @@ public class ConversationActivity extends AppCompatActivity {
 
                 else{
                     if(!messageList.get(i).failed){ //successfully sent message
-                        time = convertDate(messageList.get(i).time,"dd/MM hh:mm aa");
+                        time = convertDate(messageList.get(i).time,"E dd/MM hh:mm aa");
                         userTimeText.setText(time);
                         userTimeText.setVisibility(View.VISIBLE);
                     }
@@ -374,7 +374,7 @@ public class ConversationActivity extends AppCompatActivity {
                 senderMessage.setVisibility(View.VISIBLE);
 
                 TextView senderTimeText = view.findViewById(R.id.senderTime);
-                String time = convertDate(messageList.get(i).time,"dd/MM - hh:mm aa");
+                String time = convertDate(messageList.get(i).time,"E dd/MM - hh:mm aa");
                 senderTimeText.setText(time);
                 senderTimeText.setVisibility(View.VISIBLE);
 
@@ -823,7 +823,6 @@ public class ConversationActivity extends AppCompatActivity {
                 return false;
             }
         });
-
     }
 
     void cancelDeletionMode() {
@@ -846,12 +845,12 @@ public class ConversationActivity extends AppCompatActivity {
         else
             getSupportActionBar().setTitle(senderName);
 
-
     }
 
     void deleteMessages(){
 
         String defaultSmsApp = Telephony.Sms.getDefaultSmsPackage(ConversationActivity.this);
+
 
         if (defaultSmsApp.equals("mhd3v.filteredsms")){
 
@@ -867,61 +866,69 @@ public class ConversationActivity extends AppCompatActivity {
                 }
             }
 
-            new AlertDialog.Builder(ConversationActivity.this)
-                    .setTitle("Deleting Messages")
-                    .setMessage("Are you sure you want to delete "+ selectedMessagesList.size() + " messages(s)?")
-                    .setPositiveButton("Yes", new DialogInterface.OnClickListener() {
+            if(selectedMessagesList.size()== 0)
+                Toast.makeText(conversationInstance, "Select some messages!", Toast.LENGTH_SHORT).show();
 
-                        @Override
-                        public void onClick(DialogInterface dialog, int which) {
+            else{
 
-                            for(int i = 0; i < selectedMessagesList.size(); i++ ) {
-                                getContentResolver().delete(Uri.parse("content://sms"), "thread_id =" + threadId + " and date= " + selectedMessagesList.get(i), null); //android db
+                new AlertDialog.Builder(ConversationActivity.this)
+                        .setTitle("Deleting Messages")
+                        .setMessage("Are you sure you want to delete "+ selectedMessagesList.size() + " messages(s)?")
+                        .setPositiveButton("Yes", new DialogInterface.OnClickListener() {
 
-                                filteredDatabase.execSQL("delete from messageTable where thread_id = " + threadId + " and date_string=" + selectedMessagesList.get(i) + ";"); //messageTable
+                            @Override
+                            public void onClick(DialogInterface dialog, int which) {
 
-                                messageList.remove(markedPositionsList.get(i) - i); //index needs to be decreased each time an item is deleted since size of messageList decreases
-                            }
+                                for(int i = 0; i < selectedMessagesList.size(); i++ ) {
+                                    getContentResolver().delete(Uri.parse("content://sms"), "thread_id =" + threadId + " and date= " + selectedMessagesList.get(i), null); //android db
 
-                            if(newestMessageSelected){ //if the newest message is selected then we have to update attributes for new newest message
+                                    filteredDatabase.execSQL("delete from messageTable where thread_id = " + threadId + " and date_string=" + selectedMessagesList.get(i) + ";"); //messageTable
 
-                                Cursor c = filteredDatabase.rawQuery("select * from messageTable where thread_id = " + threadId + " order by date_string", null);
-
-                                if(c.moveToLast()){ //newest message will have the largest time string val
-
-                                    ContentValues filteredThreadsCv = new ContentValues();
-                                    ContentValues messageTableCv = new ContentValues();
-
-                                    //updating the sender_name table, since only it is used to setup the fragments
-                                    if(senderName.equals(""))
-                                        messageTableCv.put("sender_name", "");
-                                    else
-                                        messageTableCv.put("sender_name", senderName);
-
-                                    filteredThreadsCv.put("date_string", c.getString(c.getColumnIndex("date_string"))); //updating filteredThreads table entry
-
-                                    filteredDatabase.update("filteredThreads", filteredThreadsCv,  "thread_id =" + threadId, null);
-
-                                    filteredDatabase.update("messageTable", messageTableCv,  "thread_id =" + threadId + " and date_string ="
-                                            + c.getString(c.getColumnIndex("date_string")), null); //adding sender_name to new newest message
+                                    messageList.remove(markedPositionsList.get(i) - i); //index needs to be decreased each time an item is deleted since size of messageList decreases
                                 }
 
-                                else{
-                                    filteredDatabase.delete("filteredThreads", "thread_id =" +threadId, null); //all messages delete. Remove thread entry from filtered threads
-                                    finish(); //all messages in the thread deleted
+                                if(newestMessageSelected){ //if the newest message is selected then we have to update attributes for new newest message
+
+                                    Cursor c = filteredDatabase.rawQuery("select * from messageTable where thread_id = " + threadId + " order by date_string", null);
+
+                                    if(c.moveToLast()){ //newest message will have the largest time string val
+
+                                        ContentValues filteredThreadsCv = new ContentValues();
+                                        ContentValues messageTableCv = new ContentValues();
+
+                                        //updating the sender_name table, since only it is used to setup the fragments
+                                        if(senderName.equals(""))
+                                            messageTableCv.put("sender_name", "");
+                                        else
+                                            messageTableCv.put("sender_name", senderName);
+
+                                        filteredThreadsCv.put("date_string", c.getString(c.getColumnIndex("date_string"))); //updating filteredThreads table entry
+
+                                        filteredDatabase.update("filteredThreads", filteredThreadsCv,  "thread_id =" + threadId, null);
+
+                                        filteredDatabase.update("messageTable", messageTableCv,  "thread_id =" + threadId + " and date_string ="
+                                                + c.getString(c.getColumnIndex("date_string")), null); //adding sender_name to new newest message
+                                    }
+
+                                    else{
+                                        filteredDatabase.delete("filteredThreads", "thread_id =" +threadId, null); //all messages delete. Remove thread entry from filtered threads
+                                        finish(); //all messages in the thread deleted
+                                    }
+
+                                    c.close();
                                 }
 
-                                c.close();
+                                filteredDatabase.close();
+
+                                cancelDeletionMode();
+
+                                refreshMain();
                             }
 
-                            filteredDatabase.close();
+                        }).setNegativeButton("No", null).show();
 
-                            cancelDeletionMode();
+            }
 
-                            refreshMain();
-                        }
-
-                    }).setNegativeButton("No", null).show();
 
         }
 

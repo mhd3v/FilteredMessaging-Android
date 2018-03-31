@@ -29,6 +29,7 @@ import android.view.MenuItem;
 import android.view.View;
 import android.widget.ProgressBar;
 import android.widget.TextView;
+import android.widget.Toast;
 
 import java.util.ArrayList;
 import java.util.Arrays;
@@ -784,38 +785,44 @@ public class MainActivity extends AppCompatActivity{
 
                 String defaultSmsApp = Telephony.Sms.getDefaultSmsPackage(MainActivity.this);
 
-                if (defaultSmsApp.equals("mhd3v.filteredsms")){
+                if (defaultSmsApp.equals("mhd3v.filteredsms")) {
 
                     final ArrayList<String> threadIds = new ArrayList<>();
 
                     filteredDatabase = openOrCreateDatabase("filteredDatabase", MODE_PRIVATE, null);
 
-                    for(int i=0; i< knownInstance.threadsToDelete.length; i++){
-                        if(knownInstance.threadsToDelete[i] != null)
+                    for (int i = 0; i < knownInstance.threadsToDelete.length; i++) {
+                        if (knownInstance.threadsToDelete[i] != null)
                             threadIds.add(knownInstance.threadsToDelete[i]);
                     }
 
-                    for(int i=0; i< unknownInstance.threadsToDelete.length; i++){
-                        if(unknownInstance.threadsToDelete[i] != null)
+                    for (int i = 0; i < unknownInstance.threadsToDelete.length; i++) {
+                        if (unknownInstance.threadsToDelete[i] != null)
                             threadIds.add(unknownInstance.threadsToDelete[i]);
                     }
 
-                    new AlertDialog.Builder(MainActivity.this)
-                            .setTitle("Deleting Conversations")
-                            .setMessage("Are you sure you want to delete "+ threadIds.size() + " conversation(s)?")
-                            .setPositiveButton("Yes", new DialogInterface.OnClickListener() {
-                                @Override
-                                public void onClick(DialogInterface dialog, int which) {
+                    if (threadIds.size() == 0)
+                        Toast.makeText(MainActivity.this, "Select some threads to delete!", Toast.LENGTH_SHORT).show();
 
-                                    for(int i =0; i<threadIds.size(); i++ ){
-                                        getContentResolver().delete(Uri.parse("content://sms/conversations/" + threadIds.get(i)),null,null);
-                                        filteredDatabase.execSQL("delete from messageTable where thread_id = " + threadIds.get(i)+ ";");
+                    else {
+
+                        new AlertDialog.Builder(MainActivity.this)
+                                .setTitle("Deleting Conversations")
+                                .setMessage("Are you sure you want to delete " + threadIds.size() + " conversation(s)?")
+                                .setPositiveButton("Yes", new DialogInterface.OnClickListener() {
+                                    @Override
+                                    public void onClick(DialogInterface dialog, int which) {
+
+                                        for (int i = 0; i < threadIds.size(); i++) {
+                                            getContentResolver().delete(Uri.parse("content://sms/conversations/" + threadIds.get(i)), null, null);
+                                            filteredDatabase.execSQL("delete from messageTable where thread_id = " + threadIds.get(i) + ";");
+                                        }
+                                        filteredDatabase.close();
+                                        cancelDeletionMode();
+                                        refreshOnExtraThread();
                                     }
-                                    filteredDatabase.close();
-                                    cancelDeletionMode();
-                                    refreshOnExtraThread();
-                                }
-                            }).setNegativeButton("No", null).show();
+                                }).setNegativeButton("No", null).show();
+                    }
                 }
 
                 else{

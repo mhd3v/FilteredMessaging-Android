@@ -180,7 +180,7 @@ public class UnknownFragment extends Fragment {
 
             TextView time = view.findViewById(R.id.time);
             String lastSenderMessageTime = smsList.get(i).messages.get(0).time;
-            lastSenderMessageTime = convertDate(lastSenderMessageTime, "dd/MM - hh:mm aa");
+            lastSenderMessageTime = convertDate(lastSenderMessageTime, "E dd/MM - hh:mm aa");
             time.setText(lastSenderMessageTime);
 
             TextView text = view.findViewById(R.id.textbody);
