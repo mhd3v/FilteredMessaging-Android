@@ -77,8 +77,8 @@ public class ConversationActivity extends AppCompatActivity {
 
     private String SimState = "";
 
-    MenuItem blacklistbutton;
-    MenuItem whitelistbutton;
+    MenuItem blacklistButton;
+    MenuItem whitelistButton;
     MenuItem addToContactsButton;
     MenuItem callButton;
     MenuItem deleteButton;
@@ -96,9 +96,7 @@ public class ConversationActivity extends AppCompatActivity {
 
     Boolean editMode = false;
 
-    boolean[] selectedViews;
     String[] messagesToDelete;
-    int[] markedPositions;
 
     @Override
     protected void onCreate(Bundle savedInstanceState) {
@@ -176,12 +174,7 @@ public class ConversationActivity extends AppCompatActivity {
 
         Collections.reverse(messageList);
 
-        selectedViews = new boolean[messageList.size()];
         messagesToDelete = new String[messageList.size()];
-        markedPositions = new int[messageList.size()];
-
-        Arrays.fill(selectedViews, Boolean.FALSE);
-        Arrays.fill(markedPositions, 0);
 
         conversation = findViewById(R.id.conversationList);
 
@@ -231,17 +224,17 @@ public class ConversationActivity extends AppCompatActivity {
         getMenuInflater().inflate(R.menu.conversation_menu, menu);
 
 
-        blacklistbutton = toolbar.getMenu().findItem(R.id.blacklistbutton);
-        whitelistbutton = toolbar.getMenu().findItem(R.id.whitelistbutton);
+        blacklistButton = toolbar.getMenu().findItem(R.id.blacklistbutton);
+        whitelistButton = toolbar.getMenu().findItem(R.id.whitelistbutton);
         addToContactsButton = toolbar.getMenu().findItem(R.id.addToContacts);
         deleteButton = toolbar.getMenu().findItem(R.id.deleteButtonConversation);
         cancelButton = toolbar.getMenu().findItem(R.id.cancelButtonConversation);
         callButton = toolbar.getMenu().findItem(R.id.callButton);
 
         if (blacklisted == 0)
-            blacklistbutton.setVisible(true);
+            blacklistButton.setVisible(true);
         else
-            whitelistbutton.setVisible(true);
+            whitelistButton.setVisible(true);
 
         if (senderName.equals(""))
             addToContactsButton.setVisible(true);
@@ -275,8 +268,8 @@ public class ConversationActivity extends AppCompatActivity {
 
         filteredDatabase.close();
 
-        whitelistbutton.setVisible(false);
-        blacklistbutton.setVisible(true);
+        whitelistButton.setVisible(false);
+        blacklistButton.setVisible(true);
 
         refreshMain();
 
@@ -296,8 +289,8 @@ public class ConversationActivity extends AppCompatActivity {
 
         filteredDatabase.close();
 
-        whitelistbutton.setVisible(true);
-        blacklistbutton.setVisible(false);
+        whitelistButton.setVisible(true);
+        blacklistButton.setVisible(false);
 
         refreshMain();
 
@@ -361,7 +354,7 @@ public class ConversationActivity extends AppCompatActivity {
 
                 }
 
-                if(selectedViews[i]){
+                if(messagesToDelete[i] != null){
                     Drawable backgroundDrawable = userMessage.getBackground();
                     DrawableCompat.setTint(backgroundDrawable, getResources().getColor(R.color.messageSelected));
                 }
@@ -389,7 +382,7 @@ public class ConversationActivity extends AppCompatActivity {
                 ImageView img = view.findViewById(R.id.image_message_profile);
                 img.setVisibility(View.VISIBLE);
 
-                if(selectedViews[i]){
+                if(messagesToDelete[i] != null){
                     Drawable backgroundDrawable = senderMessage.getBackground();
                     DrawableCompat.setTint(backgroundDrawable, getResources().getColor(R.color.messageSelected));
                 }
@@ -412,7 +405,7 @@ public class ConversationActivity extends AppCompatActivity {
 
     public void onSendClick(View view) {
 
-        input = (EditText) findViewById(R.id.edittext_chatbox);
+        input = findViewById(R.id.edittext_chatbox);
 
 
         if(!(input.getText().toString().trim().length() == 0)){
@@ -754,7 +747,8 @@ public class ConversationActivity extends AppCompatActivity {
 
                 ConstraintLayout cL = view.findViewById(R.id.messageBox);
 
-                if(!selectedViews[position]) {
+
+                if(messagesToDelete[position] == null) {
 
                     if(messageList.get(position).isUserMessage){
                         //view.findViewById(R.id.userText).setBackgroundColor(Color.LTGRAY);
@@ -768,9 +762,7 @@ public class ConversationActivity extends AppCompatActivity {
                         DrawableCompat.setTint(backgroundDrawable, getResources().getColor(R.color.messageSelected));
                     }
 
-                    selectedViews[position] = true;
                     messagesToDelete[position] = messageList.get(position).time;
-                    markedPositions[position] = position+1; //so that we can use 0 to mark a non selected item
 
                     if(position == messageList.size()-1)  //if last index, then last message is being removed
                         newestMessageSelected = true;
@@ -788,9 +780,7 @@ public class ConversationActivity extends AppCompatActivity {
                         DrawableCompat.setTint(backgroundDrawable, getResources().getColor(R.color.colorPrimary));
                     }
 
-                    selectedViews[position] = false;
                     messagesToDelete[position] = null;
-                    markedPositions[position] = 0;
 
                     if(position == messageList.size()-1)
                         newestMessageSelected = false;
@@ -845,9 +835,7 @@ public class ConversationActivity extends AppCompatActivity {
         cancelButton.setVisible(false);
         editMode = false;
 
-        Arrays.fill(selectedViews, Boolean.FALSE);
         Arrays.fill(messagesToDelete, null);
-        Arrays.fill(markedPositions, 0);
 
         adapter.notifyDataSetChanged();
 
@@ -873,13 +861,9 @@ public class ConversationActivity extends AppCompatActivity {
             final ArrayList<Integer> markedPositionsList = new ArrayList<>();
 
             for(int i = 0; i < messagesToDelete.length; i++){
-                if(messagesToDelete[i] != null)
+                if(messagesToDelete[i] != null){
                     selectedMessagesList.add(messagesToDelete[i]);
-            }
-
-            for(int i = 0; i < markedPositions.length; i++){
-                if(markedPositions[i] != 0){
-                    markedPositionsList.add(markedPositions[i]-1); //subtracting -1 since we added +1 earlier. This will make sure that even view at position 0 will be removed
+                    markedPositionsList.add(i);
                 }
             }
 
@@ -896,7 +880,7 @@ public class ConversationActivity extends AppCompatActivity {
 
                                 filteredDatabase.execSQL("delete from messageTable where thread_id = " + threadId + " and date_string=" + selectedMessagesList.get(i) + ";"); //messageTable
 
-                                messageList.remove((int) markedPositionsList.get(i)); //current message list, typecasting for Integer -> int
+                                messageList.remove(markedPositionsList.get(i) - i); //index needs to be decreased each time an item is deleted since size of messageList decreases
                             }
 
                             if(newestMessageSelected){ //if the newest message is selected then we have to update attributes for new newest message
@@ -926,6 +910,8 @@ public class ConversationActivity extends AppCompatActivity {
                                     filteredDatabase.delete("filteredThreads", "thread_id =" +threadId, null); //all messages delete. Remove thread entry from filtered threads
                                     finish(); //all messages in the thread deleted
                                 }
+
+                                c.close();
                             }
 
                             filteredDatabase.close();
