@@ -54,7 +54,7 @@ import java.util.Collections;
 
 public class ConversationActivity extends AppCompatActivity {
 
-    ArrayList<messages> messageList;
+    ArrayList<Message> messageList;
     EditText input;
 
     Toolbar toolbar;
@@ -157,10 +157,10 @@ public class ConversationActivity extends AppCompatActivity {
 
                 if (cursor.getString(Integer.parseInt(type)).equalsIgnoreCase("1")) {
                     //received messages
-                    messages newMessage = new messages(cursor.getString(indexBody), cursor.getString(cursor.getColumnIndex("date")));
+                    Message newMessage = new Message(cursor.getString(indexBody), cursor.getString(cursor.getColumnIndex("date")));
                     messageList.add(newMessage);
                 } else if (cursor.getString(Integer.parseInt(type)).equalsIgnoreCase("2")) {
-                    messages newMessage = new messages(cursor.getString(indexBody), cursor.getString(cursor.getColumnIndex("date")));
+                    Message newMessage = new Message(cursor.getString(indexBody), cursor.getString(cursor.getColumnIndex("date")));
                     newMessage.isUserMessage = true;
                     messageList.add(newMessage);
                 }
@@ -169,7 +169,7 @@ public class ConversationActivity extends AppCompatActivity {
 
         } else {
             Bundle args = intent.getBundleExtra("BUNDLE");
-            messageList = (ArrayList<messages>) args.getSerializable("messageList");
+            messageList = (ArrayList<Message>) args.getSerializable("messageList");
         }
 
         Collections.reverse(messageList);
@@ -410,7 +410,7 @@ public class ConversationActivity extends AppCompatActivity {
 
         if(!(input.getText().toString().trim().length() == 0)){
 
-            messages newSms = new messages(input.getText().toString() ,Long.toString(System.currentTimeMillis()));
+            Message newSms = new Message(input.getText().toString() ,Long.toString(System.currentTimeMillis()));
 
             newSms.sending = true;
 
@@ -469,7 +469,7 @@ public class ConversationActivity extends AppCompatActivity {
             super.onBackPressed();
     }
 
-    void updateViewsAndDB(boolean status, messages newSms){
+    void updateViewsAndDB(boolean status, Message newSms){
 
         if(status){
 
@@ -559,7 +559,7 @@ public class ConversationActivity extends AppCompatActivity {
 
     }
 
-    private void sendSms(final messages newSms) {
+    private void sendSms(final Message newSms) {
         if (simExists()) {
             try {
                 String SENT = "SMS_SENT";

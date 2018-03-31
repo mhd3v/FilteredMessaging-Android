@@ -7,37 +7,37 @@ import java.util.ArrayList;
  * Created by Mahad on 12/10/2017.
  */
 
-public class sms{
+public class SMSThread {
 
     String threadId;
-    boolean knownThread = false;
+
     int blacklisted = 0;
     int read = 0;
 
     String sender;
     String senderName;
 
-    ArrayList<messages> messages = new ArrayList<>();
+    ArrayList<Message> messageList = new ArrayList<>();
 
-    sms(String sender, String threadId){
+    SMSThread(String sender, String threadId){
         this.sender = sender;
         this.threadId = threadId;
     }
 
     void addNewSenderMessage(String message, String time){
-        messages m = new messages(message, time);
-        messages.add(m);
+        Message m = new Message(message, time);
+        messageList.add(m);
     }
 
     void addNewUserMessage(String message, String time){
-        messages m = new messages(message, time);
+        Message m = new Message(message, time);
         m.isUserMessage = true;
-        messages.add(m);
+        messageList.add(m);
     }
 
 }
 
-class messages implements Serializable{
+class Message implements Serializable{
 
     boolean isUserMessage = false;
     String messageBody;
@@ -45,7 +45,7 @@ class messages implements Serializable{
     boolean failed = false;
     boolean sending = false;
 
-    messages(String messageBody, String time){
+    Message(String messageBody, String time){
         this.messageBody = messageBody;
         this.time = time;
     }

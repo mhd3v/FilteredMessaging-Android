@@ -22,8 +22,6 @@ import android.support.v4.app.NotificationCompat;
 import android.telephony.SmsMessage;
 import android.text.format.DateFormat;
 
-import java.util.ArrayList;
-
 import static android.content.Context.MODE_PRIVATE;
 
 /**
@@ -93,12 +91,9 @@ public class SmsBroadcastReceiver extends BroadcastReceiver {
                 cursor.moveToFirst();
 
                 String date = cursor.getString(cursor.getColumnIndex("date"));
-                String dateTime = convertDate(date,"yyyy/MM/dd hh:mm:ss");
-
                 threadId = cursor.getString(cursor.getColumnIndex("thread_id"));
 
                 cv.put("thread_id", threadId);
-                cv.put("date", dateTime);
                 cv.put("date_string", date);
                 cv.put("type", 1);
                 cv.put("address", address);
@@ -144,7 +139,6 @@ public class SmsBroadcastReceiver extends BroadcastReceiver {
                     }
 
                     cv.put("sender_name", contactName);
-                    cv.put("sender", "known");
                 }
 
                 else {
@@ -168,7 +162,6 @@ public class SmsBroadcastReceiver extends BroadcastReceiver {
                     }
 
                     cv.put("sender_name", "");
-                    cv.put("sender", "unknown");
                 }
 
                 filteredDatabase.insertOrThrow("messageTable", null, cv);
@@ -184,7 +177,7 @@ public class SmsBroadcastReceiver extends BroadcastReceiver {
 
                     if (conversationInstance.threadId.equals(threadId)) {
 
-                            messages newSms = new messages(smsBody, Long.toString(System.currentTimeMillis()));
+                            Message newSms = new Message(smsBody, Long.toString(System.currentTimeMillis()));
 
                             conversationInstance.messageList.add(newSms);
 
