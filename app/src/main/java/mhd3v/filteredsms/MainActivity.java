@@ -166,7 +166,7 @@ public class MainActivity extends AppCompatActivity{
 
         filteredDatabase.execSQL("CREATE TABLE IF NOT EXISTS messageTable " +
                 "(thread_id VARCHAR, address VARCHAR, body VARCHAR, type INT" +
-                ", date VARCHAR, date_string VARCHAR, sender_name VARCHAR, failed INTEGER );");
+                ", date_string VARCHAR, sender_name VARCHAR, failed INTEGER );");
     }
 
     private void openExistingDatabase(Cursor cursor) {

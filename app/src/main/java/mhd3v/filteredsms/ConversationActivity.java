@@ -476,7 +476,6 @@ public class ConversationActivity extends AppCompatActivity {
             String defaultSmsApp = Telephony.Sms.getDefaultSmsPackage(this);
 
             if(defaultSmsApp.equals("mhd3v.filteredsms")){
-                Log.d("test", "coming in here");
                 ContentValues values = new ContentValues();
                 values.put("address", sender);
                 values.put("body", newSms.messageBody);
