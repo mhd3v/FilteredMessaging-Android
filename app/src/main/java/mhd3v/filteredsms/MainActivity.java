@@ -1,6 +1,5 @@
 package mhd3v.filteredsms;
 
-import android.Manifest;
 import android.annotation.SuppressLint;
 import android.app.NotificationManager;
 import android.content.ContentResolver;
@@ -9,7 +8,6 @@ import android.content.Context;
 import android.content.DialogInterface;
 import android.content.Intent;
 import android.content.SharedPreferences;
-import android.content.pm.PackageManager;
 import android.database.Cursor;
 import android.database.sqlite.SQLiteDatabase;
 import android.net.Uri;
@@ -21,7 +19,6 @@ import android.provider.Telephony;
 import android.support.design.widget.FloatingActionButton;
 import android.support.design.widget.Snackbar;
 import android.support.design.widget.TabLayout;
-import android.support.v4.content.ContextCompat;
 import android.support.v4.view.ViewPager;
 import android.support.v7.app.AlertDialog;
 import android.support.v7.app.AppCompatActivity;
@@ -38,6 +35,7 @@ import java.util.ArrayList;
 import java.util.Arrays;
 
 
+
 public class MainActivity extends AppCompatActivity{
 
     private SectionsPageAdapter mSectionsPageAdapter;
@@ -48,9 +46,9 @@ public class MainActivity extends AppCompatActivity{
     KnownFragment.customAdapter knownAdapter;
     UnknownFragment.customAdapter unknownAdapter;
 
-    ArrayList<sms> knownSms = new ArrayList<>();
-    ArrayList<sms> unknownSms = new ArrayList<>();
-    ArrayList<sms> smsList = new ArrayList<>();
+    ArrayList<SMSThread> knownSms = new ArrayList<>();
+    ArrayList<SMSThread> unknownSms = new ArrayList<>();
+    ArrayList<SMSThread> SMSThreadList = new ArrayList<>();
 
     boolean isContact;
     static boolean refreshInbox = false;
@@ -150,13 +148,14 @@ public class MainActivity extends AppCompatActivity{
             ViewPager mViewPager = findViewById(R.id.container);
             setupFragments(mViewPager);
 
-            TabLayout tabLayout = (TabLayout) findViewById(R.id.tabs);
+            TabLayout tabLayout = findViewById(R.id.tabs);
             tabLayout.setupWithViewPager(mViewPager);
 
             tb = findViewById(R.id.toolbar);
             tb.setTitle("Filtered Messaging");
 
             tb.inflateMenu(R.menu.menu_main);
+
         }
 
     }
@@ -167,7 +166,7 @@ public class MainActivity extends AppCompatActivity{
 
         filteredDatabase.execSQL("CREATE TABLE IF NOT EXISTS messageTable " +
                 "(thread_id VARCHAR, address VARCHAR, body VARCHAR, type INT" +
-                ", date VARCHAR, date_string VARCHAR, sender VARCHAR, sender_name VARCHAR, failed INTEGER );");
+                ", date_string VARCHAR, sender_name VARCHAR, failed INTEGER );");
     }
 
     private void openExistingDatabase(Cursor cursor) {
@@ -182,15 +181,15 @@ public class MainActivity extends AppCompatActivity{
 
                     String thread_Id = c.getString(c.getColumnIndex("thread_id"));
 
-                    sms newSms = new sms(c.getString(c.getColumnIndex("address")), thread_Id);
+                    SMSThread newSMSThread = new SMSThread(c.getString(c.getColumnIndex("address")), thread_Id);
 
-                    newSms.senderName = c.getString(c.getColumnIndex("sender_name"));
+                    newSMSThread.senderName = c.getString(c.getColumnIndex("sender_name"));
 
-                    newSms.read = Integer.parseInt(cursor.getString(cursor.getColumnIndex("read")));
+                    newSMSThread.read = Integer.parseInt(cursor.getString(cursor.getColumnIndex("read")));
 
 
                     do{
-                        messages message = new messages(c.getString(c.getColumnIndex("body")), c.getString(c.getColumnIndex("date_string")));
+                        Message message = new Message(c.getString(c.getColumnIndex("body")), c.getString(c.getColumnIndex("date_string")));
 
                         if(c.getString(c.getColumnIndex("type")).equals("2")){
                             message.isUserMessage = true;
@@ -199,16 +198,16 @@ public class MainActivity extends AppCompatActivity{
                         if(c.getString(c.getColumnIndex("failed")).equals("1"))
                             message.failed = true;
 
-                        newSms.messages.add(message);
+                        newSMSThread.messageList.add(message);
                     }
                     while(c.moveToNext());
 
                     if((cursor.getInt(cursor.getColumnIndex("blacklisted")) == 0))
-                        knownSms.add(newSms);
+                        knownSms.add(newSMSThread);
 
                     else{
-                        newSms.blacklisted = 1;
-                        unknownSms.add(newSms);
+                        newSMSThread.blacklisted = 1;
+                        unknownSms.add(newSMSThread);
                     }
 
                 }
@@ -217,14 +216,14 @@ public class MainActivity extends AppCompatActivity{
 
                     String thread_Id = c.getString(c.getColumnIndex("thread_id"));
 
-                    sms newSms = new sms(c.getString(c.getColumnIndex("address")), thread_Id);
-                    newSms.senderName = c.getString(c.getColumnIndex("sender_name"));
+                    SMSThread newSMSThread = new SMSThread(c.getString(c.getColumnIndex("address")), thread_Id);
+                    newSMSThread.senderName = c.getString(c.getColumnIndex("sender_name"));
 
-                    newSms.read = Integer.parseInt(cursor.getString(cursor.getColumnIndex("read")));
+                    newSMSThread.read = Integer.parseInt(cursor.getString(cursor.getColumnIndex("read")));
 
                     do{
 
-                        messages message = new messages(c.getString(c.getColumnIndex("body")), c.getString(c.getColumnIndex("date_string")));
+                        Message message = new Message(c.getString(c.getColumnIndex("body")), c.getString(c.getColumnIndex("date_string")));
 
                         if(c.getString(c.getColumnIndex("type")).equals("2")){
                             message.isUserMessage = true;
@@ -233,17 +232,17 @@ public class MainActivity extends AppCompatActivity{
                         if(c.getString(c.getColumnIndex("failed")).equals("1"))
                             message.failed = true;
 
-                        newSms.messages.add(message);
+                        newSMSThread.messageList.add(message);
                     }
                     while(c.moveToNext());
 
 
                     if((cursor.getInt(cursor.getColumnIndex("blacklisted")) == 0))
-                        knownSms.add(newSms);
+                        knownSms.add(newSMSThread);
 
                     else{
-                        newSms.blacklisted = 1;
-                        unknownSms.add(newSms);
+                        newSMSThread.blacklisted = 1;
+                        unknownSms.add(newSMSThread);
                     }
 
                     //unknownSms.add(newSms);
@@ -318,23 +317,15 @@ public class MainActivity extends AppCompatActivity{
 
                             ContentValues cv = new ContentValues();
 
-                            for (int i = 0; i < smsList.size(); i++) {
+                            for (int i = 0; i < SMSThreadList.size(); i++) {
 
-                                if (smsList.get(i).threadId.equals(cursor.getString(cursor.getColumnIndex("thread_id")))) {
+                                if (SMSThreadList.get(i).threadId.equals(cursor.getString(cursor.getColumnIndex("thread_id")))) {
                                     String date = cursor.getString(cursor
                                             .getColumnIndex("date"));
-
-                                    String dateTime = convertDate(date,"yyyy/MM/dd hh:mm:ss");
 
 
                                     int threadId= cursor.getInt(cursor.getColumnIndex("thread_id"));
 
-                                    if(smsList.get(i).knownThread)
-                                        cv.put("sender", "known");
-                                    else
-                                        cv.put("sender", "unknown");
-
-                                    cv.put("date", dateTime);
                                     cv.put("date_string", date);
                                     cv.put("address", cursor.getString(indexAddress));
                                     cv.put("body", cursor.getString(indexBody));
@@ -344,7 +335,7 @@ public class MainActivity extends AppCompatActivity{
 
                                     filteredDatabase.insert("messageTable", null ,cv );
 
-                                    smsList.get(i).addNewSenderMessage(cursor.getString(indexBody), date);
+                                    SMSThreadList.get(i).addNewSenderMessage(cursor.getString(indexBody), date);
                                     found = true;
                                 }
 
@@ -353,16 +344,14 @@ public class MainActivity extends AppCompatActivity{
 
                                 String date = cursor.getString(cursor
                                         .getColumnIndex("date"));
-                                String dateTime = convertDate(date,"yyyy/MM/dd hh:mm:ss");
 
-                                sms newSms = new sms(cursor.getString(indexAddress), cursor.getString(cursor.getColumnIndex("thread_id")));
-                                newSms.addNewSenderMessage(cursor.getString(indexBody), date);
+                                SMSThread newSMSThread = new SMSThread(cursor.getString(indexAddress), cursor.getString(cursor.getColumnIndex("thread_id")));
+                                newSMSThread.addNewSenderMessage(cursor.getString(indexBody), date);
 
-                                smsList.add(newSms);
+                                SMSThreadList.add(newSMSThread);
 
                                 int threadId= cursor.getInt(cursor.getColumnIndex("thread_id"));
 
-                                cv.put("date", dateTime);
                                 cv.put("date_string", date);
                                 cv.put("address", cursor.getString(indexAddress));
                                 cv.put("body", cursor.getString(indexBody));
@@ -371,7 +360,7 @@ public class MainActivity extends AppCompatActivity{
                                 cv.put("failed",0);
 
                                 String contactName;
-                                contactName = getContactName(MainActivity.this, newSms.sender);
+                                contactName = getContactName(MainActivity.this, newSMSThread.sender);
 
                                 ContentValues filteredThreadsCv = new ContentValues();
 
@@ -384,11 +373,10 @@ public class MainActivity extends AppCompatActivity{
                                     filteredThreadsCv.put("read", cursor.getString(cursor.getColumnIndex("read")));
                                     filteredDatabase.insert("filteredThreads", null, filteredThreadsCv);
 
-                                    newSms.senderName = contactName;
-                                    newSms.knownThread = true;
-                                    knownSms.add(newSms);
+                                    newSMSThread.senderName = contactName;
 
-                                    cv.put("sender", "known");
+                                    knownSms.add(newSMSThread);
+
                                     cv.put("sender_name",contactName);
 
                                     filteredDatabase.insertOrThrow("messageTable", null, cv);
@@ -403,11 +391,11 @@ public class MainActivity extends AppCompatActivity{
                                     filteredThreadsCv.put("read", cursor.getString(cursor.getColumnIndex("read")));
                                     filteredDatabase.insert("filteredThreads", null, filteredThreadsCv);
 
-                                    newSms.senderName = "";
-                                    unknownSms.add(newSms);
+                                    newSMSThread.senderName = "";
+                                    unknownSms.add(newSMSThread);
 
-                                    newSms.blacklisted = 1;
-                                    cv.put("sender", "unknown");
+                                    newSMSThread.blacklisted = 1;
+
                                     cv.put("sender_name","");
 
                                     filteredDatabase.insertOrThrow("messageTable", null, cv);
@@ -427,21 +415,14 @@ public class MainActivity extends AppCompatActivity{
 
                             ContentValues cv = new ContentValues();
 
-                            for (int i = 0; i < smsList.size(); i++) {
+                            for (int i = 0; i < SMSThreadList.size(); i++) {
 
-                                if (smsList.get(i).threadId.equals(cursor.getString(cursor.getColumnIndex("thread_id")))) {
+                                if (SMSThreadList.get(i).threadId.equals(cursor.getString(cursor.getColumnIndex("thread_id")))) {
 
                                     String date = cursor.getString(cursor.getColumnIndex("date"));
-                                    String dateTime = convertDate(date,"yyyy/MM/dd hh:mm:ss");
 
                                     int threadId= cursor.getInt(cursor.getColumnIndex("thread_id"));
 
-                                    if(smsList.get(i).knownThread)
-                                        cv.put("sender", "known");
-                                    else
-                                        cv.put("sender", "unknown");
-
-                                    cv.put("date", dateTime);
                                     cv.put("date_string", date);
                                     cv.put("address", cursor.getString(indexAddress));
                                     cv.put("body", cursor.getString(indexBody));
@@ -458,7 +439,7 @@ public class MainActivity extends AppCompatActivity{
                                     filteredDatabase.update("filteredThreads", newCv, "thread_id =" + threadId, null);
                                     //===
 
-                                    smsList.get(i).addNewUserMessage(cursor.getString(indexBody), date);
+                                    SMSThreadList.get(i).addNewUserMessage(cursor.getString(indexBody), date);
                                     found = true;
                                 }
                             }
@@ -467,17 +448,14 @@ public class MainActivity extends AppCompatActivity{
                                 String date = cursor.getString(cursor
                                         .getColumnIndex("date"));
 
-                                String dateTime = convertDate(date,"yyyy/MM/dd hh:mm:ss");
+                                SMSThread newSMSThread = new SMSThread(cursor.getString(indexAddress),cursor.getString(cursor.getColumnIndex("thread_id")));
 
-                                sms newSms = new sms(cursor.getString(indexAddress),cursor.getString(cursor.getColumnIndex("thread_id")));
+                                newSMSThread.addNewUserMessage(cursor.getString(indexBody), date);
 
-                                newSms.addNewUserMessage(cursor.getString(indexBody), date);
-
-                                smsList.add(newSms);
+                                SMSThreadList.add(newSMSThread);
 
                                 int threadId= cursor.getInt(cursor.getColumnIndex("thread_id"));
 
-                                cv.put("date", dateTime);
                                 cv.put("date_string", date);
                                 cv.put("address", cursor.getString(cursor.getColumnIndex("address")));
                                 cv.put("body", cursor.getString(indexBody));
@@ -487,7 +465,7 @@ public class MainActivity extends AppCompatActivity{
 
 
                                 String contactName;
-                                contactName = getContactName(MainActivity.this, newSms.sender);
+                                contactName = getContactName(MainActivity.this, newSMSThread.sender);
 
                                 ContentValues filteredThreadsCv = new ContentValues();
 
@@ -500,13 +478,12 @@ public class MainActivity extends AppCompatActivity{
                                     filteredThreadsCv.put("read", cursor.getString(cursor.getColumnIndex("read")));
                                     filteredDatabase.insert("filteredThreads", null, filteredThreadsCv);
 
-                                    cv.put("sender", "known");
                                     cv.put("sender_name",contactName);
-                                    newSms.knownThread = true;
+
                                     filteredDatabase.insertOrThrow("messageTable", null, cv);
 
-                                    newSms.senderName = contactName;
-                                    knownSms.add(newSms);
+                                    newSMSThread.senderName = contactName;
+                                    knownSms.add(newSMSThread);
                                 }
                                 else {
 
@@ -517,13 +494,13 @@ public class MainActivity extends AppCompatActivity{
                                     filteredThreadsCv.put("read", cursor.getString(cursor.getColumnIndex("read")));
                                     filteredDatabase.insert("filteredThreads", null, filteredThreadsCv);
 
-                                    cv.put("sender", "unknown");
+
                                     cv.put("sender_name","");
                                     filteredDatabase.insertOrThrow("messageTable", null, cv);
 
                                     //newSms.blacklisted = 1;
-                                    newSms.senderName = "";
-                                    knownSms.add(newSms);
+                                    newSMSThread.senderName = "";
+                                    knownSms.add(newSMSThread);
                                 }
 
                             }
@@ -553,7 +530,7 @@ public class MainActivity extends AppCompatActivity{
 
                 knownSms.clear();
                 unknownSms.clear();
-                smsList.clear();
+                SMSThreadList.clear();
 
                 loadDatabase();
                 loadLayout();
@@ -568,18 +545,18 @@ public class MainActivity extends AppCompatActivity{
 
     void refreshFragments(){
 
-        ArrayList<sms> newKnownList = new ArrayList<>();
-        ArrayList<sms> newUnknownList = new ArrayList<>();
+        ArrayList<SMSThread> newKnownList = new ArrayList<>();
+        ArrayList<SMSThread> newUnknownList = new ArrayList<>();
 
         newKnownList.addAll(getKnownSms());
         newUnknownList.addAll(getUnknownSms());
 
-        knownInstance.smsList.clear();
-        knownInstance.smsList.addAll(newKnownList);
+        knownInstance.SMSThreadList.clear();
+        knownInstance.SMSThreadList.addAll(newKnownList);
         knownAdapter.notifyDataSetChanged();
 
-        unknownInstance.smsList.clear();
-        unknownInstance.smsList.addAll(newUnknownList);
+        unknownInstance.SMSThreadList.clear();
+        unknownInstance.SMSThreadList.addAll(newUnknownList);
         unknownAdapter.notifyDataSetChanged();
 
         knownInstance.knownList.setVisibility(View.VISIBLE);
@@ -625,7 +602,7 @@ public class MainActivity extends AppCompatActivity{
         protected Void doInBackground(Void... params) {
 
             knownSms.clear();
-            smsList.clear();
+            SMSThreadList.clear();
             unknownSms.clear();
 
             filteredDatabase = openOrCreateDatabase("filteredDatabase", MODE_PRIVATE, null);
@@ -648,20 +625,7 @@ public class MainActivity extends AppCompatActivity{
             if(cameFromNotification)
                 loadLayout();
 
-            //----experimental-------
-//            unknownInstance.selectedViews = new boolean[unknownSms.size()];
-//            unknownInstance.threadsToDelete = new String[unknownSms.size()];
-//            Arrays.fill(unknownInstance.selectedViews, Boolean.FALSE);
-//            Arrays.fill(unknownInstance.threadsToDelete, null);
-//
-//            knownInstance.selectedViews = new boolean[knownSms.size()];
-//            knownInstance.threadsToDelete = new String[knownSms.size()];
-//            Arrays.fill(knownInstance.selectedViews, Boolean.FALSE);
-//            Arrays.fill(knownInstance.threadsToDelete, null);
-            //-----------------------
-
             refreshFragments();
-
         }
     }
 
@@ -678,18 +642,18 @@ public class MainActivity extends AppCompatActivity{
         return DateFormat.format(dateFormat, Long.parseLong(dateInMilliseconds)).toString();
     }
 
-    public ArrayList<sms> getKnownSms() {
+    public ArrayList<SMSThread> getKnownSms() {
 
         return knownSms;
     }
-    public ArrayList<sms> getUnknownSms() {
+    public ArrayList<SMSThread> getUnknownSms() {
 
         return unknownSms;
     }
 
-    public ArrayList<sms> getSmsList() {
+    public ArrayList<SMSThread> getSMSThreadList() {
 
-        return smsList;
+        return SMSThreadList;
     }
 
     public String getContactName(Context context, String phoneNo) {
@@ -799,38 +763,44 @@ public class MainActivity extends AppCompatActivity{
 
                 String defaultSmsApp = Telephony.Sms.getDefaultSmsPackage(MainActivity.this);
 
-                if (defaultSmsApp.equals("mhd3v.filteredsms")){
+                if (defaultSmsApp.equals("mhd3v.filteredsms")) {
 
                     final ArrayList<String> threadIds = new ArrayList<>();
 
                     filteredDatabase = openOrCreateDatabase("filteredDatabase", MODE_PRIVATE, null);
 
-                    for(int i=0; i< knownInstance.threadsToDelete.length; i++){
-                        if(knownInstance.threadsToDelete[i] != null)
+                    for (int i = 0; i < knownInstance.threadsToDelete.length; i++) {
+                        if (knownInstance.threadsToDelete[i] != null)
                             threadIds.add(knownInstance.threadsToDelete[i]);
                     }
 
-                    for(int i=0; i< unknownInstance.threadsToDelete.length; i++){
-                        if(unknownInstance.threadsToDelete[i] != null)
+                    for (int i = 0; i < unknownInstance.threadsToDelete.length; i++) {
+                        if (unknownInstance.threadsToDelete[i] != null)
                             threadIds.add(unknownInstance.threadsToDelete[i]);
                     }
 
-                    new AlertDialog.Builder(MainActivity.this)
-                            .setTitle("Deleting Conversations")
-                            .setMessage("Are you sure you want to delete "+ threadIds.size() + " conversation(s)?")
-                            .setPositiveButton("Yes", new DialogInterface.OnClickListener() {
-                                @Override
-                                public void onClick(DialogInterface dialog, int which) {
+                    if (threadIds.size() == 0)
+                        Toast.makeText(MainActivity.this, "Select some threads to delete!", Toast.LENGTH_SHORT).show();
 
-                                    for(int i =0; i<threadIds.size(); i++ ){
-                                        getContentResolver().delete(Uri.parse("content://sms/conversations/" + threadIds.get(i)),null,null);
-                                        filteredDatabase.execSQL("delete from messageTable where thread_id = " + threadIds.get(i)+ ";");
+                    else {
+
+                        new AlertDialog.Builder(MainActivity.this)
+                                .setTitle("Deleting Conversations")
+                                .setMessage("Are you sure you want to delete " + threadIds.size() + " conversation(s)?")
+                                .setPositiveButton("Yes", new DialogInterface.OnClickListener() {
+                                    @Override
+                                    public void onClick(DialogInterface dialog, int which) {
+
+                                        for (int i = 0; i < threadIds.size(); i++) {
+                                            getContentResolver().delete(Uri.parse("content://sms/conversations/" + threadIds.get(i)), null, null);
+                                            filteredDatabase.execSQL("delete from messageTable where thread_id = " + threadIds.get(i) + ";");
+                                        }
+                                        filteredDatabase.close();
+                                        cancelDeletionMode();
+                                        refreshOnExtraThread();
                                     }
-                                    filteredDatabase.close();
-                                    cancelDeletionMode();
-                                    refreshOnExtraThread();
-                                }
-                            }).setNegativeButton("No", null).show();
+                                }).setNegativeButton("No", null).show();
+                    }
                 }
 
                 else{
@@ -900,7 +870,6 @@ public class MainActivity extends AppCompatActivity{
             super.onBackPressed();
         else
             cancelDeletionMode();
-
 
     }
 

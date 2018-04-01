@@ -25,7 +25,7 @@ import java.util.ArrayList;
 
 public class KnownFragment extends Fragment {
 
-    ArrayList<sms> smsList = new ArrayList<>();
+    ArrayList<SMSThread> SMSThreadList = new ArrayList<>();
 
     customAdapter knownAdapter;
     ListView knownList;
@@ -48,10 +48,10 @@ public class KnownFragment extends Fragment {
         knownList = view.findViewById(R.id.knownList);
 
         //if(smsList.isEmpty())
-        smsList = activity.getKnownSms();
+        SMSThreadList = activity.getKnownSms();
 
-        selectedViews = new boolean[smsList.size()];
-        threadsToDelete = new String[smsList.size()];
+        selectedViews = new boolean[SMSThreadList.size()];
+        threadsToDelete = new String[SMSThreadList.size()];
 
         knownAdapter = new customAdapter();
 
@@ -89,7 +89,7 @@ public class KnownFragment extends Fragment {
                 if(!selectedViews[position]) {
                     knownSenderSelected.setVisibility(View.VISIBLE);
                     selectedViews[position] = true;
-                    threadsToDelete[position] = smsList.get(position).threadId;
+                    threadsToDelete[position] = SMSThreadList.get(position).threadId;
                 }
 
                 else{
@@ -110,14 +110,14 @@ public class KnownFragment extends Fragment {
 
                 Intent intent = new Intent(getActivity(), ConversationActivity.class);
                 Bundle args = new Bundle();
-                args.putSerializable("messageList", smsList.get(position).messages);
+                args.putSerializable("messageList", SMSThreadList.get(position).messageList);
                 intent.putExtra("BUNDLE",args);
 
-                intent.putExtra("sender", smsList.get(position).sender);
-                intent.putExtra("senderName", smsList.get(position).senderName);
-                intent.putExtra("threadId", smsList.get(position).threadId);
-                intent.putExtra("blacklisted", smsList.get(position).blacklisted);
-                intent.putExtra("read", smsList.get(position).read);
+                intent.putExtra("sender", SMSThreadList.get(position).sender);
+                intent.putExtra("senderName", SMSThreadList.get(position).senderName);
+                intent.putExtra("threadId", SMSThreadList.get(position).threadId);
+                intent.putExtra("blacklisted", SMSThreadList.get(position).blacklisted);
+                intent.putExtra("read", SMSThreadList.get(position).read);
 
 
                 intent.setAction("frag1");
@@ -130,9 +130,9 @@ public class KnownFragment extends Fragment {
     }
 
     public String[] getAllThreadIds(){
-        String allThreads[] = new String[smsList.size()];
+        String allThreads[] = new String[SMSThreadList.size()];
         for(int i = 0; i < threadsToDelete.length; i++)
-            allThreads[i] = smsList.get(i).threadId;
+            allThreads[i] = SMSThreadList.get(i).threadId;
         return allThreads;
     }
 
@@ -141,7 +141,7 @@ public class KnownFragment extends Fragment {
 
         @Override
         public int getCount() {
-            return smsList.size();
+            return SMSThreadList.size();
         }
 
         @Override
@@ -161,24 +161,24 @@ public class KnownFragment extends Fragment {
 
             TextView sender= view.findViewById(R.id.sender);
 
-            if(!(smsList.get(i).senderName.equals("")))
-                sender.setText(smsList.get(i).senderName);
+            if(!(SMSThreadList.get(i).senderName.equals("")))
+                sender.setText(SMSThreadList.get(i).senderName);
             else
-                sender.setText(smsList.get(i).sender);
+                sender.setText(SMSThreadList.get(i).sender);
 
-            if(smsList.get(i).read == 0)
+            if(SMSThreadList.get(i).read == 0)
                 sender.setTypeface(null, Typeface.BOLD);
 
             TextView time= view.findViewById(R.id.time);
-            String lastSenderMessageTime = smsList.get(i).messages.get(0).time;
-            lastSenderMessageTime = convertDate(lastSenderMessageTime, "dd/MM - hh:mm aa");
+            String lastSenderMessageTime = SMSThreadList.get(i).messageList.get(0).time;
+            lastSenderMessageTime = convertDate(lastSenderMessageTime, "E dd/MM - hh:mm aa");
             time.setText(lastSenderMessageTime);
 
             TextView text= view.findViewById(R.id.textbody);
-            if(smsList.get(i).messages.get(0).messageBody.length() >= 50)
-                text.setText(TextUtils.substring(smsList.get(i).messages.get(0).messageBody, 0, 50) + "...");
+            if(SMSThreadList.get(i).messageList.get(0).messageBody.length() >= 50)
+                text.setText(TextUtils.substring(SMSThreadList.get(i).messageList.get(0).messageBody, 0, 50) + "...");
             else
-                text.setText(smsList.get(i).messages.get(0).messageBody);
+                text.setText(SMSThreadList.get(i).messageList.get(0).messageBody);
 
             ImageView contactPicture = view.findViewById(R.id.contactPicture);
 

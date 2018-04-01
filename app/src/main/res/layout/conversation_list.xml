@@ -7,10 +7,11 @@
     xmlns:app="http://schemas.android.com/apk/res-auto"
 
     xmlns:tools="http://schemas.android.com/tools"
-    android:layout_width="match_parent"
+    android:id="@+id/messageBox"
 
-    android:paddingTop="8dp"
-    android:layout_height="wrap_content">
+    android:layout_width="match_parent"
+    android:layout_height="wrap_content"
+    android:paddingTop="8dp">
 
     <ImageView
         android:id="@+id/image_message_profile"
@@ -45,13 +46,11 @@
         android:padding="8dp"
         android:textColor="#ffffff"
         android:textColorLink="@android:color/white"
-        android:textIsSelectable="true"
         android:visibility="gone"
         app:layout_constraintBottom_toBottomOf="parent"
         app:layout_constraintLeft_toRightOf="@+id/image_message_profile"
         app:layout_constraintTop_toBottomOf="@+id/senderName"
-        app:layout_constraintVertical_bias="0.0"
-        android:onClick="resendSMS"/>
+        app:layout_constraintVertical_bias="0.0" />
 
     <TextView
         android:id="@+id/senderTime"
@@ -79,7 +78,6 @@
         android:padding="8dp"
         android:textColor="#000000"
         android:textColorLink="#000000"
-        android:textIsSelectable="true"
         android:visibility="gone"
         app:layout_constraintBottom_toBottomOf="parent"
         app:layout_constraintRight_toRightOf="parent" />
