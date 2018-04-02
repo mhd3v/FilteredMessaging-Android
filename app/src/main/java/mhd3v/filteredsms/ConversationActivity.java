@@ -512,6 +512,8 @@ public class ConversationActivity extends AppCompatActivity {
 
             int nRowsEffected = filteredDatabase.update("filteredThreads", filteredThreadCv, "thread_id =" + threadId, null); //update time for filtered_threads entry
 
+
+            //unreachable code, filteredThreads table will always contain entry for the thread
             if(nRowsEffected == 0){ //if no entry in filteredThreads table
 
                 filteredThreadCv.put("thread_id", threadId);
@@ -520,6 +522,7 @@ public class ConversationActivity extends AppCompatActivity {
                 filteredDatabase.insert("filteredThreads", null, filteredThreadCv);
 
             }
+            //----
 
             filteredDatabase.close();
 
@@ -530,7 +533,7 @@ public class ConversationActivity extends AppCompatActivity {
 
         }
 
-        else{
+        else{ //message sending failed
 
             ContentValues cv = new ContentValues();
 
