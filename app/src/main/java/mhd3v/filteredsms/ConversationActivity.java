@@ -418,6 +418,8 @@ public class ConversationActivity extends AppCompatActivity {
 
             messageList.add(newSms);
 
+            messagesToDelete = new String[messageList.size()]; //messageList size updated, => update messagesToDelete array too
+
             adapter.notifyDataSetChanged();
 
             sendSms(newSms);
@@ -552,6 +554,7 @@ public class ConversationActivity extends AppCompatActivity {
 
             newSms.failed = true;
             newSms.sending = false;
+
             adapter.notifyDataSetChanged();
 
         }
@@ -724,10 +727,11 @@ public class ConversationActivity extends AppCompatActivity {
         if (requestCode == CALL_PHONE_PERMISSIONS_REQUEST ) {
             if (grantResults.length > 0 && grantResults[0] == PackageManager.PERMISSION_GRANTED ) {
 
-                Intent callIntent = new Intent(Intent.ACTION_CALL);
-                callIntent.setData(Uri.parse("tel:" + sender));
+                    Intent callIntent = new Intent(Intent.ACTION_CALL);
+                    callIntent.setData(Uri.parse("tel:" + sender));
 
-                startActivity(callIntent);
+                    startActivity(callIntent);
+
             }
 
             else {
@@ -884,7 +888,10 @@ public class ConversationActivity extends AppCompatActivity {
                                     filteredDatabase.execSQL("delete from messageTable where thread_id = " + threadId + " and date_string=" + selectedMessagesList.get(i) + ";"); //messageTable
 
                                     messageList.remove(markedPositionsList.get(i) - i); //index needs to be decreased each time an item is deleted since size of messageList decreases
+
                                 }
+
+                                messagesToDelete = new String[messageList.size()]; //messageList updated, update max size of messages that can be deleted
 
                                 if(newestMessageSelected){ //if the newest message is selected then we have to update attributes for new newest message
 
