@@ -134,14 +134,6 @@ public class ConversationActivity extends AppCompatActivity {
         filteredDatabase.close();
         //-------
 
-        SharedPreferences sp = PreferenceManager.getDefaultSharedPreferences(this);
-        SharedPreferences.Editor editor = sp.edit();
-        editor.clear();
-        editor.apply();
-
-        NotificationManager notificationManager = (NotificationManager) this.getSystemService(Context.NOTIFICATION_SERVICE);
-        notificationManager.cancelAll();
-
         if (intent.getAction().equals("android.intent.action.NotificationClicked")) {
 
             cameFromNotification = true;
@@ -418,7 +410,7 @@ public class ConversationActivity extends AppCompatActivity {
 
             messageList.add(newSms);
 
-            messagesToDelete = new String[messageList.size()]; //messageList size updated, => update messagesToDelete array too
+            updateMessagesToDeleteLength(); //messageList size updated, => update messagesToDelete array too
 
             adapter.notifyDataSetChanged();
 
@@ -442,9 +434,24 @@ public class ConversationActivity extends AppCompatActivity {
 
     }
 
+    void updateMessagesToDeleteLength(){
+        messagesToDelete = new String[messageList.size()];
+    }
+
     @Override
     public void onStart() {
+
         super.onStart();
+
+        SharedPreferences sp = PreferenceManager.getDefaultSharedPreferences(this);
+        SharedPreferences.Editor editor = sp.edit();
+        editor.clear();
+        editor.apply();
+
+        NotificationManager notificationManager = (NotificationManager) this.getSystemService(Context.NOTIFICATION_SERVICE);
+        notificationManager.cancelAll();
+
+        active = true;
         conversationInstance = this;
     }
 
@@ -465,10 +472,14 @@ public class ConversationActivity extends AppCompatActivity {
             Intent mainIntent = new Intent(this, MainActivity.class);
             mainIntent.putExtra("cameFromNotification", true);
             startActivity(mainIntent);
+            conversationInstance = null;
             this.finish();
         }
-        else
-            super.onBackPressed();
+        else{
+             super.onBackPressed();
+             conversationInstance = null;
+        }
+
     }
 
     void updateViewsAndDB(boolean status, Message newSms){
@@ -894,7 +905,7 @@ public class ConversationActivity extends AppCompatActivity {
 
                                 }
 
-                                messagesToDelete = new String[messageList.size()]; //messageList updated, update max size of messages that can be deleted
+                                updateMessagesToDeleteLength(); //messageList updated, update max size of messages that can be deleted
 
                                 if(newestMessageSelected){ //if the newest message is selected then we have to update attributes for new newest message
 
