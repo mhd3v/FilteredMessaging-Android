@@ -15,6 +15,7 @@ import android.content.pm.PackageManager;
 import android.database.Cursor;
 import android.database.sqlite.SQLiteDatabase;
 import android.graphics.Color;
+import android.graphics.drawable.ColorDrawable;
 import android.graphics.drawable.Drawable;
 import android.net.Uri;
 import android.os.Build;
@@ -814,6 +815,7 @@ public class ConversationActivity extends AppCompatActivity {
         setDeletionModeClickListener();
 
         getSupportActionBar().setTitle("Edit Mode");
+        getSupportActionBar().setBackgroundDrawable(new ColorDrawable(0xffe57373));
 
         callButton.setVisible(false);
         deleteButton.setVisible(true);
@@ -845,6 +847,8 @@ public class ConversationActivity extends AppCompatActivity {
     void cancelDeletionMode() {
 
         editMode = false;
+
+        getSupportActionBar().setBackgroundDrawable(new ColorDrawable(0xff263238));
 
         callButton.setVisible(true);
         deleteButton.setVisible(false);
