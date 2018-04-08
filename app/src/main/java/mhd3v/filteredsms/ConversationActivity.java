@@ -5,6 +5,8 @@ import android.app.Activity;
 import android.app.NotificationManager;
 import android.app.PendingIntent;
 import android.content.BroadcastReceiver;
+import android.content.ClipData;
+import android.content.ClipboardManager;
 import android.content.ContentValues;
 import android.content.Context;
 import android.content.DialogInterface;
@@ -68,6 +70,8 @@ public class ConversationActivity extends AppCompatActivity {
 
     int blacklisted;
     int read;
+    int selectedMessagesCount;
+    int selectedMessagePosition;
 
     boolean cameFromNotification = false;
     boolean newestMessageSelected = true;
@@ -84,6 +88,7 @@ public class ConversationActivity extends AppCompatActivity {
     MenuItem callButton;
     MenuItem deleteButton;
     MenuItem cancelButton;
+    MenuItem copyButton;
 
     SQLiteDatabase filteredDatabase;
 
@@ -223,6 +228,7 @@ public class ConversationActivity extends AppCompatActivity {
         deleteButton = toolbar.getMenu().findItem(R.id.deleteButtonConversation);
         cancelButton = toolbar.getMenu().findItem(R.id.cancelButtonConversation);
         callButton = toolbar.getMenu().findItem(R.id.callButton);
+        copyButton = toolbar.getMenu().findItem(R.id.copyText);
 
         if (blacklisted == 0)
             blacklistButton.setVisible(true);
@@ -296,6 +302,13 @@ public class ConversationActivity extends AppCompatActivity {
         intent.putExtra(ContactsContract.Intents.Insert.PHONE, sender);
         startActivity(intent);
 
+    }
+
+    public void copyText(MenuItem item) {
+        ClipboardManager clipboard = (ClipboardManager) getSystemService(CLIPBOARD_SERVICE);
+        ClipData clip = ClipData.newPlainText("label", messageList.get(selectedMessagePosition).messageBody);
+        clipboard.setPrimaryClip(clip);
+        Toast.makeText(this, "Copied text to clipboard", Toast.LENGTH_SHORT).show();
     }
 
     class customAdapter extends BaseAdapter {
@@ -385,7 +398,11 @@ public class ConversationActivity extends AppCompatActivity {
                     DrawableCompat.setTint(backgroundDrawable, getResources().getColor(R.color.colorPrimary));
 
                 }
+
             }
+
+
+
 
             return view;
         }
@@ -759,6 +776,8 @@ public class ConversationActivity extends AppCompatActivity {
 
     void setDeletionModeClickListener(){
 
+        selectedMessagesCount = 0;
+
         conversation.setOnItemClickListener(new AdapterView.OnItemClickListener() {
             @Override
             public void onItemClick(AdapterView<?> parent, View view, int position, long id) {
@@ -766,32 +785,47 @@ public class ConversationActivity extends AppCompatActivity {
                 ConstraintLayout cL = view.findViewById(R.id.messageBox);
 
 
-                if(messagesToDelete[position] == null) {
+                if(messagesToDelete[position] == null) { //message selected
+
+                    Drawable backgroundDrawable;
 
                     if(messageList.get(position).isUserMessage){
-                        //view.findViewById(R.id.userText).setBackgroundColor(Color.LTGRAY);
-                        Drawable backgroundDrawable = view.findViewById(R.id.userText).getBackground();
-                        DrawableCompat.setTint(backgroundDrawable, getResources().getColor(R.color.messageSelected));
-
+                        TextView userText = view.findViewById(R.id.userText);
+                        backgroundDrawable = userText.getBackground();
+                        userText.setTextColor(0xFFffffff);
                     }
 
-                    else{
-                        Drawable backgroundDrawable = view.findViewById(R.id.senderText).getBackground();
-                        DrawableCompat.setTint(backgroundDrawable, getResources().getColor(R.color.messageSelected));
-                    }
+
+                    else
+                        backgroundDrawable = view.findViewById(R.id.senderText).getBackground();
+
+
+                    DrawableCompat.setTint(backgroundDrawable, getResources().getColor(R.color.colorAccent));
 
                     messagesToDelete[position] = messageList.get(position).time;
 
                     if(position == messageList.size()-1)  //if last index, then last message is being removed
                         newestMessageSelected = true;
 
+                    selectedMessagesCount++;
+
+                    if(selectedMessagesCount == 1){
+                        selectedMessagePosition = position;
+                        copyButton.setVisible(true);
+                    }
+
+                    else
+                        copyButton.setVisible(false);
+
                 }
 
-                else{
+                else{ //message deselected
 
                     if(messageList.get(position).isUserMessage){
-                        Drawable backgroundDrawable = view.findViewById(R.id.userText).getBackground();
+                        TextView userText = view.findViewById(R.id.userText);
+                        Drawable backgroundDrawable = userText.getBackground();
                         DrawableCompat.setTint(backgroundDrawable, Color.WHITE);
+                        userText.setTextColor(0xFF000000);
                     }
                     else{
                         Drawable backgroundDrawable = view.findViewById(R.id.senderText).getBackground();
@@ -802,6 +836,16 @@ public class ConversationActivity extends AppCompatActivity {
 
                     if(position == messageList.size()-1)
                         newestMessageSelected = false;
+
+                    selectedMessagesCount--;
+
+                    if(selectedMessagesCount == 1){
+                        selectedMessagePosition = position;
+                        copyButton.setVisible(true);
+                    }
+
+                    else
+                        copyButton.setVisible(false);
                 }
 
             }
@@ -815,11 +859,12 @@ public class ConversationActivity extends AppCompatActivity {
         setDeletionModeClickListener();
 
         getSupportActionBar().setTitle("Edit Mode");
-        getSupportActionBar().setBackgroundDrawable(new ColorDrawable(0xffe57373));
+        getSupportActionBar().setBackgroundDrawable(new ColorDrawable(0xff3a6f89));
 
         callButton.setVisible(false);
         deleteButton.setVisible(true);
         cancelButton.setVisible(true);
+        copyButton.setVisible(true);
 
         setDeletionModeClickListener();
 
@@ -892,9 +937,16 @@ public class ConversationActivity extends AppCompatActivity {
 
             else{
 
+                String alertMessage;
+
+                if(selectedMessagesList.size() > 1)
+                    alertMessage = "Are you sure you want to delete " + selectedMessagesList.size() + " messages?";
+                else
+                    alertMessage = "Are you sure you want to delete the selected message?";
+
                 new AlertDialog.Builder(ConversationActivity.this)
                         .setTitle("Deleting Messages")
-                        .setMessage("Are you sure you want to delete "+ selectedMessagesList.size() + " messages(s)?")
+                        .setMessage(alertMessage)
                         .setPositiveButton("Yes", new DialogInterface.OnClickListener() {
 
                             @Override

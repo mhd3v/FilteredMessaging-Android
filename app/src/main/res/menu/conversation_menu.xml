@@ -33,6 +33,16 @@
         app:showAsAction="never" />
 
     <item
+        android:id="@+id/copyText"
+        android:checkable="false"
+        android:enabled="true"
+        android:onClick="copyText"
+        android:title="Copy"
+
+        android:visible="false"
+        app:showAsAction="never" />
+
+    <item
         android:id="@+id/whitelistbutton"
         android:checkable="false"
         android:enabled="true"

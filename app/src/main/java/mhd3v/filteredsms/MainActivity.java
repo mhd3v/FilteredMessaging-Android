@@ -784,9 +784,16 @@ public class MainActivity extends AppCompatActivity{
 
                     else {
 
+                        String alertMessage;
+
+                        if(threadIds.size() > 1)
+                            alertMessage = "Are you sure you want to delete " + threadIds.size() + " conversations?";
+                        else
+                            alertMessage = "Are you sure you want to delete the selected conversation?";
+
                         new AlertDialog.Builder(MainActivity.this)
                                 .setTitle("Deleting Conversations")
-                                .setMessage("Are you sure you want to delete " + threadIds.size() + " conversation(s)?")
+                                .setMessage(alertMessage)
                                 .setPositiveButton("Yes", new DialogInterface.OnClickListener() {
                                     @Override
                                     public void onClick(DialogInterface dialog, int which) {
