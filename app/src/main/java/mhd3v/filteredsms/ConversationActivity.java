@@ -308,6 +308,7 @@ public class ConversationActivity extends AppCompatActivity {
         ClipboardManager clipboard = (ClipboardManager) getSystemService(CLIPBOARD_SERVICE);
         ClipData clip = ClipData.newPlainText("label", messageList.get(selectedMessagePosition).messageBody);
         clipboard.setPrimaryClip(clip);
+        selectedMessagesCount = 0;
         Toast.makeText(this, "Copied text to clipboard", Toast.LENGTH_SHORT).show();
     }
 
@@ -362,12 +363,14 @@ public class ConversationActivity extends AppCompatActivity {
 
                 if(messagesToDelete[i] != null){
                     Drawable backgroundDrawable = userMessage.getBackground();
-                    DrawableCompat.setTint(backgroundDrawable, getResources().getColor(R.color.messageSelected));
+                    DrawableCompat.setTint(backgroundDrawable, getResources().getColor(R.color.colorAccent));
+                    userMessage.setTextColor(0xFFffffff);
                 }
 
                 else{
                     Drawable backgroundDrawable = userMessage.getBackground();
                     DrawableCompat.setTint(backgroundDrawable, Color.WHITE);
+                    userMessage.setTextColor(0xFF000000);
 
                 }
 
@@ -390,7 +393,7 @@ public class ConversationActivity extends AppCompatActivity {
 
                 if(messagesToDelete[i] != null){
                     Drawable backgroundDrawable = senderMessage.getBackground();
-                    DrawableCompat.setTint(backgroundDrawable, getResources().getColor(R.color.messageSelected));
+                    DrawableCompat.setTint(backgroundDrawable, getResources().getColor(R.color.colorAccent));
                 }
 
                 else{
@@ -840,7 +843,6 @@ public class ConversationActivity extends AppCompatActivity {
                     selectedMessagesCount--;
 
                     if(selectedMessagesCount == 1){
-                        selectedMessagePosition = position;
                         copyButton.setVisible(true);
                     }
 
