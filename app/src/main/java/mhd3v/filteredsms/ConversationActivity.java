@@ -87,7 +87,6 @@ public class ConversationActivity extends AppCompatActivity {
     MenuItem addToContactsButton;
     MenuItem callButton;
     MenuItem deleteButton;
-    MenuItem cancelButton;
     MenuItem copyButton;
 
     SQLiteDatabase filteredDatabase;
@@ -193,16 +192,9 @@ public class ConversationActivity extends AppCompatActivity {
                 getSupportActionBar().setTitle(senderName);
 
 
-            getSupportActionBar().setHomeButtonEnabled(true);
-            getSupportActionBar().setDisplayHomeAsUpEnabled(true);
         }
 
-        toolbar.setNavigationOnClickListener(new View.OnClickListener() {
-            @Override
-            public void onClick(View view) {
-                finish();
-            }
-        });
+        setDefaultBackButtonListener();
 
         conversation.setOnItemLongClickListener(new AdapterView.OnItemLongClickListener() {
             @Override
@@ -216,6 +208,22 @@ public class ConversationActivity extends AppCompatActivity {
 
     }
 
+    void setDefaultBackButtonListener(){
+
+        getSupportActionBar().setHomeButtonEnabled(true);
+        getSupportActionBar().setDisplayHomeAsUpEnabled(true);
+        toolbar.setNavigationIcon(R.drawable.ic_arrow_back);
+
+        toolbar.setNavigationOnClickListener(new View.OnClickListener() {
+            @Override
+            public void onClick(View view) {
+                finish();
+            }
+        });
+    }
+
+
+
     @Override
     public boolean onCreateOptionsMenu(Menu menu) {
 
@@ -226,7 +234,6 @@ public class ConversationActivity extends AppCompatActivity {
         whitelistButton = toolbar.getMenu().findItem(R.id.whitelistbutton);
         addToContactsButton = toolbar.getMenu().findItem(R.id.addToContacts);
         deleteButton = toolbar.getMenu().findItem(R.id.deleteButtonConversation);
-        cancelButton = toolbar.getMenu().findItem(R.id.cancelButtonConversation);
         callButton = toolbar.getMenu().findItem(R.id.callButton);
         copyButton = toolbar.getMenu().findItem(R.id.copyText);
 
@@ -858,27 +865,16 @@ public class ConversationActivity extends AppCompatActivity {
 
         editMode = true;
 
-        setDeletionModeClickListener();
+        toolbar.setNavigationIcon(R.drawable.ic_cancel);
 
         getSupportActionBar().setTitle("Edit Mode");
         getSupportActionBar().setBackgroundDrawable(new ColorDrawable(0xff3a6f89));
 
         callButton.setVisible(false);
         deleteButton.setVisible(true);
-        cancelButton.setVisible(true);
         copyButton.setVisible(true);
 
         setDeletionModeClickListener();
-
-        cancelButton.setOnMenuItemClickListener(new MenuItem.OnMenuItemClickListener() {
-            @Override
-            public boolean onMenuItemClick(MenuItem item) {
-
-                cancelDeletionMode();
-
-                return false;
-            }
-        });
 
         deleteButton.setOnMenuItemClickListener(new MenuItem.OnMenuItemClickListener() {
             @Override
@@ -889,6 +885,15 @@ public class ConversationActivity extends AppCompatActivity {
                 return false;
             }
         });
+
+        toolbar.setNavigationOnClickListener(new View.OnClickListener() {
+            @Override
+            public void onClick(View view) {
+                cancelDeletionMode();
+            }
+        });
+
+
     }
 
     void cancelDeletionMode() {
@@ -897,10 +902,11 @@ public class ConversationActivity extends AppCompatActivity {
 
         getSupportActionBar().setBackgroundDrawable(new ColorDrawable(0xff263238));
 
+        setDefaultBackButtonListener();
+
         callButton.setVisible(true);
         deleteButton.setVisible(false);
-        cancelButton.setVisible(false);
-        editMode = false;
+        copyButton.setVisible(false);
 
         Arrays.fill(messagesToDelete, null);
 
@@ -1015,7 +1021,7 @@ public class ConversationActivity extends AppCompatActivity {
             View parentLayout = findViewById(R.id.messageBox);
             final int DEF_SMS_REQ = 0;
 
-            Snackbar.make(parentLayout, "Set as default app to delete messages!", Snackbar.LENGTH_INDEFINITE)
+            Snackbar.make(parentLayout, "Set as default app to delete messages!", Snackbar.LENGTH_LONG)
                     .setAction("Change", new View.OnClickListener() {
                         @Override
                         public void onClick(View v) {

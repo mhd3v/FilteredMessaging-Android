@@ -36,11 +36,11 @@
         android:id="@+id/copyText"
         android:checkable="false"
         android:enabled="true"
+        android:icon="@drawable/ic_content_copy"
         android:onClick="copyText"
         android:title="Copy"
-
         android:visible="false"
-        app:showAsAction="never" />
+        app:showAsAction="always" />
 
     <item
         android:id="@+id/whitelistbutton"
@@ -52,14 +52,6 @@
         android:visible="false"
         app:showAsAction="never" />
 
-    <item
-        android:id="@+id/cancelButtonConversation"
-        android:checkable="false"
-        android:enabled="true"
-        android:icon="@drawable/cancel"
-        android:title="cancel"
-        android:visible="false"
-        app:showAsAction="always" />
 
     <item
         android:id="@+id/deleteButtonConversation"
