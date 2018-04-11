@@ -64,8 +64,8 @@ public class MainActivity extends AppCompatActivity{
     MenuItem cancelButton;
     MenuItem deleteButton;
 
-    MenuItem selectAllFiltered;
-    MenuItem selectAllUnfiltered;
+    MenuItem selectAllFilteredButton;
+    MenuItem selectAllUnfilteredButton;
 
     boolean deletionMode = false;
     boolean firstRun = false;
@@ -76,18 +76,18 @@ public class MainActivity extends AppCompatActivity{
 
         super.onCreate(savedInstanceState);
 
-        boolean cameFromFirst = getIntent().getBooleanExtra("cameFromFirst", false);
+        boolean cameFromInitialActivities = getIntent().getBooleanExtra("cameFromFirst", false);
 
         String defaultSmsApp = Telephony.Sms.getDefaultSmsPackage(this);
 
-        if (!(defaultSmsApp.equals("mhd3v.filteredsms")) && !cameFromFirst){
-            finish();
-            startActivity(new Intent(this, DefaultAppActivity.class));
+        if(defaultSmsApp.equals("mhd3v.filteredsms") || cameFromInitialActivities){ //if permission was denied for default SMS app don't ask again for that session
+            setContentView(R.layout.activity_main);
+            loadActivity();
         }
 
         else{
-            setContentView(R.layout.activity_main);
-            loadActivity();
+            finish();
+            startActivity(new Intent(this, DefaultAppActivity.class));
         }
 
     }
@@ -731,8 +731,8 @@ public class MainActivity extends AppCompatActivity{
 
     void setDeletionMode(){
 
-        selectAllFiltered = tb.getMenu().findItem(R.id.selectAllFiltered);
-        selectAllUnfiltered = tb.getMenu().findItem(R.id.selectAllUnfiltered);
+        selectAllFilteredButton = tb.getMenu().findItem(R.id.selectAllFiltered);
+        selectAllUnfilteredButton = tb.getMenu().findItem(R.id.selectAllUnfiltered);
 
         cancelButton = tb.getMenu().findItem(R.id.cancelButton);
         deleteButton = tb.getMenu().findItem(R.id.deleteButton);
@@ -747,8 +747,8 @@ public class MainActivity extends AppCompatActivity{
         cancelButton.setVisible(true);
         deleteButton.setVisible(true);
 
-        selectAllFiltered.setVisible(true);
-        selectAllUnfiltered.setVisible(true);
+        selectAllFilteredButton.setVisible(true);
+        selectAllUnfilteredButton.setVisible(true);
 
         tb.findViewById(R.id.cancelButton).setOnClickListener(new View.OnClickListener() {
             @Override
@@ -851,8 +851,8 @@ public class MainActivity extends AppCompatActivity{
         cancelButton.setVisible(false);
         deleteButton.setVisible(false);
 
-        selectAllFiltered.setVisible(false);
-        selectAllUnfiltered.setVisible(false);
+        selectAllFilteredButton.setVisible(false);
+        selectAllUnfilteredButton.setVisible(false);
 
         tb.setTitle("Filtered Messaging");
 
