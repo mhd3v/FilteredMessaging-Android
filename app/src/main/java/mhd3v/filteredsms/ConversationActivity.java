@@ -5,6 +5,8 @@ import android.app.Activity;
 import android.app.NotificationManager;
 import android.app.PendingIntent;
 import android.content.BroadcastReceiver;
+import android.content.ClipData;
+import android.content.ClipboardManager;
 import android.content.ContentValues;
 import android.content.Context;
 import android.content.DialogInterface;
@@ -15,6 +17,7 @@ import android.content.pm.PackageManager;
 import android.database.Cursor;
 import android.database.sqlite.SQLiteDatabase;
 import android.graphics.Color;
+import android.graphics.drawable.ColorDrawable;
 import android.graphics.drawable.Drawable;
 import android.net.Uri;
 import android.os.Build;
@@ -67,6 +70,8 @@ public class ConversationActivity extends AppCompatActivity {
 
     int blacklisted;
     int read;
+    int selectedMessagesCount;
+    int selectedMessagePosition;
 
     boolean cameFromNotification = false;
     boolean newestMessageSelected = true;
@@ -82,7 +87,7 @@ public class ConversationActivity extends AppCompatActivity {
     MenuItem addToContactsButton;
     MenuItem callButton;
     MenuItem deleteButton;
-    MenuItem cancelButton;
+    MenuItem copyButton;
 
     SQLiteDatabase filteredDatabase;
 
@@ -133,14 +138,6 @@ public class ConversationActivity extends AppCompatActivity {
 
         filteredDatabase.close();
         //-------
-
-        SharedPreferences sp = PreferenceManager.getDefaultSharedPreferences(this);
-        SharedPreferences.Editor editor = sp.edit();
-        editor.clear();
-        editor.apply();
-
-        NotificationManager notificationManager = (NotificationManager) this.getSystemService(Context.NOTIFICATION_SERVICE);
-        notificationManager.cancelAll();
 
         if (intent.getAction().equals("android.intent.action.NotificationClicked")) {
 
@@ -195,16 +192,9 @@ public class ConversationActivity extends AppCompatActivity {
                 getSupportActionBar().setTitle(senderName);
 
 
-            getSupportActionBar().setHomeButtonEnabled(true);
-            getSupportActionBar().setDisplayHomeAsUpEnabled(true);
         }
 
-        toolbar.setNavigationOnClickListener(new View.OnClickListener() {
-            @Override
-            public void onClick(View view) {
-                finish();
-            }
-        });
+        setDefaultBackButtonListener();
 
         conversation.setOnItemLongClickListener(new AdapterView.OnItemLongClickListener() {
             @Override
@@ -218,6 +208,22 @@ public class ConversationActivity extends AppCompatActivity {
 
     }
 
+    void setDefaultBackButtonListener(){
+
+        getSupportActionBar().setHomeButtonEnabled(true);
+        getSupportActionBar().setDisplayHomeAsUpEnabled(true);
+        toolbar.setNavigationIcon(R.drawable.ic_arrow_back);
+
+        toolbar.setNavigationOnClickListener(new View.OnClickListener() {
+            @Override
+            public void onClick(View view) {
+                finish();
+            }
+        });
+    }
+
+
+
     @Override
     public boolean onCreateOptionsMenu(Menu menu) {
 
@@ -228,8 +234,8 @@ public class ConversationActivity extends AppCompatActivity {
         whitelistButton = toolbar.getMenu().findItem(R.id.whitelistbutton);
         addToContactsButton = toolbar.getMenu().findItem(R.id.addToContacts);
         deleteButton = toolbar.getMenu().findItem(R.id.deleteButtonConversation);
-        cancelButton = toolbar.getMenu().findItem(R.id.cancelButtonConversation);
         callButton = toolbar.getMenu().findItem(R.id.callButton);
+        copyButton = toolbar.getMenu().findItem(R.id.copyText);
 
         if (blacklisted == 0)
             blacklistButton.setVisible(true);
@@ -305,6 +311,14 @@ public class ConversationActivity extends AppCompatActivity {
 
     }
 
+    public void copyText(MenuItem item) {
+        ClipboardManager clipboard = (ClipboardManager) getSystemService(CLIPBOARD_SERVICE);
+        ClipData clip = ClipData.newPlainText("label", messageList.get(selectedMessagePosition).messageBody);
+        clipboard.setPrimaryClip(clip);
+        selectedMessagesCount = 0;
+        Toast.makeText(this, "Copied text to clipboard", Toast.LENGTH_SHORT).show();
+    }
+
     class customAdapter extends BaseAdapter {
 
         @Override
@@ -356,12 +370,14 @@ public class ConversationActivity extends AppCompatActivity {
 
                 if(messagesToDelete[i] != null){
                     Drawable backgroundDrawable = userMessage.getBackground();
-                    DrawableCompat.setTint(backgroundDrawable, getResources().getColor(R.color.messageSelected));
+                    DrawableCompat.setTint(backgroundDrawable, getResources().getColor(R.color.colorAccent));
+                    userMessage.setTextColor(0xFFffffff);
                 }
 
                 else{
                     Drawable backgroundDrawable = userMessage.getBackground();
                     DrawableCompat.setTint(backgroundDrawable, Color.WHITE);
+                    userMessage.setTextColor(0xFF000000);
 
                 }
 
@@ -384,7 +400,7 @@ public class ConversationActivity extends AppCompatActivity {
 
                 if(messagesToDelete[i] != null){
                     Drawable backgroundDrawable = senderMessage.getBackground();
-                    DrawableCompat.setTint(backgroundDrawable, getResources().getColor(R.color.messageSelected));
+                    DrawableCompat.setTint(backgroundDrawable, getResources().getColor(R.color.colorAccent));
                 }
 
                 else{
@@ -392,7 +408,11 @@ public class ConversationActivity extends AppCompatActivity {
                     DrawableCompat.setTint(backgroundDrawable, getResources().getColor(R.color.colorPrimary));
 
                 }
+
             }
+
+
+
 
             return view;
         }
@@ -418,6 +438,8 @@ public class ConversationActivity extends AppCompatActivity {
 
             messageList.add(newSms);
 
+            updateMessagesToDeleteLength(); //messageList size updated, => update messagesToDelete array too
+
             adapter.notifyDataSetChanged();
 
             sendSms(newSms);
@@ -440,9 +462,24 @@ public class ConversationActivity extends AppCompatActivity {
 
     }
 
+    void updateMessagesToDeleteLength(){
+        messagesToDelete = new String[messageList.size()];
+    }
+
     @Override
     public void onStart() {
+
         super.onStart();
+
+        SharedPreferences sp = PreferenceManager.getDefaultSharedPreferences(this);
+        SharedPreferences.Editor editor = sp.edit();
+        editor.clear();
+        editor.apply();
+
+        NotificationManager notificationManager = (NotificationManager) this.getSystemService(Context.NOTIFICATION_SERVICE);
+        notificationManager.cancelAll();
+
+        active = true;
         conversationInstance = this;
     }
 
@@ -463,10 +500,14 @@ public class ConversationActivity extends AppCompatActivity {
             Intent mainIntent = new Intent(this, MainActivity.class);
             mainIntent.putExtra("cameFromNotification", true);
             startActivity(mainIntent);
+            conversationInstance = null;
             this.finish();
         }
-        else
-            super.onBackPressed();
+        else{
+             super.onBackPressed();
+             conversationInstance = null;
+        }
+
     }
 
     void updateViewsAndDB(boolean status, Message newSms){
@@ -510,6 +551,8 @@ public class ConversationActivity extends AppCompatActivity {
 
             int nRowsEffected = filteredDatabase.update("filteredThreads", filteredThreadCv, "thread_id =" + threadId, null); //update time for filtered_threads entry
 
+
+            //unreachable code, filteredThreads table will always contain entry for the thread
             if(nRowsEffected == 0){ //if no entry in filteredThreads table
 
                 filteredThreadCv.put("thread_id", threadId);
@@ -518,6 +561,7 @@ public class ConversationActivity extends AppCompatActivity {
                 filteredDatabase.insert("filteredThreads", null, filteredThreadCv);
 
             }
+            //----
 
             filteredDatabase.close();
 
@@ -528,7 +572,7 @@ public class ConversationActivity extends AppCompatActivity {
 
         }
 
-        else{
+        else{ //message sending failed
 
             ContentValues cv = new ContentValues();
 
@@ -552,6 +596,7 @@ public class ConversationActivity extends AppCompatActivity {
 
             newSms.failed = true;
             newSms.sending = false;
+
             adapter.notifyDataSetChanged();
 
         }
@@ -724,10 +769,11 @@ public class ConversationActivity extends AppCompatActivity {
         if (requestCode == CALL_PHONE_PERMISSIONS_REQUEST ) {
             if (grantResults.length > 0 && grantResults[0] == PackageManager.PERMISSION_GRANTED ) {
 
-                Intent callIntent = new Intent(Intent.ACTION_CALL);
-                callIntent.setData(Uri.parse("tel:" + sender));
+                    Intent callIntent = new Intent(Intent.ACTION_CALL);
+                    callIntent.setData(Uri.parse("tel:" + sender));
 
-                startActivity(callIntent);
+                    startActivity(callIntent);
+
             }
 
             else {
@@ -740,6 +786,8 @@ public class ConversationActivity extends AppCompatActivity {
 
     void setDeletionModeClickListener(){
 
+        selectedMessagesCount = 0;
+
         conversation.setOnItemClickListener(new AdapterView.OnItemClickListener() {
             @Override
             public void onItemClick(AdapterView<?> parent, View view, int position, long id) {
@@ -747,32 +795,47 @@ public class ConversationActivity extends AppCompatActivity {
                 ConstraintLayout cL = view.findViewById(R.id.messageBox);
 
 
-                if(messagesToDelete[position] == null) {
+                if(messagesToDelete[position] == null) { //message selected
+
+                    Drawable backgroundDrawable;
 
                     if(messageList.get(position).isUserMessage){
-                        //view.findViewById(R.id.userText).setBackgroundColor(Color.LTGRAY);
-                        Drawable backgroundDrawable = view.findViewById(R.id.userText).getBackground();
-                        DrawableCompat.setTint(backgroundDrawable, getResources().getColor(R.color.messageSelected));
-
+                        TextView userText = view.findViewById(R.id.userText);
+                        backgroundDrawable = userText.getBackground();
+                        userText.setTextColor(0xFFffffff);
                     }
 
-                    else{
-                        Drawable backgroundDrawable = view.findViewById(R.id.senderText).getBackground();
-                        DrawableCompat.setTint(backgroundDrawable, getResources().getColor(R.color.messageSelected));
-                    }
+
+                    else
+                        backgroundDrawable = view.findViewById(R.id.senderText).getBackground();
+
+
+                    DrawableCompat.setTint(backgroundDrawable, getResources().getColor(R.color.colorAccent));
 
                     messagesToDelete[position] = messageList.get(position).time;
 
                     if(position == messageList.size()-1)  //if last index, then last message is being removed
                         newestMessageSelected = true;
 
+                    selectedMessagesCount++;
+
+                    if(selectedMessagesCount == 1){
+                        selectedMessagePosition = position;
+                        copyButton.setVisible(true);
+                    }
+
+                    else
+                        copyButton.setVisible(false);
+
                 }
 
-                else{
+                else{ //message deselected
 
                     if(messageList.get(position).isUserMessage){
-                        Drawable backgroundDrawable = view.findViewById(R.id.userText).getBackground();
+                        TextView userText = view.findViewById(R.id.userText);
+                        Drawable backgroundDrawable = userText.getBackground();
                         DrawableCompat.setTint(backgroundDrawable, Color.WHITE);
+                        userText.setTextColor(0xFF000000);
                     }
                     else{
                         Drawable backgroundDrawable = view.findViewById(R.id.senderText).getBackground();
@@ -783,6 +846,15 @@ public class ConversationActivity extends AppCompatActivity {
 
                     if(position == messageList.size()-1)
                         newestMessageSelected = false;
+
+                    selectedMessagesCount--;
+
+                    if(selectedMessagesCount == 1){
+                        copyButton.setVisible(true);
+                    }
+
+                    else
+                        copyButton.setVisible(false);
                 }
 
             }
@@ -793,25 +865,16 @@ public class ConversationActivity extends AppCompatActivity {
 
         editMode = true;
 
-        setDeletionModeClickListener();
+        toolbar.setNavigationIcon(R.drawable.ic_cancel);
 
         getSupportActionBar().setTitle("Edit Mode");
+        getSupportActionBar().setBackgroundDrawable(new ColorDrawable(0xff3a6f89));
 
         callButton.setVisible(false);
         deleteButton.setVisible(true);
-        cancelButton.setVisible(true);
+        copyButton.setVisible(true);
 
         setDeletionModeClickListener();
-
-        cancelButton.setOnMenuItemClickListener(new MenuItem.OnMenuItemClickListener() {
-            @Override
-            public boolean onMenuItemClick(MenuItem item) {
-
-                cancelDeletionMode();
-
-                return false;
-            }
-        });
 
         deleteButton.setOnMenuItemClickListener(new MenuItem.OnMenuItemClickListener() {
             @Override
@@ -822,16 +885,28 @@ public class ConversationActivity extends AppCompatActivity {
                 return false;
             }
         });
+
+        toolbar.setNavigationOnClickListener(new View.OnClickListener() {
+            @Override
+            public void onClick(View view) {
+                cancelDeletionMode();
+            }
+        });
+
+
     }
 
     void cancelDeletionMode() {
 
         editMode = false;
 
+        getSupportActionBar().setBackgroundDrawable(new ColorDrawable(0xff263238));
+
+        setDefaultBackButtonListener();
+
         callButton.setVisible(true);
         deleteButton.setVisible(false);
-        cancelButton.setVisible(false);
-        editMode = false;
+        copyButton.setVisible(false);
 
         Arrays.fill(messagesToDelete, null);
 
@@ -870,9 +945,16 @@ public class ConversationActivity extends AppCompatActivity {
 
             else{
 
+                String alertMessage;
+
+                if(selectedMessagesList.size() > 1)
+                    alertMessage = "Are you sure you want to delete " + selectedMessagesList.size() + " messages?";
+                else
+                    alertMessage = "Are you sure you want to delete the selected message?";
+
                 new AlertDialog.Builder(ConversationActivity.this)
                         .setTitle("Deleting Messages")
-                        .setMessage("Are you sure you want to delete "+ selectedMessagesList.size() + " messages(s)?")
+                        .setMessage(alertMessage)
                         .setPositiveButton("Yes", new DialogInterface.OnClickListener() {
 
                             @Override
@@ -884,7 +966,10 @@ public class ConversationActivity extends AppCompatActivity {
                                     filteredDatabase.execSQL("delete from messageTable where thread_id = " + threadId + " and date_string=" + selectedMessagesList.get(i) + ";"); //messageTable
 
                                     messageList.remove(markedPositionsList.get(i) - i); //index needs to be decreased each time an item is deleted since size of messageList decreases
+
                                 }
+
+                                updateMessagesToDeleteLength(); //messageList updated, update max size of messages that can be deleted
 
                                 if(newestMessageSelected){ //if the newest message is selected then we have to update attributes for new newest message
 
@@ -936,7 +1021,7 @@ public class ConversationActivity extends AppCompatActivity {
             View parentLayout = findViewById(R.id.messageBox);
             final int DEF_SMS_REQ = 0;
 
-            Snackbar.make(parentLayout, "Set as default app to delete messages!", Snackbar.LENGTH_INDEFINITE)
+            Snackbar.make(parentLayout, "Set as default app to delete messages!", Snackbar.LENGTH_LONG)
                     .setAction("Change", new View.OnClickListener() {
                         @Override
                         public void onClick(View v) {

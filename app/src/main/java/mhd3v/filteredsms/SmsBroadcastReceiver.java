@@ -177,24 +177,26 @@ public class SmsBroadcastReceiver extends BroadcastReceiver {
 
                     if (conversationInstance.threadId.equals(threadId)) {
 
-                            Message newSms = new Message(smsBody, Long.toString(System.currentTimeMillis()));
+                        Message newSms = new Message(smsBody, Long.toString(System.currentTimeMillis()));
 
-                            conversationInstance.messageList.add(newSms);
+                        conversationInstance.messageList.add(newSms);
 
-                            conversationInstance.adapter.notifyDataSetChanged();
+                        conversationInstance.updateMessagesToDeleteLength();
 
-                            ConversationActivity.refreshMain();
+                        conversationInstance.adapter.notifyDataSetChanged();
 
-                            if(!conversationInstance.active)
-                                setNotfication(context);
+                        ConversationActivity.refreshMain();
 
-                            //if conversation instance is active and open, then each new message is marked as read
-                            filteredDatabase = context.openOrCreateDatabase("filteredDatabase", MODE_PRIVATE, null);
-                            ContentValues readCv = new ContentValues();
-                            readCv.put("read", 1);
-                            filteredDatabase.update("filteredThreads", readCv, "thread_id=" + threadId, null);
-                            filteredDatabase.close();
-                            //---
+                        if(!conversationInstance.active)
+                            setNotfication(context);
+
+                        //if conversation instance is active and open, then each new message is marked as read
+                        filteredDatabase = context.openOrCreateDatabase("filteredDatabase", MODE_PRIVATE, null);
+                        ContentValues readCv = new ContentValues();
+                        readCv.put("read", 1);
+                        filteredDatabase.update("filteredThreads", readCv, "thread_id=" + threadId, null);
+                        filteredDatabase.close();
+                        //---
 
 
                     }
@@ -208,12 +210,12 @@ public class SmsBroadcastReceiver extends BroadcastReceiver {
 
                 else if (mainActivityInstance != null) {
 
-                    if (MainActivity.active)
+                    if (mainActivityInstance.active)
                         mainActivityInstance.refreshOnExtraThread();
 
                     else {
 
-                        MainActivity.refreshInbox = true;
+                        mainActivityInstance.refreshInbox = true;
                         setNotfication(context);
                     }
                 }
@@ -221,10 +223,10 @@ public class SmsBroadcastReceiver extends BroadcastReceiver {
                 else  //MainActivity not instantiated
                     setNotfication(context);
 
-                }
             }
-
         }
+
+    }
 
 
     void setNotfication(Context context){
