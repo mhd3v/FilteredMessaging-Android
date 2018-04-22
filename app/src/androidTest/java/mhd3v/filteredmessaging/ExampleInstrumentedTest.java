@@ -1,4 +1,4 @@
-package mhd3v.filteredsms;
+package mhd3v.filteredmessaging;
 
 import android.content.Context;
 import android.support.test.InstrumentationRegistry;

@@ -1,4 +1,4 @@
-package mhd3v.filteredsms;
+package mhd3v.filteredmessaging;
 
 /**
  * Created by Saqib Naveed on 21-Dec-17.

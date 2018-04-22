@@ -1,4 +1,4 @@
-package mhd3v.filteredsms;
+package mhd3v.filteredmessaging;
 
 import android.support.v4.app.Fragment;
 import android.support.v4.app.FragmentManager;
