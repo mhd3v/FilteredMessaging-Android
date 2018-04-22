@@ -13,16 +13,19 @@ import android.database.sqlite.SQLiteDatabase;
 import android.net.Uri;
 import android.provider.ContactsContract;
 import android.provider.Telephony;
+import android.support.v4.app.NavUtils;
 import android.support.v7.app.AppCompatActivity;
 import android.os.Bundle;
 import android.telephony.SmsManager;
 import android.telephony.TelephonyManager;
 import android.util.Log;
+import android.view.MenuItem;
 import android.view.View;
 import android.view.inputmethod.InputMethodManager;
 import android.widget.Button;
 import android.widget.EditText;
 import android.widget.Toast;
+import android.widget.Toolbar;
 
 public class NewMessage extends AppCompatActivity {
 
@@ -42,8 +45,8 @@ public class NewMessage extends AppCompatActivity {
         super.onCreate(savedInstanceState);
         setContentView(R.layout.activity_new_message);
 
-        textPhone = ((EditText) findViewById(R.id.edittext_contactnumber));
-        messageEt = ((EditText) findViewById(R.id.edittext_chatbox));
+        textPhone = findViewById(R.id.edittext_contactnumber);
+        messageEt = findViewById(R.id.edittext_chatbox);
         phone_number = "";
 
         textPhone.setOnClickListener(new View.OnClickListener() {
@@ -53,6 +56,22 @@ public class NewMessage extends AppCompatActivity {
                 phone_number = "";
             }
         });
+
+
+        getSupportActionBar().setDisplayHomeAsUpEnabled(true);
+        getSupportActionBar().setDisplayShowHomeEnabled(true);
+
+    }
+
+    @Override
+    public boolean onOptionsItemSelected(MenuItem item) {
+        switch (item.getItemId()) {
+            case android.R.id.home:
+                finish();
+                return true;
+            default:
+                return super.onOptionsItemSelected(item);
+        }
     }
 
 
@@ -66,7 +85,7 @@ public class NewMessage extends AppCompatActivity {
     @Override
     protected void onActivityResult(int requestCode, int resultCode, Intent data) {
 
-        EditText textPhone = (EditText) findViewById(R.id.edittext_contactnumber);
+        EditText textPhone = findViewById(R.id.edittext_contactnumber);
 
         // TODO Auto-generated method stub
         if(resultCode == RESULT_OK){
@@ -112,7 +131,7 @@ public class NewMessage extends AppCompatActivity {
 
     public static void refreshMain() {
         MainActivity mainInstance  = MainActivity.getInstance();
-        mainInstance.refreshInbox = true;
+        MainActivity.refreshInbox = true;
     }
 
     public void onSendClick(View view) {
@@ -132,7 +151,7 @@ public class NewMessage extends AppCompatActivity {
 
         else{
 
-            Button send = (Button) findViewById(R.id.button_chatbox_send);
+            Button send = findViewById(R.id.button_chatbox_send);
 
             sendSms(sendernumber, messagebody);
 
@@ -151,7 +170,7 @@ public class NewMessage extends AppCompatActivity {
 
         String defaultSmsApp = Telephony.Sms.getDefaultSmsPackage(this);
 
-        if(defaultSmsApp.equals("mhd3v.filteredsms")){
+        if(defaultSmsApp.equals("com.mhd3v.filteredmessaging")){
             ContentValues values = new ContentValues();
             values.put("address", address);//sender name
             values.put("body", message);

@@ -516,7 +516,7 @@ public class ConversationActivity extends AppCompatActivity {
 
             String defaultSmsApp = Telephony.Sms.getDefaultSmsPackage(this);
 
-            if(defaultSmsApp.equals("mhd3v.filteredsms")){
+            if(defaultSmsApp.equals("com.mhd3v.filteredmessaging")){
                 ContentValues values = new ContentValues();
                 values.put("address", sender);
                 values.put("body", newSms.messageBody);
@@ -926,7 +926,7 @@ public class ConversationActivity extends AppCompatActivity {
         String defaultSmsApp = Telephony.Sms.getDefaultSmsPackage(ConversationActivity.this);
 
 
-        if (defaultSmsApp.equals("mhd3v.filteredsms")){
+        if (defaultSmsApp.equals("com.mhd3v.filteredmessaging")){
 
             filteredDatabase = openOrCreateDatabase("filteredDatabase", MODE_PRIVATE, null);
 

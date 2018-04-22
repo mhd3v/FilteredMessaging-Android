@@ -40,7 +40,7 @@ public class DefaultAppActivity extends AppCompatActivity {
             case DEF_SMS_REQ:
                 String currentDefault = Telephony.Sms.getDefaultSmsPackage(this);
 
-                if(currentDefault.equals("mhd3v.filteredsms")){
+                if(currentDefault.equals("com.mhd3v.filteredmessaging")){
 
                     if (ContextCompat.checkSelfPermission(this, Manifest.permission.READ_SMS)
                             != PackageManager.PERMISSION_GRANTED &&

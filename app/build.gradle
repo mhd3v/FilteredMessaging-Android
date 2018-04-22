@@ -4,7 +4,7 @@ android {
     compileSdkVersion 27
     buildToolsVersion '27.0.3'
     defaultConfig {
-        applicationId "mhd3v.filteredsms"
+        applicationId "com.mhd3v.filteredmessaging"
         minSdkVersion 19
         targetSdkVersion 27
         versionCode 1
@@ -14,9 +14,10 @@ android {
     }
     buildTypes {
         release {
-            minifyEnabled false
+            minifyEnabled true
             proguardFiles getDefaultProguardFile('proguard-android.txt'), 'proguard-rules.pro'
         }
+
     }
 }
 

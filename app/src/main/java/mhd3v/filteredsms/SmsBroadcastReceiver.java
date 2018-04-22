@@ -73,7 +73,7 @@ public class SmsBroadcastReceiver extends BroadcastReceiver {
 
                 String defaultSmsApp = Telephony.Sms.getDefaultSmsPackage(context);
 
-                if (defaultSmsApp.equals("mhd3v.filteredsms")) {
+                if (defaultSmsApp.equals("com.mhd3v.filteredmessaging")) {
 
                     ContentValues cv = new ContentValues();
                     cv.put("address", address);
@@ -210,12 +210,12 @@ public class SmsBroadcastReceiver extends BroadcastReceiver {
 
                 else if (mainActivityInstance != null) {
 
-                    if (mainActivityInstance.active)
+                    if (MainActivity.active)
                         mainActivityInstance.refreshOnExtraThread();
 
                     else {
 
-                        mainActivityInstance.refreshInbox = true;
+                        MainActivity.refreshInbox = true;
                         setNotfication(context);
                     }
                 }

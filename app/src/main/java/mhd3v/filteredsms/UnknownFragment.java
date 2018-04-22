@@ -113,7 +113,7 @@ public class UnknownFragment extends Fragment {
 
                 Intent intent = new Intent(getActivity(), ConversationActivity.class);
                 Bundle args = new Bundle();
-                args.putSerializable("messageList", (Serializable) SMSThreadList.get(position).messageList);
+                args.putSerializable("messageList", SMSThreadList.get(position).messageList);
                 intent.putExtra("sender", SMSThreadList.get(position).sender);
                 intent.putExtra("BUNDLE", args);
                 intent.putExtra("sender", SMSThreadList.get(position).sender);

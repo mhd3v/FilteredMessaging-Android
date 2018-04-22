@@ -20,15 +20,6 @@
         app:showAsAction="always" />
 
     <item
-        android:id="@+id/newmessagebutton"
-        android:checkable="false"
-        android:enabled="true"
-        android:icon="@drawable/new_message"
-        android:title="new_message"
-        android:visible="false"
-        app:showAsAction="always" />
-
-    <item
         android:id="@+id/settingsButton"
         android:checkable="false"
         android:enabled="true"
