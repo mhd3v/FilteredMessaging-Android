@@ -1,4 +1,4 @@
-package mhd3v.filteredsms;
+package mhd3v.filteredmessaging;
 
 import android.content.BroadcastReceiver;
 import android.content.Context;

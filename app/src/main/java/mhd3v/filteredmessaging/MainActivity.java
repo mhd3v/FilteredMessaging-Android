@@ -1,4 +1,4 @@
-package mhd3v.filteredsms;
+package mhd3v.filteredmessaging;
 
 import android.annotation.SuppressLint;
 import android.app.NotificationManager;
@@ -80,7 +80,7 @@ public class MainActivity extends AppCompatActivity{
 
         String defaultSmsApp = Telephony.Sms.getDefaultSmsPackage(this);
 
-        if(defaultSmsApp.equals("mhd3v.filteredsms") || cameFromInitialActivities){ //if permission was denied for default SMS app don't ask again for that session
+        if(defaultSmsApp.equals("com.mhd3v.filteredmessaging") || cameFromInitialActivities){ //if permission was denied for default SMS app don't ask again for that session
             setContentView(R.layout.activity_main);
             loadActivity();
         }
@@ -763,7 +763,7 @@ public class MainActivity extends AppCompatActivity{
 
                 String defaultSmsApp = Telephony.Sms.getDefaultSmsPackage(MainActivity.this);
 
-                if (defaultSmsApp.equals("mhd3v.filteredsms")) {
+                if (defaultSmsApp.equals("com.mhd3v.filteredmessaging")) {
 
                     final ArrayList<String> threadIds = new ArrayList<>();
 

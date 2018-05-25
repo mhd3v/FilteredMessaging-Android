@@ -1,4 +1,4 @@
-package mhd3v.filteredsms;
+package mhd3v.filteredmessaging;
 
 import java.io.Serializable;
 import java.util.ArrayList;

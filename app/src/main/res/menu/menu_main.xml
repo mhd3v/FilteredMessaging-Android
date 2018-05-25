@@ -1,7 +1,7 @@
 <menu xmlns:android="http://schemas.android.com/apk/res/android"
     xmlns:app="http://schemas.android.com/apk/res-auto"
     xmlns:tools="http://schemas.android.com/tools"
-    tools:context="mhd3v.filteredsms.MainActivity">
+    tools:context="mhd3v.filteredmessaging.MainActivity">
     <item
         android:id="@+id/cancelButton"
         android:checkable="false"
@@ -16,15 +16,6 @@
         android:checkable="false"
         android:icon="@drawable/delete"
         android:title="delete"
-        android:visible="false"
-        app:showAsAction="always" />
-
-    <item
-        android:id="@+id/newmessagebutton"
-        android:checkable="false"
-        android:enabled="true"
-        android:icon="@drawable/new_message"
-        android:title="new_message"
         android:visible="false"
         app:showAsAction="always" />
 
