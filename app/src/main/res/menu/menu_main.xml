@@ -28,6 +28,12 @@
         android:onClick="setSettingOnClick" />
 
     <item
+        android:id="@+id/getSpamMsgLenght"
+        android:enabled="true"
+        android:title="Get Spam Length"
+        android:onClick="getSpamMessagesLength" />
+
+    <item
         android:id="@+id/rebuildDatabase"
         android:checkable="false"
         android:enabled="true"

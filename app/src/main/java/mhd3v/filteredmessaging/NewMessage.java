@@ -21,6 +21,7 @@ import android.telephony.TelephonyManager;
 import android.util.Log;
 import android.view.MenuItem;
 import android.view.View;
+import android.view.WindowManager;
 import android.view.inputmethod.InputMethodManager;
 import android.widget.Button;
 import android.widget.EditText;
@@ -44,19 +45,15 @@ public class NewMessage extends AppCompatActivity {
     protected void onCreate(Bundle savedInstanceState) {
         super.onCreate(savedInstanceState);
         setContentView(R.layout.activity_new_message);
+        this.getWindow().setSoftInputMode(WindowManager.LayoutParams.SOFT_INPUT_STATE_ALWAYS_HIDDEN);
 
         textPhone = findViewById(R.id.edittext_contactnumber);
         messageEt = findViewById(R.id.edittext_chatbox);
         phone_number = "";
 
-        textPhone.setOnClickListener(new View.OnClickListener() {
-            @Override
-            public void onClick(View view) {
-                textPhone.setText("");
-                phone_number = "";
-            }
-        });
-
+        if(getIntent().getStringExtra("receiver") != null){
+            textPhone.setText(getContactName(this, getIntent().getStringExtra("receiver")));
+        }
 
         getSupportActionBar().setDisplayHomeAsUpEnabled(true);
         getSupportActionBar().setDisplayShowHomeEnabled(true);
@@ -76,7 +73,6 @@ public class NewMessage extends AppCompatActivity {
 
 
     public void onAddContactIcon(View view) {
-
         intent = new Intent(Intent.ACTION_PICK, ContactsContract.Contacts.CONTENT_URI);
         intent.setType(ContactsContract.Contacts.CONTENT_TYPE);
         startActivityForResult(intent, PICK_CONTACT);
@@ -84,8 +80,6 @@ public class NewMessage extends AppCompatActivity {
 
     @Override
     protected void onActivityResult(int requestCode, int resultCode, Intent data) {
-
-        EditText textPhone = findViewById(R.id.edittext_contactnumber);
 
         // TODO Auto-generated method stub
         if(resultCode == RESULT_OK){
@@ -112,17 +106,18 @@ public class NewMessage extends AppCompatActivity {
                         if(cursorNum.moveToNext()){
                             phone_number = cursorNum.getString(cursorNum.getColumnIndex(ContactsContract.CommonDataKinds.Phone.NUMBER));
                             String contactName = cursorNum.getString(cursorNum.getColumnIndex(ContactsContract.Contacts.DISPLAY_NAME));
-                            Log.d("aqib", contactName);
-                            Log.d("aqib1", phone_number);
+
                             textPhone.setText(contactName);
                         }
+                    }
 
-                    }else{
+                    else{
                         textPhone.setText("NO Phone Number");
                     }
 
 
-                }else{
+                }
+                else{
                     Toast.makeText(getApplicationContext(), "NO data!", Toast.LENGTH_LONG).show();
                 }
             }
@@ -137,7 +132,7 @@ public class NewMessage extends AppCompatActivity {
     public void onSendClick(View view) {
 
         if(phone_number.equals(""))
-            phone_number = textPhone.getText().toString();
+        phone_number = textPhone.getText().toString();
 
         String sendernumber = phone_number;
         String messagebody = messageEt.getText().toString();
@@ -150,8 +145,6 @@ public class NewMessage extends AppCompatActivity {
             Toast.makeText(this, "Please enter a message body", Toast.LENGTH_SHORT).show();
 
         else{
-
-            Button send = findViewById(R.id.button_chatbox_send);
 
             sendSms(sendernumber, messagebody);
 

@@ -32,7 +32,7 @@
 
             <intent-filter>
                 <action android:name="android.intent.action.SEND" />
-                <action android:name="android.intent.action.SENDTO" />
+                <action android:name="android.intent.action.SENDTO"/>
                 <category android:name="android.intent.category.DEFAULT" />
                 <category android:name="android.intent.category.BROWSABLE" />
 
@@ -101,7 +101,16 @@
         </service>
 
         <activity android:name="NewMessage"
-            android:label="New Message"/>
+
+            android:label="New Message"
+            android:theme="@style/NewMessageActivityTheme"
+            android:windowSoftInputMode="adjustResize">
+
+            <intent-filter>
+                <action android:name="android.intent.action.SENDTO" />
+            </intent-filter>
+
+        </activity>
 
         <activity
             android:name="DefaultAppActivity"

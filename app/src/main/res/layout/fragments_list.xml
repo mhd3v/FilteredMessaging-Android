@@ -19,15 +19,13 @@
 
     <TextView
         android:id="@+id/textbody"
-        android:layout_width="242dp"
+        android:layout_width="wrap_content"
         android:layout_height="wrap_content"
-        android:layout_marginEnd="16dp"
         android:layout_marginLeft="16dp"
         android:layout_marginTop="1dp"
         android:text="Some Text"
         android:textColor="#000000"
         android:textSize="12sp"
-        app:layout_constraintEnd_toEndOf="parent"
         app:layout_constraintLeft_toRightOf="@+id/contactPicture"
         app:layout_constraintTop_toBottomOf="@+id/sender" />
 

@@ -29,6 +29,11 @@
         <item name="android:colorBackground">@color/bgwhite</item>
     </style>
 
+    <style name="NewMessageActivityTheme" parent="AppTheme">
+        <item name="android:windowBackground">@color/bgwhite</item>
+        <item name="android:colorBackground">@color/bgwhite</item>
+    </style>
+
     <style name="LaunchActivitiesTheme" parent="AppTheme.NoActionBar">
         <item name="android:windowBackground">@color/colorPrimary</item>
         <item name="android:colorBackground">@color/colorPrimary</item>

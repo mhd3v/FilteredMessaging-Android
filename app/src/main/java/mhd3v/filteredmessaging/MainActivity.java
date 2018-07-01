@@ -68,7 +68,7 @@ public class MainActivity extends AppCompatActivity{
     MenuItem selectAllUnfilteredButton;
 
     boolean deletionMode = false;
-    boolean firstRun = false;
+    boolean dbUpdated = true;
     boolean cameFromNotification = false;
 
     @Override
@@ -90,6 +90,18 @@ public class MainActivity extends AppCompatActivity{
             startActivity(new Intent(this, DefaultAppActivity.class));
         }
 
+        if(getIntent().getAction() != null){
+
+            if((getIntent().getAction().equals("android.intent.action.SENDTO"))){
+
+                String receiver = getIntent().getData().getSchemeSpecificPart();
+                Intent intent = new Intent(this, NewMessage.class);
+                intent.putExtra("receiver", receiver);
+                startActivity(intent);
+
+            }
+        }
+
     }
 
     void loadActivity(){
@@ -108,32 +120,41 @@ public class MainActivity extends AppCompatActivity{
 
         loadDatabase();
 
-        if(!firstRun && !cameFromNotification)
+        if(dbUpdated && !cameFromNotification)
             loadLayout();
-
-
     }
-
 
     private void loadDatabase(){
 
-        firstRun = false;
+        dbUpdated = true;
 
         createOrOpenDb();
 
         Cursor threadCursor = filteredDatabase.rawQuery("select * from messageTable;", null);
+        Cursor cursor = getContentResolver().query(Uri
+                .parse("content://sms"), null, null, null, null);
 
-        if(threadCursor.moveToFirst()){
+        Log.d("test1", Integer.toString(threadCursor.getCount()));
+        Log.d("test2", Integer.toString(cursor.getCount()));
 
-            threadCursor = filteredDatabase.rawQuery("select thread_id, filtered_status, blacklisted,read from filteredThreads ORDER BY date_string DESC;", null);
+        if(threadCursor.getCount() == cursor.getCount()){
 
-            threadCursor.moveToFirst();
-            openExistingDatabase(threadCursor);
-            filteredDatabase.close();
+            if(cursor.getCount() != 0){
+
+                cursor.close();
+
+                threadCursor = filteredDatabase.rawQuery("select thread_id, filtered_status, blacklisted,read from filteredThreads ORDER BY date_string DESC;", null);
+
+                threadCursor.moveToFirst();
+                openExistingDatabase(threadCursor);
+                filteredDatabase.close();
+            }
+
         }
 
         else {
-            firstRun = true;
+            dbUpdated = false;
+            this.deleteDatabase("filteredDatabase");
             refreshSmsInbox();
         }
 
@@ -170,6 +191,8 @@ public class MainActivity extends AppCompatActivity{
     }
 
     private void openExistingDatabase(Cursor cursor) {
+
+        ArrayList<Integer> spamMessagesLenghts = new ArrayList<>();
 
         do{
 
@@ -223,6 +246,11 @@ public class MainActivity extends AppCompatActivity{
 
                     do{
 
+                        //filteration algo check
+                        Log.d("message", c.getString(c.getColumnIndex("body")).substring(0,10 ).replaceAll(System.getProperty("line.separator"), "") + " | " + Integer.toString(c.getString(c.getColumnIndex("body")).length()));
+                        spamMessagesLenghts.add(c.getString(c.getColumnIndex("body")).length());
+                        //======================
+
                         Message message = new Message(c.getString(c.getColumnIndex("body")), c.getString(c.getColumnIndex("date_string")));
 
                         if(c.getString(c.getColumnIndex("type")).equals("2")){
@@ -253,6 +281,16 @@ public class MainActivity extends AppCompatActivity{
             c.close();
         }
         while(cursor.moveToNext());
+
+        float sum = 0;
+
+        for(int i = 0; i < spamMessagesLenghts.size(); i ++){
+            sum += spamMessagesLenghts.get(i);
+        }
+
+        Log.d("message 1", Integer.toString(spamMessagesLenghts.size()));
+        System.out.println("Avg spam message size: " + sum/spamMessagesLenghts.size());
+
         cursor.close();
 
     }
@@ -262,22 +300,12 @@ public class MainActivity extends AppCompatActivity{
 
         new AsyncTask<Void, Void, Void>  (){
 
-            boolean databaseAlreadyBuilt = false;
-
             TextView firstRunText;
             FloatingActionButton fab;
 
             @Override
             protected void onPreExecute() {
                 super.onPreExecute();
-
-                Cursor threadCursor = filteredDatabase.rawQuery("select * from messageTable;", null);
-
-                if(threadCursor.moveToFirst()){
-                    databaseAlreadyBuilt = true;
-                }
-
-                threadCursor.close();
 
                 firstRunText = findViewById(R.id.firstRunText);
                 fab = findViewById(R.id.floatingActionButton);
@@ -290,8 +318,6 @@ public class MainActivity extends AppCompatActivity{
 
             @Override
             protected Void doInBackground(Void... voids) {
-
-                if(!databaseAlreadyBuilt){
 
                     Cursor cursor = getContentResolver().query(Uri
                             .parse("content://sms"), null, null, null, null);
@@ -513,7 +539,7 @@ public class MainActivity extends AppCompatActivity{
 
                     cursor.close();
 
-                }
+
 
                 return null;
             }
@@ -877,6 +903,27 @@ public class MainActivity extends AppCompatActivity{
             super.onBackPressed();
         else
             cancelDeletionMode();
+
+    }
+
+    public void getSpamMessagesLength(MenuItem mItem){
+
+        ArrayList<Integer> spamMessagesLenghts = new ArrayList<>();
+
+        for(int i = 0; i < unknownSms.size(); i++){
+            for(int j = 0; j < unknownSms.get(i).messageList.size(); j++){
+                spamMessagesLenghts.add(unknownSms.get(i).messageList.get(j).messageBody.length());
+            }
+        }
+
+        float sum = 0;
+
+        for (int item : spamMessagesLenghts) {
+            sum += item;
+        }
+        Log.d("message 2", Integer.toString(spamMessagesLenghts.size()));
+        System.out.println("Average Spam Message Size" + sum/spamMessagesLenghts.size());
+        Toast.makeText(this, "Average Spam Message Lenght " + sum/spamMessagesLenghts.size(), Toast.LENGTH_SHORT).show();
 
     }
 
