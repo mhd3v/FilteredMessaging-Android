@@ -27,6 +27,7 @@ import android.text.format.DateFormat;
 import android.util.Log;
 import android.view.MenuItem;
 import android.view.View;
+import android.widget.Filter;
 import android.widget.ProgressBar;
 import android.widget.TextView;
 import android.widget.Toast;
@@ -94,7 +95,7 @@ public class MainActivity extends AppCompatActivity{
 
             if((getIntent().getAction().equals("android.intent.action.SENDTO"))){
 
-                String receiver = getIntent().getData().getSchemeSpecificPart();
+                String receiver = getIntent().getData().getSchemeSpecificPart(); // get phone number sent by the intent
                 Intent intent = new Intent(this, NewMessage.class);
                 intent.putExtra("receiver", receiver);
                 startActivity(intent);
@@ -155,6 +156,7 @@ public class MainActivity extends AppCompatActivity{
         else {
             dbUpdated = false;
             this.deleteDatabase("filteredDatabase");
+            createOrOpenDb();
             refreshSmsInbox();
         }
 
@@ -247,7 +249,7 @@ public class MainActivity extends AppCompatActivity{
                     do{
 
                         //filteration algo check
-                        Log.d("message", c.getString(c.getColumnIndex("body")).substring(0,10 ).replaceAll(System.getProperty("line.separator"), "") + " | " + Integer.toString(c.getString(c.getColumnIndex("body")).length()));
+                        Log.d("message", c.getString(c.getColumnIndex("body")).substring(0,3 ).replaceAll(System.getProperty("line.separator"), "") + " | " + Integer.toString(c.getString(c.getColumnIndex("body")).length()));
                         spamMessagesLenghts.add(c.getString(c.getColumnIndex("body")).length());
                         //======================
 
@@ -390,7 +392,7 @@ public class MainActivity extends AppCompatActivity{
 
                                 ContentValues filteredThreadsCv = new ContentValues();
 
-                                if(isContact){
+                                if(isContact || Filteration.checkMessage(cursor.getString(indexBody))){
 
                                     filteredThreadsCv.put("thread_id",threadId);
                                     filteredThreadsCv.put("filtered_status","filtered");
@@ -403,7 +405,10 @@ public class MainActivity extends AppCompatActivity{
 
                                     knownSms.add(newSMSThread);
 
-                                    cv.put("sender_name",contactName);
+                                    if(isContact)
+                                        cv.put("sender_name",contactName);
+                                    else
+                                        cv.put("sender_name","");
 
                                     filteredDatabase.insertOrThrow("messageTable", null, cv);
 
@@ -923,7 +928,7 @@ public class MainActivity extends AppCompatActivity{
         }
         Log.d("message 2", Integer.toString(spamMessagesLenghts.size()));
         System.out.println("Average Spam Message Size" + sum/spamMessagesLenghts.size());
-        Toast.makeText(this, "Average Spam Message Lenght " + sum/spamMessagesLenghts.size(), Toast.LENGTH_SHORT).show();
+        Toast.makeText(this, "Average Spam Message Length " + sum/spamMessagesLenghts.size(), Toast.LENGTH_SHORT).show();
 
     }
 

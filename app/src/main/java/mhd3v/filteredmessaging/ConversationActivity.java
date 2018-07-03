@@ -359,8 +359,9 @@ public class ConversationActivity extends AppCompatActivity {
 
                 else{
                     if(!messageList.get(i).failed){ //successfully sent message
-                        time = convertDate(messageList.get(i).time,"E dd/MM hh:mm aa");
-                        userTimeText.setText(time);
+//                        time = convertDate(messageList.get(i).time,"E dd/MM hh:mm aa");
+//                        userTimeText.setText(time);
+                        userTimeText.setText(Integer.toString(messageList.get(i).messageBody.length()));
                         userTimeText.setVisibility(View.VISIBLE);
                     }
                     else
@@ -390,8 +391,9 @@ public class ConversationActivity extends AppCompatActivity {
                 senderMessage.setVisibility(View.VISIBLE);
 
                 TextView senderTimeText = view.findViewById(R.id.senderTime);
-                String time = convertDate(messageList.get(i).time,"E dd/MM - hh:mm aa");
-                senderTimeText.setText(time);
+                senderTimeText.setText(Integer.toString(messageList.get(i).messageBody.length()));
+//                String time = convertDate(messageList.get(i).time,"E dd/MM - hh:mm aa");
+//                senderTimeText.setText(time);
                 senderTimeText.setVisibility(View.VISIBLE);
 
 

@@ -126,7 +126,7 @@ public class NewMessage extends AppCompatActivity {
 
     public static void refreshMain() {
         MainActivity mainInstance  = MainActivity.getInstance();
-        MainActivity.refreshInbox = true;
+        mainInstance.refreshInbox = true;
     }
 
     public void onSendClick(View view) {
@@ -235,18 +235,23 @@ public class NewMessage extends AppCompatActivity {
                             case Activity.RESULT_OK:
                                 Toast.makeText(getBaseContext(), "SMS sent", Toast.LENGTH_LONG).show();
                                 updateDB(address, message, Long.toString(System.currentTimeMillis()));
+                                unregisterReceiver(this); // experimental
                                 break;
                             case SmsManager.RESULT_ERROR_GENERIC_FAILURE:
                                 Toast.makeText(getBaseContext(), "Generic failure", Toast.LENGTH_LONG).show();
+                                unregisterReceiver(this);
                                 break;
                             case SmsManager.RESULT_ERROR_NO_SERVICE:
                                 Toast.makeText(getBaseContext(), "No service", Toast.LENGTH_LONG).show();
+                                unregisterReceiver(this);
                                 break;
                             case SmsManager.RESULT_ERROR_NULL_PDU:
                                 Toast.makeText(getBaseContext(), "Null PDU", Toast.LENGTH_LONG).show();
+                                unregisterReceiver(this);
                                 break;
                             case SmsManager.RESULT_ERROR_RADIO_OFF:
                                 Toast.makeText(getBaseContext(), "Radio off", Toast.LENGTH_LONG).show();
+                                unregisterReceiver(this);
                                 break;
                         }
                     }
@@ -263,8 +268,7 @@ public class NewMessage extends AppCompatActivity {
         }
     }
 
-    public boolean simExists()
-    {
+    public boolean simExists() {
         TelephonyManager telephonyManager = (TelephonyManager) getSystemService(Context.TELEPHONY_SERVICE);
         int SIM_STATE = telephonyManager.getSimState();
 

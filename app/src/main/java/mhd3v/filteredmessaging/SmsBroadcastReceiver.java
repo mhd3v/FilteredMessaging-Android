@@ -142,13 +142,23 @@ public class SmsBroadcastReceiver extends BroadcastReceiver {
                 }
 
                 else {
-                    filteredThreadsCv.put("thread_id",threadId);
-                    filteredThreadsCv.put("filtered_status","unfiltered");
+
+                    filteredThreadsCv.put("thread_id", threadId);
+                    filteredThreadsCv.put("filtered_status","filtered");
                     filteredThreadsCv.put("date_string", date);
 
                     if(messageFromNewSender){ //if message from new sender and not in contact list
-                        filteredThreadsCv.put("blacklisted", 1);
-                        blackListStatus = 1;
+
+                        if(Filteration.checkMessage(smsBody)){
+                            filteredThreadsCv.put("blacklisted", 0);
+                            blackListStatus = 0;
+                        }
+
+                        else {
+                            filteredThreadsCv.put("blacklisted", 1);
+                            blackListStatus = 1;
+                        }
+
                         filteredDatabase.insert("filteredThreads", null, filteredThreadsCv); //insert
                     }
 
